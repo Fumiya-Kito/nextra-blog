@@ -1,0 +1,108 @@
+# ポインタとは（Go言語）
+## Goではアドレスをポインタと呼んで扱う
+
+変数のアドレスを取得するためには、`&変数名`とする
+
+メモリ上の記録する場所はコンピュータによって変わるため、プログラムを実行する度に違うアドレスを出力する場合もある
+
+```go
+fmt.Println(name);
+fmt.Pringln(&name); // addres
+```
+
+アドレスは値である。整数や文字列のように操作したり変数に代入することができる
+
+**Goではアドレスをポインタと呼んで扱う**
+
+ポインタが代入された変数を**ポインタ型変数**という
+
+ポインタ型変数を定義するには、変数のデータ型に`*`(アスタリスク)をつけて宣言する
+
+下の例はポインタ型変数`namePtr`を定義し、`&name`で取得したポインタを代入している
+
+```go
+name := "John"
+var namePtr *string = &name // *string: (string)ポインタ型, namePtr: ポインタ型変数
+```
+
+ポインタ型変数に対して`*変数名`とすることで、そのポインタが示す変数の値を取り出すことができる
+
+```go
+fmt.Println(*namePtr); // John
+
+*namePtr = "Kate"
+fmt.Println(*namePtr) //Kate
+fmt.Println(namePtr) //0xc...
+
+fmt.Println(name) //John
+fmt.Println(&name) //0xc...
+```
+
+## ポインタ型変数をいつ使うのか？
+※以下　https://zenn.dev/uji/articles/f6ab9a06320294146733　の完コピ
+### 引数やレシーバを関数内で書き換える必要がある場合
+- 引数やレシーバを関数内で書き換える必要がある場合、書き換える対象はポインタで渡す必要があります
+
+```go
+type S struct { value string }
+
+func (s S) SetA (v string) {
+  s.value = v
+}
+
+func (s *S) SetB (v string) {
+  s.value = v
+}
+
+func main() {
+  var s S
+  s.SetA("a")
+  fmt.Println(s.value) // sはゼロ値のまま
+  s.SetB("b")
+  fmt.Println(s.value) // b
+}
+```
+
+### コピーを避けたいデータを引数、レシーバにする場合
+- os.File や sync.Mutex などコピーが発生すると問題が生じるような構造体の場合は、ポインタで扱うことでコピーされないようにします
+
+```go
+// os.Open では File 型をポインタで返している
+func Open(name string) (file *File, err error) {
+  return OpenFile(name, O_RDONLY, 0)
+}
+```
+### 大きな構造体や配列を扱う場合
+- 大きな構造体や配列を扱う場合はポインタを使う方が効率的です
+- 逆にintやstringなどのプリミティブな型やフィールドが多くない構造体に関しては、コピーのコストはあまり気にならず、むしろポインタで扱った方がGCの兼ね合いで非効率になるので、値レシーバにした方が良いようです
+
+構造体の「大きい」の基準は Go Code Review Comments には以下のように書かれています
+
+> もし構造体の全ての値を引数に渡すと仮定してください。多すぎると感じたなら、それはポインタにしても良いくらいの大きさです。
+
+なかなか難しい基準ですが、利便性や変更容易性、GCの負荷等を考慮して決めます
+
+> 迷っている場合はレシーバをポインタにしましょう。
+
+という記述もあったので、迷ったらポインタを使うのが良さそうです
+
+> Go Code Review Comments 日本語訳 (Receiver Type)
+
+
+### 大きな構造体をスライスに持たせる場合
+- スライス は cap 以上に append した際や、for ~ range でsliceの要素を取得する際に、全レコードのコピーが発生するので、slice 要素に大きな構造体を持たせる場合はポインタにしておくと、コピーのコストが抑えられます
+
+```go
+// listのcapが足りない場合新しくアロケートされる
+list = append(list, x)
+
+// xにlistの要素がコピーされる
+for _, x := range list {
+    ...
+}
+```
+
+
+### 参照
+https://qiita.com/Sekky0905/items/447efa04a95e3fec217f
+https://zenn.dev/uji/articles/f6ab9a06320294146733

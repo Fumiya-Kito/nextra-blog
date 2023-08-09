@@ -1,0 +1,95 @@
+# Nextraとは
+- Next.jsのテンプレート
+- Vercelの中の人が開発
+- まさにこのページ。以下が設定せずに実装可能
+    - 右上の全体検索(cmd+K)
+    - 左側カラム：ディレクトリ表示（Next.jsのページルータ）
+    - md, mdx（Reactのコードを中に書ける）に対応
+    - フッターのページネーション etc.
+- ショーケース(https://nextra.site/showcase) を見ると、node.jsのドキュメントにも使用されている
+
+
+## 使ってみる
+1. ドキュメント(https://nextra.site/docs/docs-theme/start) から
+---
+
+2. Shu Dingさんのレポジトリ(https://github.com/shuding/nextra-docs-template) からクローン
+
+
+```shell
+$ git clone https://github.com/shuding/nextra-docs-template.git
+```
+- パッケージのインストール
+```shell
+$ npm i
+```
+
+- 設定ファイルの確認 (Nextraの設定をしても、Next.jsの機能は使用可能)
+    - next.config.js 
+    - package.json>dependenciesの確認
+```js filename="next.config.js"
+const withNextra = require('nextra')({
+    theme: 'nextra-theme-docs',
+    themeConfig: './theme.config.jsx'
+  })
+   
+module.exports = withNextra()
+```
+
+```json filename="package.json"
+{
+	"dependencies": {
+		"next": "^13.4.13",
+		"react": "^18.2.0",
+		"react-dom": "^18.2.0",
+		"nextra": "^2.10.0",
+		"nextra-theme-docs": "^2.10.0"
+	}
+}
+```
+- Localで実行
+```shell
+$ npm run dev
+```
+
+### Reactコンポーネントを書いてみる
+- useStateを使ってカウントする。
+
+import { useState } from 'react'
+
+export const Counter = () => {
+  const [count, setCount] = useState(0);
+  const style = {
+    margin: "10px 0 0 0",
+    padding: "5px 16px",
+    border: "1px solid" 
+  }
+  return (
+    <div>
+      <button onClick={() => setCount(count + 1)} style={style}>Clicked {count} times</button>
+    </div>
+  );
+};
+
+<Counter/>
+
+
+```mdx filename="pages/2023-08/07_Nextra.mdx"
+import { useState } from 'react'
+
+export const Counter = () => {
+  const [count, setCount] = useState(0);
+  const style = {
+    margin: "10px 0 0 0",
+    padding: "5px 16px",
+    border: "1px solid" 
+  }
+  return (
+    <div>
+      <button onClick={() => setCount(count + 1)} style={style}>Clicked {count} times</button>
+    </div>
+  );
+};
+
+<Counter/>
+```
