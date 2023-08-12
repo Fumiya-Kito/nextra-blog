@@ -3,5 +3,6 @@
     "08_Go_Pointers": "08 ポインタ【Go】",
     "09_Address": "09 アドレス",
     "10_Bug_Nextra_Deploy": "10 本番環境でバグ?【Nextra】",
-    "11_Async_Process": "11_非同期処理"
+    "11_Async_Process": "11 非同期処理①",
+    "12_Promise": "12 非同期処理②【JS】"
 }
