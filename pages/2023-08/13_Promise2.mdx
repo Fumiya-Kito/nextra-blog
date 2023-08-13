@@ -1,0 +1,122 @@
+# 非同期処理③
+
+{/* ### 
+基本的にJSは、シングルスレッド（メインスレッドのみ）で並列処理はできない
+- メインスレッドが占有されている(処理中の)場合、他の処理は実行できない
+- メインスレッドはコールスタックにより管理される
+  - 関数が呼び出されると、コールスタックに積み上がる
+  - 関数がreturnされると、コールスタックから追い出される
+  - 非同期処理はタスクをコールスタックから一時退避させることで、同時にタスクを処理させているように見せかけている
+
+setTimeout関数やPromise.resolve関数といった、非同期APIはコールスタックから条件付きで追い出す */}
+
+### なぜPromise？【コールバックヘル】
+- 非同期処理を連鎖させると、階層が深くなる（コールバックヘル）
+```js filename="1秒ごとに(時間経過-1秒)を表示させる"
+function sleep(callback, n) {
+  //setTimeOut=非同期API コールバック関数をタスクキューに退避
+  setTimeout(function () { 
+    console.log(n);
+    n++
+    callback(n);
+  }, 1000);
+}
+
+sleep(function (n) {// 0秒時点:呼び出し 1秒時点: 0を表示
+  sleep(function (n) {// 1秒時点: 呼び出し, 2秒時点: 1を表示
+    sleep(function (n) {
+      sleep(function (n) {
+        sleep(function (n) {
+          sleep(function (n) {
+          }, n);
+        }, n);
+      }, n);
+    }, n);
+  }, n);
+}, 0);
+```
+
+- Promiseで書き換える（階層が深くならず、可読性が上がる）
+```js
+function sleep(n) {
+  return new Promise(resolve => {
+    setTimeout(function () { 
+      console.log(n);
+      n++
+      resolve(n)
+    }, 1000);
+  })
+}
+
+sleep(0)
+  .then(n => {
+    return sleep(n); // chainさせるには、Promiseインスタンスを返す
+  })
+  .then(n => {
+    return sleep(n);
+  })
+  .then(n => {
+    return sleep(n);
+  })
+  .then(n => {
+    return sleep(n);
+  })
+  .then(n => {
+    return sleep(n);
+  })
+```
+
+```js
+// アロー関数の記法を利用して以下でも実行可能
+sleep(0)
+  .then(n => sleep(n))
+  .then(n => sleep(n))
+  .then(n => sleep(n))
+  .then(n => sleep(n))
+  .then(n => sleep(n));
+```
+
+### 非同期処理の順序を制御する【Promiseチェーン】
+- コールバックの実行順は受け取る側の問題
+```js filename="whenExecCallback.js"
+const myFunc = ([order, pattern, funcName]) => {
+  console.log(`👻 ${order} This line is ${pattern} executed by ${funcName}`);
+};
+
+const syncCall = (callback, order) => {
+  callback([order, "Synchronously", syncCall.name]);
+};
+const asyncAPICall = (callback, order) => {
+  setTimeout(callback, 1000, [order, "Asynchronously", asyncAPICall.name])
+};
+const thenCall = (callback, order) => {
+  return Promise.resolve([order, "Asynchronously", thenCall.name])
+    .then(callback);
+};
+
+console.log("🦖 [1] MAINLINE: Sync");
+asyncAPICall(myFunc, "[7]");
+console.log("🦖 [2] MAINLINE: Sync");
+thenCall(myFunc, "[6]");
+console.log("🦖 [3] MAINLINE: Sync");
+syncCall(myFunc, "[4]");
+console.log("🦖 [5] MAINLINE: Sync");
+```
+
+```shell
+🦖 [1] MAINLINE: Sync
+🦖 [2] MAINLINE: Sync
+🦖 [3] MAINLINE: Sync
+👻 [4] This line is Synchronously executed by syncCall
+🦖 [5] MAINLINE: Sync
+👻 [6] This line is Asynchronously executed by thenCall
+👻 [7] This line is Asynchrouously executed by asyncAPICall
+```
+
+- Promise型をreturnすることで新たにPromiseをpending状態で始める
+- 非同期処理を処理順番を制御する 
+
+
+### 参照
+- https://zenn.dev/tana0102/articles/5a73971ad05c92
+- https://qiita.com/sho_U/items/ff82aa576837198097ce

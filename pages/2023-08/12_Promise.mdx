@@ -21,16 +21,32 @@ Promise型とは、処理の順序に**約束**を取り付けるためのデー
 Promiseには、`PromiseStatus`というstatusがあり、3つのstatusがある。
 
 - `pending`: 未解決 (処理が終わるのを待っている状態)
-- `resolved`: 解決済み (処理が終わり、無事成功した状態)
+- `fulfilled`: 解決済み (処理が終わり、無事成功した状態)
 - `rejected`: 拒否 (処理が失敗に終わってしまった状態)
 
 ![Promise](../../img/2023-08/promise1.png)
 
 `new Promise()`で作られたPromiseオブジェクトは、`pendeing`という`PromiseStatus`で作られる。<br/>
-処理が成功した時に、`PromiseStatus`は`resolved`に変わり,`then`に書かれた処理が実行される。<br/>
+処理が成功した時に、`PromiseStatus`は`fulfilled`に変わり,`then`に書かれた処理が実行される。<br/>
 処理が失敗した時は、`PromiseStatus`が`rejected`に変わり、`catch`に書かれた処理が実行される。
 
-```js filename="Promise使い方"
+### 基本的なPromise使い方
+
+```js filename="Promiseの構文"
+/** 0. 構文 */
+new Promise((resolve, reject) => {
+  //同期処理
+}).then(resolvedValue => {
+  // resolveされた場合
+  // 非同期処理
+}).catch(rejectedValue => {
+  // rejectされた場合
+  // 非同期処理
+}).finally(() => {
+  // 必ず発生
+  // 非同期処理
+})
+
 /** 1. インスタンス化 */
 const goToOffice = new Promise() // promiseStatus = pending
 ```
@@ -39,7 +55,7 @@ const goToOffice = new Promise() // promiseStatus = pending
 /** 2. 引数にコールバック関数: statusを変更する
  * statusを解決させるか・拒否するか
  * コールバック関数の引数にresolve関数, reject関数
- * 非同期で処理される 
+ * 状態遷移させるまでは同期処理 
 */
 const goToOffice = new Promise((resolve, reject) => {}) // promiseStatus = pending
 ```
@@ -69,23 +85,25 @@ const goToOffice = new Promise((resolve, reject) => {
   .catch(answer => {
     console.log(`${answer}？あなたはサボるのでダメです`);
   }) // promiseStatus = resolved (rejectされたものがcatchされ、無事処理を終えresolveされた。)
-
 ```
 
-
-{/* ### なぜPromise？【コールバックヘル】
-本来JSは1つしか実行できない（コールスタックにより管理され、メインスレッドが占有されていれば待ちが発生）
-
-
-### 順序を制御する【Promiseチェーン】
-- Promise型をreturnすることで新たにPromiseをpending状態で始める
-- 非同期処理を処理順番を制御する 
-
-### 参照
-https://zenn.dev/tana0102/articles/5a73971ad05c92
-https://qiita.com/sho_U/items/ff82aa576837198097ce
-
-*/}
+```js
+/** 5. .catch → .thenも可能 */
+const goToOffice = new Promise((resolve, reject) => {
+  console.log("朝9時に来てね");
+  const answer = "テレワークします！"
+  reject(answer); // .catchのコールバック関数の引数に渡せる
+}) // promiseStatus = rejected
+  .then(answer => {
+    console.log(`${answer}か、まあ当然だよね`); // 実行されない
+  })
+  .catch(answer => {
+    console.log(`${answer}？あなたはサボるのでダメです`);
+  })
+  .then(answer => { // answerを使いたい場合、.catch内でreturnする
+    console.log('この処理はつづくよ');
+  });
+```
 
 ### 参照
 [【ES6】 JavaScript初心者でもわかるPromise講座](https://qiita.com/cheez921/items/41b744e4e002b966391a)
