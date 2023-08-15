@@ -1,9 +1,13 @@
 # 非同期処理 in JavaScript【Promise】
 
 ### はじめに
-[2023/08/11 非同期処理](./11_Async_Process.mdx)から続きで、JSではどのように記述していくのかを本記事ではまとめます。<br/>
-「JSは簡単」とよく見かけるのですが、Promise型はかなり難しいと思っております。😓<br/>
-実務で（苦しみながら）使うようになり、最近ある程度理解してきたかな？というタイミングなので、復習がてらまとめていこうと思います。
+[2023/08/11 非同期処理](./11_Async_Process.mdx)から続きで、今回からJSについてです<br/>
+JSで非同期処理を使う方法としては以下３点があります。
+- setTimeout()やfetch()といった非同期API
+- Promise
+- Async/Await  
+
+fetch関数のレスポンスにはPromiseインスタンスが返ってきますし、Async/Awaitも内部的にはPromiseに近いそうです。
 
 ## Promiseとは
 Promise型とは、処理の順序に**約束**を取り付けるためのデータ型<br/>
@@ -88,7 +92,7 @@ const goToOffice = new Promise((resolve, reject) => {
 ```
 
 ```js
-/** 5. .catch → .thenも可能 */
+/** 5. .catch → .thenも可能(catchが正常終了すればfullfilledのため) */
 const goToOffice = new Promise((resolve, reject) => {
   console.log("朝9時に来てね");
   const answer = "テレワークします！"
@@ -100,7 +104,7 @@ const goToOffice = new Promise((resolve, reject) => {
   .catch(answer => {
     console.log(`${answer}？あなたはサボるのでダメです`);
   })
-  .then(answer => { // answerを使いたい場合、.catch内でreturnする
+  .then(someArg => { // someArgを使いたい場合、.catch内でreturnする
     console.log('この処理はつづくよ');
   });
 ```
