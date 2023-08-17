@@ -1,0 +1,78 @@
+# 技術スタック
+ムーザルちゃんねるさんのYoutube動画から。
+存在を知るだけでも勉強になる。知らないものもたくさんあった。
+Webアプリである以上フロントを作らないといけない。そういう意味ではTSが強いというのは納得。
+動画は途中からTS前提で話が進んでいってる気がしてる笑。
+ただ、GoとかRustがパフォーマンスいいと聞くので、そこは”作りたいものに合わせる”という技術スタックの前提に立ち戻る。
+今度、Supabase（知らなかった）を使ってアプリひとつ作ろうと思う。
+
+## フレームワーク
+- Ruby on Rails
+- Laravel
+- TypeScript
+  - **Next** (王道、フルスタック、TS統一で書ける)
+  - Nuxt
+  - **Svelte** (後発でいいとこ取り、パフォーマンス高)
+  - Nest
+  - Remix
+- Go
+  - **Gin** 
+  - Beego、Echo、Revel、Martini、Fiber、Buffalo...
+- Rust
+
+## CSS
+- Pure CSS
+  - CSS, CSS modules, **CSS in JS** (パフォーマンスが上がって再注目), Sass
+- Utility
+  - **tailwind CSS** (柔軟性と手軽さを両立、可読性は低め)
+- Component
+  - ChakuraUI
+
+## DB
+- SQL
+  - MySQL
+  - **PostgreSQL**
+- No SQL
+  - Mongo (ドキュメント指向)
+
+### BaaS (Postgreをどこで動かすか？)
+- Supabase (postgre)
+- Planet Scale (MySQL)
+
+firebaseのSQL版として登場
+
+## ORM
+- ORM
+- NO ORM
+- **Prisma** (リッチ)
+- Kysely (TSでSQLライクに書ける)
+
+## インフラ
+- クラウド
+ - AWS
+ - GCP
+ - Azure
+- PaaS
+  - **Vercel** (デプロイ簡単、プレビュー環境が便利)
+  - Heroku
+  - Render
+  - Netlify
+
+## CI
+- Circle CI
+- **Github Actions**
+
+## E2E Test
+- Playwright
+
+## Authentication
+- NextAuth (AuthJS)
+
+## Validation
+- Zod (for TS)
+
+## コード解析・品質UP
+- **ESLint**, Pritter
+
+### 参照
+[Webアプリ作るなら技術どれにする?](https://www.youtube.com/watch?v=sMXaYvoUxlU)
