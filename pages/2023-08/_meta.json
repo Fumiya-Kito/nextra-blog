@@ -5,5 +5,7 @@
     "10_Bug_Nextra_Deploy": "10 本番環境でバグ?【Nextra】",
     "11_Async_Process": "11 非同期処理①",
     "12_Promise": "12 非同期処理②【JS】",
-    "13_Promise2": "13 非同期処理③【JS】"
+    "13_Promise2": "13 非同期処理③【JS】",
+    "14_js_thread": "14 非同期処理④【JS】",
+    "30_Promise3": "30 非同期処理⑤【JS】"
 }
