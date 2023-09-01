@@ -1,0 +1,269 @@
+# 非同期処理⑦
+
+## async/await
+- Promise chain をより分かりやすく書くことができるように ES2017 で導入された ECMAScript の構文
+- async/awaitには「async関数」と「await式」が登場
+- async関数=非同期関数(async function)と訳されるが、setTimeout()を始めとする非同期APIも非同期関数(asynchronous function)と呼ばれるため混同しないこと
+
+### Promiseからasync関数へ
+- async関数は、async キーワードを使って宣言された関数のこと
+- 関数内部で awaitキーワードを使用することが認められている
+    - 逆に、await式はasync関数内以外では使用できない(かった)
+    - ただし、ES2022からTop-level awaitという機能が追加されasync関数外でも使用可能に
+- 必ず、**Promiseインスタンスを返す**
+
+```js
+async function alwaysReturnPromise() {
+  return "String wrapped Promise"
+}
+
+console.log(alwaysReturnPromise());
+
+alwaysReturnPromise()
+  .then(value => console.log("resolved value", value))
+  .catch(err => console.log("rejected value", err))
+  .finally(() => console.log("chain end"));
+```
+
+```shell
+> Promise {<fulfilled>: 'String wrapped Promise'}[[Prototype]]: Promise[[PromiseState]]: "fulfilled"[[PromiseResult]]: "String wrapped Promise"
+> resolved value String wrapped Promise
+> chain end
+```
+
+- async関数の即時実行
+```js
+// async 版の無名関数の即時実行
+(async function() {
+  // ...処理内容
+})();
+
+// async 版のアロー関数の即時実行
+(async () => {
+  // ...処理内容
+})();
+```
+
+- aync関数は同期処理である
+  - await式を使用して初めて非同期処理となる
+  - chainさせて初めて非同期処理となる
+```js
+console.log("🦖 [1] sync");
+
+const p = new Promise((resolve) => {
+  // コンストラクタ関数に渡すコールバック(Executor 関数)内部は同期処理
+  console.log("🦄 [2] sync");
+  resolve();
+});
+// then で chain してはじめて非同期処理となる
+p.then(() => console.log("👻 [4] async"));
+
+console.log("🦖 [3] sync");
+
+/* 出力結果
+🦖 [1] sync
+🦄 [2] sync
+🦖 [3] sync
+👻 [4] async
+*/
+```
+
+
+- async 関数内部に存在する各 await 式によって実行フローが分割される
+- 分割された処理は、最初のもの以外はそれぞれがマイクロタスクとして処理される
+  - await式の内部ではPromise.prototype.thenが利用されているため、awaitのたびに .thenしているのと同じ
+  - Promise.resolve.then と async/await は相互に書き換え可能。また、共存可能。
+```js
+(async () => {
+  // 分割された実行フロー(0): 同期  → 最初の await までは同期的に処理される
+  // <------------------->
+  await 1;
+  // 分割された実行フロー(1): 非同期 → イベントループでマイクロタスクとして処理される
+  // <------------------->
+  await 2;
+  // 分割された実行フロー(2): 非同期 → イベントループでマイクロタスクとして処理される
+  // <------------------->
+  await 3;
+  // 分割された実行フロー(3): 非同期 → イベントループでマイクロタスクとして処理される
+})();
+```
+
+### await式
+- await式は何を「待つ」のか
+  - 一つは「非同期処理の完了」を待つ
+  - 一つは「**Promise インスタンスを評価して値を取り出すこと**」を待つ
+- await式を使うときは基本後者
+```js
+async function returnRespnose(url) {
+  const response = await fetch(url);
+  // 環境に委任した並列的作業の完了を待つ
+  return response;
+}
+async function returnText(url) {
+  const text = await fetch(url).then(res => res.text());
+  // 環境に委任した並列的作業の完了後にメインスレッドでデータと共に通知させた非同期のコールバック関数の完了を待つ
+  return text;
+}
+```
+
+- 「Promiseインスタンスを評価値を待つ」ということを整理できてないと以下のようなミスを犯す
+```js
+(async () => {
+  await setTimeout(() => console.log("from setTimeout"), 3000); // これは待てない
+  console.log("output at 0ms");
+})();
+```
+```js
+// Promisification
+function promiseTimer(delay) {
+  return new Promise((resolve) => setTimeout(resolve, delay));
+}
+
+(async () => {
+  await promiseTimer(3000);
+  // Promise インスタンスを返すので await で意図通りになる
+  console.log("after 3000ms");
+})();
+```
+
+- 非同期処理の目的を忘れない: 「 async 関数内の処理は一時的に中断させて、別のことをメインスレッドで行うこと」
+  - awaitによる停止ではなく中断 
+```js
+(async () => {
+  console.log("😎 async 関数の処理を開始します");
+  const url = "https://api.github.com/zen";
+
+  // 非同期 API の作業を起点にした一連の作業
+  const response = await fetch(url); // 作業 A (データの取得: 非同期 API による並列的作業)
+  // A が終わってから B を行うので一時中断して関数の外へ
+  const text = await response.text(); // 作業 B (データの抽出: 非同期 API による並列的作業)
+  // B が終わってから C を行うので一時中断して関数の外へ
+  const message = "🦄 Github says... " + text; // 作業 C (データの加工)
+
+  console.log("👻 async 関数の処理を終了します");
+  return message;
+})().then((message) => console.log(message)); // 一連の作業結果として得られるテキストを出力
+
+// 環境が fetch をやってくれている間もメインスレッドで別のこと(console.log の起動)ができる
+console.log(
+  "👉 作業 A を起動させて await で一時中断されたらグローバルコンテキストにあるこれが実行される"
+);
+```
+
+- Promise chain と async/await の書き換え
+```js
+const githubApi = "https://api.github.com/zen";
+const fetchData = (url) => {
+  return fetch(url)
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error("Error");
+      }
+      console.log(`[3] 👦 MICRO: got data from "${url}"`);
+      return response.text();
+    });
+};
+
+console.log("[1] 🦖 MAINLINE: Start");
+
+fetchData(githubApi)
+  .then((data) => {
+    console.log("[4] 👦 MICRO: 取得データ", data);
+  })
+  .catch((error) => {
+    console.error(error);
+  });
+
+console.log("[2] 🦖 MAINLINE: End");
+```
+
+```js
+const githubApi = "https://api.github.com/zen";
+const fetchData = async (url) => {
+  try {
+    const response = await fetch(url);
+    if (!response.ok) throw new Error("Error");
+    console.log(`[3] 👦 MICRO: got data from "${url}"`);
+    const text = await response.text();
+    return text;
+  } catch (error) {
+    console.error(error);
+  }
+};
+
+console.log("[1] 🦖 MAINLINE: Start");
+
+// アロー関数かつ即時実行
+(async () => {
+  const data = await fetchData(githubApi);
+  console.log("[4] 👦 MICRO: 取得データ", data);
+})()
+
+console.log("[2] 🦖 MAINLINE: End");
+```
+
+- await式の中断による制御順序: 呼び出し元に戻る
+```js
+async function fn1() {
+  console.log("[3]"); // fn1() が呼び出された時に最初に実行される
+  await fetch(url); // 非同期 API の起動(完了するまで一旦制御を呼び出し元へ戻す)
+
+  // 環境が fetch を完了させたらここからこの関数内の処理が再開する
+  console.log("[5]");
+  // この処理が完了することで fn1() が完了することになるので呼び出し元の fn2() 内での await 式の評価が完了する
+}
+async function fn2() {
+  console.log("[2]"); // fn2() が呼び出された時に最初に実行される
+  await fn1(); // 別の async 関数 fn1() の呼び出し
+  // fn1() を呼び出した後で await fetch() によってこの関数に制御が戻るが、
+  // ここでも await 式による評価で関数内の処理を一時中断して呼び出し元のグローバルコンテキストへと制御を戻す
+
+  // fn1() から返される Promise インスタンスが Settled となり
+  // await 式の評価が完了するのでここからこの関数内の処理を再開する
+  console.log("[6]");
+}
+
+// グローバルコンテキスト
+console.log("[1]");
+fn2(); // async 関数の呼び出し
+
+// グローバルコンテキストへと制御が戻ってきたので次の行を実行
+console.log("[4]");
+// グローバルコンテキストの処理はこれしかないので、環境がバックグラウンドで行っている
+// fetch が完了するまで待機して、それが完了したら fn1() で中断した途中の処理から再開する
+```
+
+### コールバックヘルからasync/awaitへ
+- そもそもPromiseが作られたのは、非同期処理のコールバック関数のネストが深くなってしまうことを防ぐためでした
+```js filename="Callback Hell"
+getData(a => {
+  getMoreData(a, b => {
+    getMoreData(b, c => {
+      getMoreData(c, d => {
+        getMoreData(d, e => {
+          console.log(e);
+        })
+      })
+    })
+  })
+});
+```
+
+```js filename="Promise Chain"
+getData()
+  .then(a => getMoreData(a))
+  .then(b => getMoreData(b))
+  .then(c => getMoreData(c))
+  .then(d => getMoreData(d))
+  .then(e => console.log(e));
+```
+
+```js filename="async/await"
+(async () => {
+  const a = await getData(a);
+  const b = await getMoreData(b);
+  const c = await getMoreData(c);
+  const d = await getMoreData(d);
+  const e = console.log(e);
+})();
+```
