@@ -1,0 +1,68 @@
+# Next.js①
+
+## Next.jsとは
+"The React Framework for Production" (公式サイトより)
+- Reactのフレームワークであること
+- React App をスケーリングさせられること
+- **Fullstack Framework**であること
+
+React is "a JavaScript library for building user interfaces" (公式サイトより)
+- Reactの核はUI構築(Component & State & Props)である。
+- それに焦点を当てたライブラリであり、フレームワークではない
+- RoutingやAuthenticationやState Managementには他のライブラリが必要
+
+ライブラリではなく、フレームワークであることの意味
+- 1つのことに焦点をあてない
+- 明確なコーディングルール・ガイダンス・守るべきディレクトリ構造などがある
+- ReactAppを構築する上で、よくある問題・よくある機能を簡単に実装してくれる
+
+## NextJSの特徴と恩恵
+
+### 1. SSR(Server-Side Rendering)
+サーバーサイドレンダリングとは、コンテンツをクライアント側ではなく、サーバー上で準備すること。通常のReactAppでは、HTMLは骨組みだけである。
+jsタグがReactに読み込まれ、Reactがレンダリングを行う
+それはすべてクライアント上で行われる。だから、サーバーから送られるHTMLは骨組みだけである。
+このReactの特徴は主に、以下3つデメリットが生む。
+
+1. 初期読み込みが遅い
+2. データフェッチングによるLoaderが過剰、画面がチカチカする。
+3. SEO対策に不利。クローラーはHTMLを見るだけであり、ReactAppのコンテンツを見つけてくれない。
+
+※Reactにはこれを防ぐためにReactDOMServerというモジュールが用意されているが、利用方法が煩雑。<br/>
+
+NextJSでは、ReactのUXを維持しつつ、サーバーサイドでの処理を混ぜるというアイデアを実装している。
+
+
+### 2. File-based Routing
+Routingとはサーバーにリクエストを送ることなく、URLに基づいて画面に表示されるものを変更することである。
+ReactAppはSPA（HTMLは1つ）であり、画面表示するコンポーネントを操作している。
+
+- ReactでのRoutingを見てみる
+```jsx filename="react routing example"
+import React from 'react';
+import { Switch, Route } from 'react-router-dom';
+
+function App() {
+  return (
+    <Switch>
+      <Route path='/' exact>
+        <SomeCompenet1>
+      </Route>
+      <Route path='/new'>
+        <SomeCompenet2>
+      </Route>
+      <Route path='/list'>
+        <SomeCompenet3>
+      </Route>
+    </Switch>
+  );
+}
+```
+サードパーティライブラリを使い、コード実装をする必要があるのに対し、
+NextJSでは、フォルダとファイル構成だけでRoutingが完了する。
+より少ないコードで、より少ない理解でできてしまう。
+
+### 3.フルスタックに構築できる
+- バックエンドコード(file system・DBアクセス・認証など)を容易にReactAppに追加できる
+- ReactのためにRESTAPIを作る必要はない
+- バックエンドAPIを混ぜることも可能
