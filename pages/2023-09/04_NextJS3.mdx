@@ -1,0 +1,80 @@
+# Routing 1
+
+## File-based Routing
+- 従来のReactでは、react-router-domライブラリを使用してroutingするのが一般的
+- Nextにはreact-routerはインストールされていないし、JS・JSXも書く必要がない
+- NextJSは、pagesフォルダーを参照して、以下のように、ルート構造を推測する
+```
+/pages
+├ index.js     → ※Main Page (domain.com/)
+├ about.js     → About Page (domain.com/about)
+└ /products
+  ├ index.js   → All Products Page (domain.com/products)
+  └ [id].js    → ※Product Detail Page (domain.com/products/1)
+```
+※index.jsは特別扱いでそのフォルダのルートパスとなる<br/>
+※[]で囲うことで動的パスを実現する
+
+## pageを追加する
+- NextJSがどのコンポーネントをレンダリングするべきか知るために`export default` でexportする必要がある
+```jsx filename="pages/index.js"
+export default function Home() {
+  return (
+    <>
+      <h1>The Home Page</h1>
+    </>
+  )
+}
+```
+
+## Dynamic Route File (Get URL query)
+- 動的にルーティングしたい場合は、ファイル名を`[<dynamic-code>].js`とする
+- 以下のコードでは、URLにどんな`<dynamic-code>`を入れてもレンダリングされる
+- `<dynamic-code>`に応じたクエリ値を取得するには`{useRouter} from 'next/router'`フックを利用する
+
+```js filename="pages/projects/[projectId].js"
+import { useRouter } from "next/router";
+
+function ProjectDetail() {
+  const router = useRouter();
+  console.log(router.pathname);
+  console.log(router.query);
+
+  return (
+    <div>
+      <h1>The Project Detail Page</h1>
+    </div>
+  )
+}
+
+export default ProjectDetail;
+```
+
+- routerオブジェクトを観察する
+```js
+const router = useRouter();
+
+/** URL = domain.com/projects/something */
+console.log(router.pathname); // > /projects/[projectId]
+console.log(router.quert);  // > {projectId: "something"}
+```
+ファイル名に指定した`<dynamic-code>`が`router.query.<dynamic-code>`としてURLのクエリを受け取る。
+`router.query.<dynamic-code>`をパラメータとしてバックエンドにリクエストを出す。
+
+### Dynamic Routeをネストする
+```
+/pages
+└ /clients
+  ├ index.js   → Clients List Page (domain.com/clients)
+  └ /[id]
+    ├ index.js         → Clients Detail Page (domain.com/clients/<client-name>)
+    └ [projectid].js   → Project Detail per Client Page (domain.com/products/<client-name>/<project-name>)
+```
+```js filename="/pages/[id]/[projectid]"
+const router = useRouter();
+
+/** URL = domain.com//clients/kito/project1 */
+console.log(router.quert);  // > {id: "kito", projectId: "project1"}
+```
+
+今回は、パラメータの取得まで。次回、実際にRoutingを行う
