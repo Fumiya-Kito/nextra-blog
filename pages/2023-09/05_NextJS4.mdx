@@ -1,0 +1,119 @@
+# Routing 2
+
+## すべてのルートを取得する
+- `someDir/[...slug].js`とすることで、someDir以下のパラメータをすべて配列として受け取ることが可能
+- `URL = someDir/2023/12/04`のとき`router.query.slug = ["2023", "12", "04"]`となる。
+```
+/pages
+└ /someDir
+  └ /[...slug].js
+```
+
+## "Link" Componentを使用して、静的ルーティングする
+- **aタグは使わない**: HTTPリクエストをサーバーに送ってしまう。SPAではなくなってしまうからNG
+- Linkコンポーネントを使用する `default export`されているため `{}`は不要。`import Link from 'next/link';`
+- Linkコンポーネントは`onFocus`するだけで移動先のページからデータをフェッチする
+- その他、`replace`(Historyにpushするのではなく、replaceする=戻れなくなる)などのプロパティが用意されている
+```js
+import Link from 'next/link';
+
+export default function Home() {
+  return (
+    <>
+      <h1>The Home Page</h1>
+      <ul>
+        <li><a href="/projects">Projects</a></li> {/* NG */}
+        <Link replace href="/projects">Projects</Link>
+      </ul>
+    </>
+  )
+}
+```
+
+## 動的ルーティングする
+- 配列をマッピングして動的にLinkタグを作成する
+```js
+import Link from "next/link"
+
+export default function ProjectList() {
+  const projects = [ // Assume data fetched DB
+    { id: "prj1", name: "Project1"},
+    { id: "prj2", name: "Project2"},
+  ]
+  return (
+    <div>
+      <h1>Project List Page</h1>
+      <ul>
+        {projects.map(project => <li key={project.id}>
+          <Link href={`projects/${project.id}`}>{project.name}</Link>
+        </li>)}
+      </ul>
+    </div>
+  )
+}
+```
+- Objectでhrefプロパティを代替することも可能
+```js
+import Link from "next/link"
+
+export default function ProjectList() {
+  const projects = [ // Assume data fetched DB
+    { id: "prj1", name: "Project1"},
+    { id: "prj2", name: "Project2"},
+  ]
+  return (
+    <div>
+      <h1>Project List Page</h1>
+      <ul>
+        {projects.map(project => <li key={project.id}>
+          <Link href={{
+            pathname: '/projects/[id]',
+            query: {id: project.id}
+          }}>{project.name}</Link>
+        </li>)}
+      </ul>
+    </div>
+  )
+}
+```
+
+## プログラムでルーティングする
+- onClickで画面遷移させる方法
+- `router.push()`, `router.replace()` etc.
+
+```js filename="/projects/[projectid]/[clientid]"
+import Link from "next/link";
+import { useRouter } from "next/router";
+
+
+function ProjectDetail() {
+  const router = useRouter();
+
+  const loadClientHandler = event => {
+    // load data
+    router.push({
+      pathname: '/projects/[projectid]/[clientid]',
+      query: { projectid: 'projectA', clientid: 'kito'},
+    });
+  }
+
+  return (
+    <div>
+      <h1>The Project Detail Page</h1>
+      <button onClick={loadClientHandler}>Load Client A</button>
+    </div>
+  )
+}
+
+export default ProjectDetail;
+```
+
+
+##  カスタム404ページを追加する
+- rootディレクトリに`404.js`(固定値: NextJSに知らせるためにこのファイル名である必要がある)を作成することでオリジナルNot Found Pageが作成可能
+```
+/
+├ /pages
+...
+└ 404.js  → pagesに存在しないURLはこのコンポーネントが出力される
+```
