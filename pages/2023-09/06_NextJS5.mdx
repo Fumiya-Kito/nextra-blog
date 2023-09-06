@@ -1,0 +1,113 @@
+# React/Next備忘録
+- Nextでdemoアプリを作りながら、復習していく。
+- 主に、NextのRoutingの復習が目的
+
+## 作成するアプリ
+- イベントのリストアップ、検索、詳細ページの作成
+- pagesディレクトリ構造
+```
+/pages
+├ index.js   → ホームページ(おすすめのイベントを表示)
+└ /events
+  ├ index.js   → Evetnt List Page
+  ├ [event-id].js → Evetnt Detail Page
+  └ [...slug].js → Filterd Event Page(検索用)
+```
+
+## 初期設定
+- next appの作成
+```shell
+$ npx create-next-app@latest
+```
+- git関連: `init`は作成時にしてくれている
+- branchを切る
+  - `git checkout`は非推奨. git2.23から `git switch`, `git restore`に機能分岐(checkoutの機能が増えすぎたため)
+  - `git switch`: ブランチ変更
+  - `git restore`: ファイル変更
+
+```shell
+$ git add .
+$ git commit -m "init"
+$ git push origin main
+$ git switch -c feat/something
+```
+
+## ダミーデータ作成
+- 画像は`public`フォルダに保存する必要がある
+- publicフォルダの外の静的ファイルはNextJSに見つけてもらえない(ユーザは参照不可)
+```
+/ public
+├ 
+└ / images
+  ├ coding-event.jpg
+  ├ introvert-event.jpg
+  └ extrovert-event.jpg
+```
+- Eventの型は`Array<Object>`
+- 取得やフィルターの関数を`export`する
+- 本来はDBなどからAPIでfetchする
+```js filename="/dummy-data.js"
+const DUMMY_EVENTS = [
+  {
+    id: 'e1',
+    title: 'Programming for everyone',
+    description:
+      'Everyone can learn to code! Yes, everyone! In this live event, we are going to go through all the key basics and get you started with programming as well.',
+    location: 'Somestreet 25, 12345 San Somewhereo',
+    date: '2021-05-12',
+    image: 'images/coding-event.jpg',
+    isFeatured: false,
+  },
+  {
+    id: 'e2',
+    title: 'Networking for introverts',
+    description:
+      "We know: Networking is no fun if you are an introvert person. That's why we came up with this event - it'll be so much easier. Promised!",
+    location: 'New Wall Street 5, 98765 New Work',
+    date: '2021-05-30',
+    image: 'images/introvert-event.jpg',
+    isFeatured: true,
+  },
+  {
+    id: 'e3',
+    title: 'Networking for extroverts',
+    description:
+      'You probably need no help with networking in general. But focusing your energy correctly - that is something where most people can improve.',
+    location: 'My Street 12, 10115 Broke City',
+    date: '2022-04-10',
+    image: 'images/extrovert-event.jpg',
+    isFeatured: true,
+  },
+];
+
+export function getFeaturedEvents() {
+  return DUMMY_EVENTS.filter((event) => event.isFeatured);
+}
+
+export function getAllEvents() {
+  return DUMMY_EVENTS;
+}
+
+export function getFilteredEvents(dateFilter) {
+  const { year, month } = dateFilter;
+
+  let filteredEvents = DUMMY_EVENTS.filter((event) => {
+    const eventDate = new Date(event.date);
+    return eventDate.getFullYear() === year && eventDate.getMonth() === month - 1;
+  });
+
+  return filteredEvents;
+}
+
+export function getEventById(id) {
+  return DUMMY_EVENTS.find((event) => event.id === id);
+}
+```
+
+> [Unsplash](https://unsplash.com)(フリー画像のおすすめサイト)
+  - 全ての画像を無料で使える
+  - 商用利用OK
+  - 使用許可は不要
+
+
+次回、`find`, `filter`など出てきたので、Arrayのbuilt-in関数(`Array.prototype.someFunc`)を復習
