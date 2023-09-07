@@ -1,0 +1,267 @@
+# Array.prototype.functions
+基本はMDNの参照で、毛を生やしたものを備忘録的に記述。
+配列のイテレーションを行う以下の関数群は、
+関数型プログラミング(関数だけでコードを組み立てる**スタイル**)を実現するために組み込まれている。
+> jsは命令形のプログラミング言語として誕生。(if, forなどを使ったスタイル)。
+ES2015以降に追加されたアロー関数、Promise、スプレッド構文などが関数型プログラミングの動きを加速させた。
+ReactやVueは宣言型(宣言型のパラダイムの一部が関数型)であることを重要視して作られている。
+
+- 関数型プログラミングのデメリット
+  - 非効率になりうる(メモリをたくさん使う)
+- 関数型プログラミングのメリット
+  - バグを減らす(引数だけに依存)
+  - 簡潔(一時的な変数`tmp`が減る)
+  - 並列処理が書きやすい(jsではあまりメリットを享受できないが)
+
+## map
+> mapは、与えられた callbackFn 関数を配列の順番通りに、**各要素に対して一度ずつ呼び出し**、その結果から**新しい配列**を生成します。
+### 引数
+1. callbackFn(element, index, array)
+    - element: 現在処理中の要素
+    - index: `element`のindex
+    - array: `map`が呼び出された配列
+2. thisArg: 省略可能 `callbackFn`を実行するときに`this`として使う値です。
+### 返値
+各要素にコールバック関数を適用した結果（配列）が返って来る
+- 「返値があること」と「新しい配列」が重要
+- 返された配列を使用しない場合は`forEach`, `for...of`を使うこと
+### 例
+- 全要素を2倍配列がほしい(その配列を後に使うこと前提)
+```js
+const array1 = [1, 4, 9, 16];
+const map1 = array1.map((x) => x * 2);
+console.log(map1);
+// Expected output: Array [2, 8, 18, 32]
+```
+- ReactでJSXを記述するときによく使う。このとき`key`にユニークな値を入れることを忘れない
+```jsx
+import Link from "next/link"
+
+export default function ProjectList() {
+  const projects = [ 
+    { id: "prj1", name: "Project1"},
+    { id: "prj2", name: "Project2"},
+  ]
+  return (
+    <div>
+      <ul>
+        {projects.map(project => <li key={project.id}>
+          <Link href={`projects/${project.id}`}>{project.name}</Link>
+        </li>)}
+      </ul>
+    </div>
+  )
+}
+```
+
+
+## forEach
+> forEach() メソッドは、与えられた関数を、配列の各要素に対して一度ずつ実行します。
+### 引数
+1. callbackFn(element, index, array)
+    - element: 現在処理中の要素
+    - index: `element`のindex
+    - array: `forEach`が呼び出された配列
+2. thisArg: 省略可能 `callbackFn`を実行するときに`this`として使う値です。
+### 返値
+- `undefined`
+- 返り値がないため、map()のようにチェーンはできないし、走査される配列の変形も(基本的に)できない
+  - ※参照中の配列の同時進行での変更は（特殊な場合を除いて）普通は避けるべきである
+
+### 解説
+- forEachは途中で止められない(throwのみ可能) → 必ず全項目にコールバック関数を適用したいときに使用する
+  - 逆に、何かを判定したいときなどは`for`ループか`find`等を使う
+- `Promise`を待たない
+```js
+const ratings = [5, 4, 5];
+let sum = 0;
+
+const sumFunction = async (a, b) => a + b;
+
+ratings.forEach(async (rating) => {
+  sum = await sumFunction(sum, rating);
+});
+
+console.log(sum);
+// 本来期待される出力: 14
+// 実際の出力: 0
+```
+
+## find 
+> find() メソッドは、提供されたテスト関数を満たす配列内の最初の要素を返します。 テスト関数を満たす値がない場合は、 undefined を返します。
+### 引数
+1. callbackFn(element, index, array)
+    - element: 現在処理中の要素
+    - index: `element`のindex
+    - array: `find`が呼び出された配列
+2. thisArg: 省略可能 `callbackFn`を実行するときに`this`として使う値です。
+### 返値
+- テスト関数を満たす要素(`callbackFn`は`true`を返す必要がある)。見つからなければ、`undefined`
+
+### 例
+```js
+const inventory = [
+  { name: "apples", quantity: 2 },
+  { name: "bananas", quantity: 0 },
+  { name: "cherries", quantity: 5 },
+];
+// 分割代入を利用
+const result = inventory.find(({ name }) => name === "cherries");
+
+console.log(result); // { name: 'cherries', quantity: 5 }
+```
+
+### 解説
+- `find`は配列の添字に対して、一度ずつ`callbackFn`(テスト関数)を実行し、`true`を返すまで繰り返す
+- `find`実行中に要素を変更することは非推奨(途中で追加された要素は**無視**、削除された要素は**処理される**、変更された要素は`find`が走査するタイミングの値が参照される)
+- 添字が欲しい場合は`findIndex()`を使うこと（テスト関数）
+- ある値の添字が欲しい場合は`indexOf()`を使うこと（値チェック）
+- 配列に含まれるかどうかは`inclueds()`を使うこと（存在チェック）
+
+## filter
+> filter() メソッドは、この配列の中から、提供された関数で実装されたテストに合格した要素のみを抽出したシャローコピーを作成します。
+
+> ※オブジェクトのシャローコピーとは、コピーがコピー元のオブジェクトとプロパティにおいて同じ参照を共有する（同じ基礎値を指す）コピーのことを指します。その結果、コピー元とコピー先のどちらかを変更すると、もう一方のオブジェクトも変更される可能性があります。そのため、意図せずにコピー元やコピー先に予期しない変更が発生してしまう可能性があります。この挙動は、ソースとコピーが完全に独立しているディープコピーの挙動とは対照的です。
+### 引数
+1. callbackFn(element, index, array)
+    - element: 現在処理中の要素
+    - index: `element`のindex
+    - array: `filter`が呼び出された配列
+2. thisArg: 省略可能 `callbackFn`を実行するときに`this`として使う値です。
+### 返値
+- テスト関数を満たす**シャローコピー配列**。見つからなければ、`[]`
+
+### 例
+```js
+const array = [-3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13];
+
+function isPrime(num) {
+  for (let i = 2; num > i; i++) {
+    if (num % i === 0) {
+      return false;
+    }
+  }
+  return num > 1;
+}
+
+console.log(array.filter(isPrime)); // [2, 3, 5, 7, 11, 13]
+```
+
+### 解説
+- `find()`同様、`filter()`は呼び出された配列を変化させない
+- 走査中に配列を変化させることは非推奨
+- 返ってきた配列は`Shallow copy`であるため、返値を変形させると元の配列(`filter`呼び出し元)も変化してしまう（参照先が同じなため）
+- 上記で不都合がある場合、予め配列を`deep copy`をする
+```js
+let old_list = [
+    {a:1, b:2, c:3},
+    {a:2, b:3, c:4},
+    {a:3, b:4, c:5},
+]
+
+let new_deep_list = old_list.map(item => ({ ...item}))
+new_deep_list = new_deep_list.filter((item) => {return item.a == 1})
+
+new_deep_list[0].a = 2;
+
+console.log(old_list) // 変化しない
+console.log(new_deep_list) // 変化する
+```
+
+## reduce
+> 配列の要素それぞれにコールバック関数(reducer: 縮小関数)を呼び出す。直前の要素における計算結果(accumulator: 累算器)を返値に渡す。
+### 引数
+1. callbackFn(accumulator, currentElement, currentIndex, array)
+    - accumulator: 前回の`callbackFunc`のreturn値(初回は`initialValue`, 指定がない場合`array[0]`)
+    - currentElement: 現在のの要素の値((初回は`initialValue`がある場合`array[0]`, 指定がない場合`array[1]`)
+    - currentIndex: `currnetElement`のindex
+    - thisArray: 走査する配列(`reduce()`の呼び出し元の配列)
+2. initialValue: 省略可能 `accumulator`の初期値
+
+### 解説
+- `reduce()`は、関数型プログラミングの中心的な概念（reduxのreducerやuseRedcuerフックなどもこれに則る）
+- 主に、集計処理や状態管理などに使われる
+- `callbackFn`の返値に演算した`accumulator`を渡すことを忘れないこと
+
+### 例1) 動作確認
+```js
+const array = [15, 16, 17, 18, 19];
+
+function reducer(previousValue, currentValue, index) {
+  const returns = previousValue + currentValue;
+  console.log(
+    `previousValue: ${previousValue}, currentValue: ${currentValue}, index: ${index}, returns: ${returns}`,
+  );
+  return returns;
+}
+
+array.reduce(reducer);
+```
+| | previousValue |	currentValue | index | 返値 |
+| ---- | ---- | ---- | ---- | ---- |
+| 最初の呼び出し | 15 | 16 | 1 | 31 |
+| 2 番目の呼び出し | 31 | 17 | 2 | 48 |
+| 3 番目の呼び出し | 48 |	18 | 3 | 66 |
+| 4 番目の呼び出し | 66 |	19 | 4 | 85 |
+
+
+### 例2) group by
+```js filename="やりたいこと"
+// from
+const foods = [
+  { id: "banana", category: "fruits", price: 100},
+  { id: "orange", category: "fruits", price: 100},
+  { id: "apple", category: "fruits", price: 100},
+  { id: "tomato", category: "vegetable", price: 100},
+  { id: "cabbage", category: "vegetable", price: 150},
+]
+
+//to 
+const summaryByCategory = [
+  {category: "fruits", price: 300},
+  {category: "vegetable", price: 250},
+]
+```
+
+```js
+const summaryByCategory = foods.reduce((resultArr, currentItem) => {
+  const element = resultArr.find(item => item.category === currentItem.category);
+
+  if(!element) { // 新規
+    resultArr.push({
+      category: currentItem.category,
+      price: currentItem.price,
+    });
+  } else {
+    element.price += currentItem.price;
+  }
+  return resultArr;
+}, [])
+```
+
+## その他
+- push, pop, joinなどもよく使う
+
+## Objectで上記の関数郡を使用したい場合
+- `Object.keys()`や`Object.values()`を使って配列として取り出したあと上の関数を使う
+- Objectをイテレーションしたいだけであれば`for ... in`, `for ... of`ループが基本
+```js
+const object1 = {
+  a: 'somestring',
+  b: 42,
+  c: false,
+};
+
+console.log(Object.keys(object1));
+// Expected output: Array ["a", "b", "c"]
+console.log(Object.keys(object1).join(""));
+// Expected output: string "abc"
+
+console.log(Object.values(object1));
+// Expected output: Array ["somestring", 42, false]
+console.log(Object.values(object1).find(value => typeof value === 'string'));
+// Expected output: something
+```
+
+## 参照
+[MDN Web docs](https://developer.mozilla.org/ja/docs/Web/JavaScript/Reference/Global_Objects/Array/map)
