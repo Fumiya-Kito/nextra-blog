@@ -1,0 +1,95 @@
+# [demo] Event App 2
+
+## Reactコンポーネントを追加する
+- pagesフォルダには通常のコンポーネントを定義しないこと
+- pagesにはレンダリングする要素(page component)を書くだけ
+- なぜなら、pagesフォルダ内のファイルはすべてルーティングされるため
+- componentsフォルダを用意する
+
+```
+/ componets
+└ /events
+  ├ event-item.js
+  └ event-list.js 
+```
+ファイル名はキャメルケースが主流だが、上のような記述`some-thing.js`でコンポーネントを命名することもある
+
+```js filename="pages/index.js"
+import EventList from "@/components/events/envent-list";
+import { getFeaturedEvents } from "@/dummy-data";
+
+function HomePage() {
+  const featuredEvents = getFeaturedEvents()
+
+  return (
+    <div>
+      <EventList items={featuredEvents}/>
+    </div>
+  )
+}
+
+export default HomePage;
+```
+```js filename="components/event-list.js"
+import EventItem from "./envent-item";
+
+function EventList(props) {
+  const { items } = props;
+
+  return (
+    <ul>
+      {items.map((event) => (
+        <EventItem
+          key={event.id}
+          id={event.id}
+          title={event.title}
+          location={event.location}
+          date={event.date}
+          image={event.image}
+        />
+      ))}
+    </ul>
+  );
+}
+
+export default EventList;
+```
+```js filename="components/event-item.js"
+import Link from "next/link";
+
+function EventItem(props) {
+  const { title, image, date, location, id } = props;
+
+  const humanReadableDate = new Date(date).toLocaleDateString('ja-JP', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
+  const formattedAddress = location.replace(', ', '\n');
+  const exploreLink = `/events/${id}`;
+
+  return <li>
+    <img src={'/' + image} alt={title} />
+    <div>
+      <div>
+        <h2>{title}</h2>
+        <div>
+          <time>{humanReadableDate}</time>
+        </div>
+        <div>
+          <address>{formattedAddress}</address>
+        </div>
+      </div>
+
+      <div>
+        <Link href={exploreLink}>Explore Event</Link>
+      </div>
+    </div>
+  </li>
+}
+
+export default EventItem;
+```
+
+- imageを参照するとき`public` = `/`(root)である
+- これで一旦、ReactComponentを使用して、画面を作ることができた。stylingは次回
