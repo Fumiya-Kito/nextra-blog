@@ -1,0 +1,302 @@
+# [demo] Event App 3
+
+
+- styleはmoduleCSSを使用する
+- ノーマルCSSの柔軟性を保ちながら、スコープ(CSSの適用範囲)を限定してくれる
+- バックグラウンドでクラス名をuniqueに変更してくれるため
+  - editor上のcode = `className={classes.<selector>}`
+  - 実際のclassName = `<Component>_<selector>__<自動割り当て>`
+- `<Component>.module.css`というファイル名にする
+- `import <variable> from './<Component>.module.css'`でインポート
+- `className={classes.someSelector}`のように動的に当てる
+
+```js filename="components/event-list.js"
+import EventItem from "./envent-item";
+import classes from './event-list.module.css'
+
+function EventList(props) {
+  const { items } = props;
+
+  return (
+    <ul className={classes.list}>
+      {items.map((event) => (
+        <EventItem
+          key={event.id}
+          id={event.id}
+          title={event.title}
+          location={event.location}
+          date={event.date}
+          image={event.image}
+        />
+      ))}
+    </ul>
+  );
+}
+
+export default EventList;
+
+```
+```js filename="components/event-item.js"
+import Link from "next/link";
+
+import classes from './event-item.module.css';
+
+function EventItem(props) {
+  const { title, image, date, location, id } = props;
+
+  const humanReadableDate = new Date(date).toLocaleDateString('ja-JP', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
+  const formattedAddress = location.replace(', ', '\n');
+  const exploreLink = `/events/${id}`;
+
+  return (
+    <li className={classes.item}>
+      <img src={'/' + image} alt={title} />
+      <div className={classes.content}>
+        <div className={classes.summary}>
+          <h2>{title}</h2>
+          <div className={classes.date}>
+            <time>{humanReadableDate}</time>
+          </div>
+          <div className={classes.address}>
+            <address>{formattedAddress}</address>
+          </div>
+        </div>
+
+        <div className={classes.actions}>
+          <Link href={exploreLink}>Explore Event</Link>
+        </div>
+      </div>
+    </li>
+  )
+}
+
+export default EventItem;
+```
+```js filename="components/event-list.module.css"
+.list {
+  width: 90%;
+  max-width: 40rem;
+  margin: 5rem auto;
+}
+```
+```js filename="components/event-item.module.css"
+.item {
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3), 0 1px 12px 2px rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+  overflow: hidden;
+  background-color: white;
+  margin: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.item img {
+  width: 100%;
+  object-fit: cover;
+  height: 10rem;
+}
+
+.content {
+  width: 100%;
+  padding: 0 1rem;
+  text-align: center;
+}
+
+.content h2 {
+  margin: 0.5rem 0;
+}
+
+.date,
+.address {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.date svg,
+.address svg {
+  width: 1.25rem;
+  height: 1.25rem;
+  color: #666666;
+}
+
+.content time {
+  color: #666666;
+  font-weight: bold;
+}
+
+.content address {
+  margin: 0.5rem 0;
+  color: #666666;
+  white-space: pre;
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  padding: 1rem;
+}
+
+.actions a {
+  display: block;
+}
+
+.actions a span {
+  vertical-align: middle;
+}
+
+.icon {
+  margin-left: 0.5rem;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.icon svg {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+@media (min-width: 768px) {
+  .item {
+    flex-direction: row;
+  }
+
+  .item img {
+    width: 40%;
+    height: 14rem;
+  }
+
+  .content {
+    width: 60%;
+    padding: 0;
+    text-align: left;
+  }
+
+  .content h2 {
+    margin: 1rem 0;
+  }
+
+  .actions {
+    flex-direction: row;
+    justify-content: flex-end;
+  }
+}
+```
+
+## button Componentを追加する
+- props.childrenとprops.linkを利用してボタンを一般化する
+```js filename="components/button.js"
+import Link from "next/link";
+
+import classes from './button.module.css'
+
+function Button(props) {
+  // Next < v13では aタグを追加してそれにスタイリングを適用する必要がある
+  return (
+    <Link href={props.link} className={classes.btn}>
+      {props.children}
+    </Link>
+  );
+}
+
+export default Button;
+```
+
+```css filename="components/button.module.css"
+.btn {
+  text-decoration: none;
+  cursor: pointer;
+  font: inherit;
+  background-color: #03be9f;
+  border: 1px solid #03be9f;
+  border-radius: 6px;
+  color: #dafff7;
+  padding: 0.5rem 1.5rem;
+  text-align: center;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.2);
+}
+
+.btn:hover,
+.btn:active {
+  background-color: #02afa1;
+  border-color: #02afa1;
+}
+```
+
+```diff filename="components/event-item.js"
+- <div className={classes.actions}>
+-  <Link href={exploreLink}>Explore Event</Link>
+- </div>
+
++ <div className={classes.actions}>
++   <Button link={exploreLink}>Explore Event</Button>
++ </div>
+```
+
+## iconを追加する
+- heroiconsからJSX（コンポーネントとして）でコピーする
+```
+/ componets
+├ ui
+├ events
+└ /icons
+  ├ address-icon.js
+  ├ arrow-right-icon.js
+  └ date-icon.js 
+```
+
+```js filename="components/event-item.js"
+import AddressIcon from '../icons/address-icon';
+import ArrowRightIcon from '../icons/arrow-right-icon';
+import DateIcon from '../icons/date-icon';
+import Button from '../ui/button';
+
+import classes from './event-item.module.css';
+
+function EventItem(props) {
+  const { title, image, date, location, id } = props;
+
+  const humanReadableDate = new Date(date).toLocaleDateString('ja-JP', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
+  const formattedAddress = location.replace(', ', '\n');
+  const exploreLink = `/events/${id}`;
+
+  return (
+    <li className={classes.item}>
+      <img src={'/' + image} alt={title} />
+      <div className={classes.content}>
+        <div className={classes.summary}>
+          <h2>{title}</h2>
+          <div className={classes.date}>
+            <DateIcon />
+            <time>{humanReadableDate}</time>
+          </div>
+          <div className={classes.address}>
+            <AddressIcon />
+            <address>{formattedAddress}</address>
+          </div>
+        </div>
+
+        <div className={classes.actions}>
+          <Button link={exploreLink}>
+            <span>Explore Event</span>
+            <span className={classes.icon}><ArrowRightIcon /></span>
+          </Button>
+        </div>
+      </div>
+    </li>
+  )
+}
+
+export default EventItem;
+```
+

@@ -108,6 +108,21 @@ function ProjectDetail() {
 export default ProjectDetail;
 ```
 
+## NextJS13とそれ以前
+- NextJS13以前はLinkタグの中にaタグが必要だった
+```js filename="Next > v13"
+<Link href="/" className="some-class">
+  Click me
+</Link>
+```
+
+```js filename="Next < v13"
+<Link href="/">
+  <a className="some-class">
+    Click me
+  </a>
+</Link>
+```
 
 ##  カスタム404ページを追加する
 - rootディレクトリに`404.js`(固定値: NextJSに知らせるためにこのファイル名である必要がある)を作成することでオリジナルNot Found Pageが作成可能
