@@ -1,0 +1,163 @@
+# [demo] Event App 4
+
+## Event Detail pageを作る
+
+```js filename="pages/events/[eventId].js"
+import EventContent from "@/components/event-detail/event-content";
+import EventLogistics from "@/components/event-detail/event-logistics";
+import EventSummary from "@/components/event-detail/event-summary";
+import { getEventById } from "@/dummy-data";
+import { useRouter } from "next/router";
+import { Fragment } from "react";
+
+function EventDetailPage() {
+  const router = useRouter();
+
+  const eventId = router.query.eventId;
+  const event = getEventById(eventId);
+
+  if (!event) {
+    return <p>No Event found</p>;
+  }
+
+  return (
+    <Fragment>
+      <EventSummary title={event.title} />
+      <EventLogistics
+        date={event.date}
+        address={event.location}
+        image={event.image}
+        imageAlt={event.title}
+      />
+      <EventContent>
+        <p>{event.description}</p>
+      </EventContent>
+    </Fragment>
+  );
+}
+
+export default EventDetailPage;
+```
+[Event-detail Component(github)](https://github.com/mschwarzmueller/nextjs-course-code/blob/03-prj-routing-extra-files/components/event-detail.zip)
+
+
+## General Layout Wrapper Component
+ヘッダーなどのレイアウトとなるコンポーネントを追加していく
+
+### _app.js について
+- 最上位のrootコンポーネントである
+- ここでpageコンポーネントを渡している
+- この`_app.js`をラップしてあげればHeaderなど共通のレイアウトを全ページに適用できる
+
+```js filename="/_app.js"
+// 初期状態
+import '@/styles/globals.css'
+
+export default function App({ Component, pageProps }) {
+  return <Component {...pageProps} />
+}
+```
+
+### layoutフォルダの追加
+```
+/ 
+└/componets
+  └/layout
+    ├layout.js
+    └main-header.js
+```
+
+```js filename="/pages/_app.js"
+import Layout from '@/components/layout/layout'
+import '@/styles/globals.css'
+
+export default function App({ Component, pageProps }) {
+  return (
+    <Layout>
+      <Component {...pageProps} />
+    </Layout>
+  )
+}
+```
+```js filename="/componets/layout/layout.js"
+import { Fragment } from "react";
+
+import MainHeader from "./main-header";
+
+function Layout(props) {
+  return <Fragment>
+    <MainHeader />
+    <main>
+      {props.children}
+    </main>
+  </Fragment>
+}
+
+export default Layout;
+```
+```js filename="/componets/layout/main-header.js"
+import Link from "next/link";
+
+import classes from './main-header.module.css';
+
+
+function MainHeader() {
+  return <header className={classes.header}>
+    <div className={classes.logo}>
+      <Link href='/'>NextEvents</Link>
+    </div>
+    <nav className={classes.navigation}>
+      <ul>
+        <li>
+          <Link href='/events'>Browse All Events</Link>
+        </li>
+      </ul>
+    </nav>
+  </header>
+}
+
+export default MainHeader;
+```
+```js filename="/componets/layout/main-header.module.css"
+.header {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 1rem 10%;
+  height: 5rem;
+  background-color: #202020;
+}
+
+.logo {
+  font-size: 1.5rem;
+  color: white;
+  font-family: 'Fira', sans-serif;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: #94fdfd;
+}
+
+.logo a {
+  text-decoration: none;
+  color: #94fdfd;
+}
+
+.navigation a {
+  text-decoration: none;
+  color: #74dacc;
+  font-size: 1rem;
+}
+
+@media (min-width: 768px) {
+  .logo {
+    font-size: 2.5rem;
+  }
+
+  .navigation a {
+    font-size: 1.5rem;
+  }
+}
+```
