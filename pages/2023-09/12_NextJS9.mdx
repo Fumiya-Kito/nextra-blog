@@ -1,0 +1,207 @@
+# [demo] Event App 5
+
+## Event List pageを作成
+```js filename="pages/events/index.js"
+import { getAllEvents } from "@/dummy-data";
+import EventList from "@/components/events/envent-list";
+
+function AllEventsPage() {
+  const events = getAllEvents();
+
+  return (
+    <div>
+      <EventList items={events}  />
+    </div>
+  )
+}
+
+export default AllEventsPage;
+```
+
+## Filtered Event pageを作成
+- 検索コンポーネントを作成する
+  - フォームが送信された際に、`AllEventPages`に`[...slug]`コンポーネントをレンダリングしたい(ページ遷移させる)
+  - Component Tree の下層から上層に影響を与えるには、親コンポーネントからある関数を`props`で渡し、子コンポーネントから実行すればよい
+
+- submitHandler について(Reactの復習)
+  - `onSubmit`にpointerを指定するだけで実行しないこと
+  - この`submitHandler`はReactによって実行され、自動的に`event`オブジェクトを引数に取得する
+  - default eventであるhttpリクエストが送信されないように、`event.preventDefault`を実行
+    - httpリクエストを送るとページをリロードして、すべての`State`を失うことになる
+    - 代わりにJSで処理をしたい
+
+- `useRef`について(React復習)
+  - フォーム送信時に1度だけ値参照をしたい場合`useRef`フックを使用する
+    - `ref`プロパティに`something = useRef();`で指定した変数を紐付ける
+  - 逆に、状態管理に一般的にしようされるのは`useState`フック
+    - キーストロークごとに`onChange`でinput値を参照し、有効な値かどうかユーザーにフィードバックしたいときなどに使用
+
+```js filename="components/events/events-search.js"
+import { useRef } from "react";
+
+import Button from "../ui/button";
+import classes from "./events-search.module.css";
+
+
+function EventsSearch(props) {
+  const yearInputRef = useRef();
+  const monthInputRef = useRef();
+
+  const submitHandler = (event) => {
+    event.preventDefault();
+    
+    const selectedYear = yearInputRef.current.value;
+    const selectedMonth = monthInputRef.current.value;
+
+    props.onSearch(selectedYear, selectedMonth);
+  };
+
+  return (
+    <form className={classes.form} onSubmit={submitHandler}>
+      <div className={classes.controls}>
+        <div className={classes.control}>
+          <label htmlFor="year">Year</label>
+          <select id="year" ref={yearInputRef}>
+            <option value="2021">2021</option>
+            <option value="2022">2022</option>
+          </select>
+        </div>
+        <div className={classes.control}>
+          <label htmlFor="month">Month</label>
+          <select id="month" ref={monthInputRef}>
+            <option value="1">1月</option>
+            <option value="2">2月</option>
+            <option value="3">3月</option>
+            <option value="4">4月</option>
+            <option value="5">5月</option>
+            <option value="6">6月</option>
+            <option value="7">7月</option>
+            <option value="8">8月</option>
+            <option value="9">9月</option>
+            <option value="10">10月</option>
+            <option value="11">11月</option>
+            <option value="12">12月</option>
+          </select>
+        </div>
+      </div>
+      <Button>Find Events</Button>
+    </form>
+  );
+}
+
+export default EventsSearch;
+```
+
+- button componentをリンクありとリンクなしで分岐する
+```js filename="components/ui/button.js"
+import Link from "next/link";
+
+import classes from "./button.module.css";
+
+function Button(props) {
+  if (props.link) {
+    return (
+      <Link href={props.link} className={classes.btn}>
+        {props.children}
+      </Link>
+    );
+  }
+
+  return (
+    <button className={classes.btn} onClick={props.onClick}>
+      {props.children}
+    </button>
+  );
+}
+
+export default Button;
+```
+
+## EventListPageに検索コンポーネントとロジックを追加
+- 検索画面では`findEventsHandler`を定義、propsにわたす、画面遷移させる
+```js filename="pages/events/index.js"
+import { getAllEvents } from "@/dummy-data";
+import EventList from "@/components/events/envent-list";
+import EventsSearch from "@/components/events/events-search";
+import { useRouter } from "next/router";
+
+function AllEventsPage() {
+  const events = getAllEvents();
+  // Hooksはネストさせてはいけない!
+  const router = useRouter();
+
+  const findEventsHandler = (year, month) => {
+    const fullPath = `/events/${year}/${month}`
+    // const fullPath = `/events/${year}` // この場合は[slug]ではなく、[eventId]コンポーネントが呼ばれる
+    router.push(fullPath);
+  }
+
+  return (
+    <>
+      <EventsSearch onSearch={findEventsHandler}/>
+      <EventList items={events}  />
+    </>
+  )
+}
+
+export default AllEventsPage;
+```
+
+### [slug] Page
+- 遷移先のページでは、URLクエリである`slug`を取得し、`getFilterEvents`にわたす
+- Reactの仕組み上、コンポーネントがまずレンダリングされ、その後`router`の取得がされる（2回レンダリングされる）
+- 1回目のレンダリングはLoadingを表示させる
+
+```js filename="pages/events/[...slug].js"
+import { useRouter } from "next/router";
+import { getFilteredEvents } from "@/dummy-data";
+
+import EventList from "@/components/events/envent-list";
+
+function FilteredEventsPage() {
+  const router = useRouter();
+  const filterData = router.query.slug;
+
+  if (!filterData) {
+    return <p className="center">Loading...</p>; // globalCSSだから
+  }
+
+  const numYear = +filterData[0]; //queryには文字列型で入っている
+  const numMonth = +filterData[1];
+
+  if (
+    isNaN(numYear) ||
+    isNaN(numMonth) ||
+    numYear > 2030 ||
+    numYear < 2021 ||
+    numMonth < 1 ||
+    numMonth > 12
+  ) {
+    return <p>Invalid filter. Please adjust you values</p>
+  }
+
+  const filteredEvents = getFilteredEvents({
+    year: numYear,
+    month: numMonth,
+  });
+
+  if (!filteredEvents || filteredEvents.length === 0) {
+    return <p>No Events Fount for the chosen filter</p>
+  }
+
+  return (
+    <div>
+      <EventList items={filteredEvents}/>
+    </div>
+  );
+}
+
+export default FilteredEventsPage;
+```
+
+## 章まとめ
+- ここまでNextJSの特徴であるpagesフォルダ、file-based-routingのコアを説明・実践
+- `useRouter`: URL周りを担当。遷移、クエリ取得...
+- `Link`: リンクボタン、`replace()`など便利なプロパティがある
+- `[...slug].js`: 複数queryを受け取って検索結果を表示させるページ(が主な用途)。
+  - `submitHandler`→ `useRouter.push` → `useRouter.query.slug`の流れ
