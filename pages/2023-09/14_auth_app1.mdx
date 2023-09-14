@@ -1,0 +1,136 @@
+# Next.js準備【NextAuthApp】
+
+[Next.jsとPrismaで構築する認証システム(メールアドレス、Google認証)](https://zenn.dev/hathle/books/next-prisma-auth-book)
+を参考に認証アプリを作成していく
+
+## NextJS構築
+- typescript, eslint, tailwind, App router有りで構築
+```shell
+npx create-next-app@latest . --typescript --eslint
+```
+
+### app フォルダ ← App Router
+>App Router ではpage.tsxファイルがルートファイルになります。
+>Next.js 13 の App Router は、アプリケーションのコードを組織的に管理するための機能です。
+
+>これには、サーバーコンポーネントとクライアントサイドコンポーネントの 2 つのタイプがあります。
+>デフォルトではサーバーコンポーネントとなります。
+>クライアントコンポーネントにする場合は、use clientと記載します。
+
+### サーバーコンポーネント
+>サーバーコンポーネントは、サーバー側で実行されるコンポーネントであり、Next.js のサーバーサイドレンダリング(SSR)によって生成される HTML を構築するために使用されます。
+
+>サーバーサイドレンダリング(SSR)による HTML の生成
+>データを取得し、サーバーサイドで処理する
+>クッキーやセッションなどの HTTP リクエストに対する認証/認可のロジックを実装
+
+### クライアントコンポーネント
+>クライアントコンポーネントは、ブラウザ上で実行されるコンポーネントであり、アプリケーションの UI を構築するために使用します。
+- ブラウザ上の JavaScript を実行して、動的な UI を生成
+- ブラウザ上のイベントを処理し、アプリケーションの振る舞いを変更
+- ブラウザ上の API を使用し、アプリケーションのデータを取得する
+- クライアントサイドのライブラリやフレームワークを使用する
+
+
+
+### ライブラリインストール
+```shell
+npm i @hookform/resolvers @next-auth/prisma-adapter @prisma/client axios bcrypt date-fns encoding next-auth next-cloudinary react-hook-form react-hot-toast react-icons zod zustand
+npm i --save-dev @types/bcrypt prisma
+```
+
+```json filename="/package.json"
+{
+  "name": "next_auth",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@hookform/resolvers": "^3.3.1",
+    "@next-auth/prisma-adapter": "^1.0.7",
+    "@prisma/client": "^5.3.0",
+    "@types/node": "20.6.0",
+    "@types/react": "18.2.21",
+    "@types/react-dom": "18.2.7",
+    "autoprefixer": "10.4.15",
+    "axios": "^1.5.0",
+    "bcrypt": "^5.1.1",
+    "date-fns": "^2.30.0",
+    "encoding": "^0.1.13",
+    "eslint": "8.49.0",
+    "eslint-config-next": "13.4.19",
+    "next": "13.4.19",
+    "next-auth": "^4.23.1",
+    "next-cloudinary": "^4.21.0",
+    "postcss": "8.4.29",
+    "react": "18.2.0",
+    "react-dom": "18.2.0",
+    "react-hook-form": "^7.46.1",
+    "react-hot-toast": "^2.4.1",
+    "react-icons": "^4.11.0",
+    "tailwindcss": "3.3.3",
+    "typescript": "5.2.2",
+    "zod": "^3.22.2",
+    "zustand": "^4.4.1"
+  },
+  "devDependencies": {
+    "@types/bcrypt": "^5.0.0",
+    "prisma": "^5.3.0"
+  }
+}
+```
+
+### App Router
+- メインページ: とりあえず文字を出すだけ
+```tsx filename="~/app/page.tsx"
+const Home = () => {
+  return(
+    <div>
+      <div>Main</div>
+    </div>
+  )
+}
+
+export default Home;
+```
+
+- レイアウトコンポーネント
+>レイアウトは全ページ共通のコンポーネントです。
+>page.tsxと同じ階層にlayout.tsxファイルを配置すると、その階層以下のディレクトリで共通のコンポーネントになります。
+>全ページ共通のナビゲーションやサイドバーなどはレイアウトファイルに記載していきます。
+
+
+- ナビゲーション
+ヘッダのコンポーネント。ここではトップページのリンクを作成
+```tsx filename="app/components/navigation/Navigation.tsx"
+'use client'
+
+import Link from 'next/link'
+
+// ナビゲーション
+const Navigation = () => {
+  return (
+    <header className="shadow-lg shadow-gray-100">
+      <div className="container mx-auto flex max-w-screen-sm items-center justify-between px-1 py-5">
+        <Link href="/" className="cursor-pointer text-xl font-bold">
+          FullStackChannel
+        </Link>
+      </div>
+    </header>
+  )
+}
+
+export default Navigation
+```
+
+- CSS
+```css filename="glbals.css"
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+```
