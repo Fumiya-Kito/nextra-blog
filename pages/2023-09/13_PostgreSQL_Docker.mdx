@@ -1,0 +1,70 @@
+# DockerでPostgresコンテナを作成【NextAuthApp】
+
+nextAuthを使った認証アプリのDBはPostgresを使う。今回はDockerを使ってサクッとDB環境構築
+([Local](https://www.postgresql.org/download/)でもOK)
+
+## Docker上でDB作成
+- (無ければ) [Docer desktop](https://www.docker.com/products/docker-desktop)をインストール
+
+- docker desktop が起動できたら`docker ps`で起動確認
+- dockerhub 公式Postgresをinstall
+```shell
+# tag = 15-alpine = Ver.15の軽量なimageということ
+docker pull postgres:15-alpine
+# 確認
+docker images
+```
+
+- postgreSQLコンテナをはしらせる
+
+```shell
+docker run \\
+--name postgres15 \\ 
+-p 5432:5432 \\
+-e POSTGRES_USER=root \\ 
+-e POSTGRES_PASSWORD=secret \\ 
+-d \\
+postgres:15-alpine
+```
+```shell filename="コピペするなら" copy
+
+docker run --name postgres15 -p 5432:5432 -e POSTGRES_USER=root -e POSTGRES_PASSWORD=secret -d postgres:15-alpine 
+```
+
+- exec でログインする
+
+```shell copy
+docker exec -it postgres15 psql -U root 
+```
+
+- passwordが必要ないのは、localhostからの接続はデフォルトで認証OKにしてるから（Postgreが）
+
+```sql
+--ログインできたか確認
+root=# select now(); 
+
+-- DB作成
+root=# create database nextjs_prisma;
+-- 終了
+root=# \q
+```
+
+- logを見てみる
+
+```shell
+docker logs postgres15
+```
+
+### ちなみに
+- Dockerで困ったら`docker cmd —-help`
+
+| cmd | Explanation |
+| --- | --- |
+| docker create `imageId`| Create a new Container |
+| docker run `imageId` | Create and start a new container based on an image |
+| docker stop  `ContainerName` | stop a running container |
+| docker start `ContainerName` | start a stopped container |
+| docker rm `ContainerName` | removed a stopped container |
+| docker push / pull `HubName`/`Repo` | share / download a remote image |
+| docker build `DockerfilePath` | build a new image based on a Dockerfile |
+| docker rmi `imageId` | remve a local image |
