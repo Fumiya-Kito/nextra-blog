@@ -1,0 +1,121 @@
+# prisma【NextAuthApp】
+
+- ここまでで一旦、DBとNextJSが用意できた
+- [Prisma](https://www.prisma.io/)(ORM)を使って、NextAppからデーテベースにアクセス
+
+> [quick start](https://www.prisma.io/docs/getting-started/quickstart)
+
+> [prisma with Next.js App](https://www.prisma.io/nextjs)
+
+これからPrismaを使ってDBを操作できるようにしていく
+## setup
+- packageはすでに入れているため省略。initから始める
+- 今回はpostgreSQLを`--datasource-provider`に指定する
+```shell
+# npx prisma init --datasource-provider <dbName>
+npx prisma init --datasource-provider postgresql
+```
+
+- `.env`ファイルと`prisma`ディレクトリが作成される
+```
+/ 
+├ ...
+├ .env
+└ /prisma
+  └ schema.prisma
+```
+
+## OAuth
+> OAuthとは、複数のWebサービスを連携して動作させるために使われる仕組みです。 通常、Webサービスを利用するためは、個別にユーザーIDとパスワードを入力してユーザーを認証する必要がありますが、OAuthを利用することで、IDやパスワードを入力することなく、アプリケーション間の連動ができるのです。 
+0. 登場人物は4人。「ユーザ」、「許可サーバ(トークン発行)」、「クライアントアプリ(NextAppなど)」、「リソースサーバ(ユーザーデータを持つ, Apple, Google, X, IGなど)」
+1. ユーザがアクセストークン発行を許可し、許可サーバはクライアントアプリにアクセストークン渡す。
+2. クライアントアプリは、アクセストークンを添えてユーザーデータをリソースサーバに要求
+3. リソースサーバはリクエストからアクセストークンを取り出し、トークンにユーザデータを利用する権限があるか検証
+4. OKならユーザデータをレスポンスする
+
+## Schema定義
+> スキーマとは、データベースの設計図のようなものです。 データベースでは、必要なデータを洗い出したり、データの格納整理をしたりするルールを決めます。 こういった作業をデータベースではスキーマを定義するという。
+- `schema.prisma`を編集してDBを構築する
+- Userテーブル(メールアドレス認証用)、Accountテーブル(OAuth認証用)を追加
+``` prisma
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id String @id @default(uuid())
+  name String?
+  email String? @unique
+  emailVerified DateTime?
+  image String?
+  hashedPassword String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  accounts Account[]
+}
+
+model Account {
+  id String @id @default(uuid())
+  userId String
+  type String
+  provider String
+  providerAccountId String
+  refresh_token String?
+  access_token String?
+  expires_at Int?
+  token_type String?
+  scope String?
+  id_token String?
+  session_state String?
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+```
+
+### 環境変数
+- .envファイルのURLを指定する
+```shell
+# Environment variables declared in this file are automatically made available to Prisma.
+# See the documentation for more detail: https://pris.ly/d/prisma-schema#accessing-environment-variables-from-the-schema
+
+# Prisma supports the native connection string format for PostgreSQL, MySQL, SQLite, SQL Server, MongoDB and CockroachDB.
+# See the documentation for all the connection string options: https://pris.ly/d/connection-strings
+
+
+# DATABASE_URL="postgresql://<johndoe>:<randompassword>@localhost:5432/<mydb>?schema=public"
+DATABASE_URL="postgresql://root:secret@localhost:5432/nextjs_prisma?schema=public"
+```
+
+- マイグレーションをする
+```shell
+npx prisma migrate dev --name init
+```
+
+- prismaクライアントのTypeScriptコードを生成
+- コードは`node_modules/.prisma/client`に生成される
+```shell
+npx prisma generate
+```
+
+- 開発時は、npx prisma db pushをすると、マイグレーションファイルを作成せずに、直接データベースを構築できる
+- 最終的にデータベースが固まったら、npx prisma migrate devを実行して、マイグレーションファイルを作成するのがおすすめ
+```shell
+npx prisma db push
+```
+
+- データベースの中身を確認するには、npx prisma studioを実行（ブラウザで見れる）
+```shell
+npx prisma studio
+```
+
+![prisam_studio](../../img/2023-09/prisma_studio.png)
