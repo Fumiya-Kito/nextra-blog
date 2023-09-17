@@ -1,0 +1,61 @@
+# Next.js準備【NextAuthApp】
+
+## 専用画面
+- ローディング、エラー、データが存在しないときの画面を作成
+- appディレクトリ直下に配置
+- Next.jsに見つけてもらうために、それぞれ`loading`, `error`, `loading`という名前である必要がある
+```
+/ 
+└ /app
+  ├ ...
+  ├ error.tsx
+  ├ not-found.tsx
+  └ loading.tsx
+```
+
+
+### Loading
+```js filename="app/loading.tsx"
+const Loading = () => {
+  return (
+    <div className="flex justify-center">
+      <div className="h-7 2-7 animate-spin rounded-full border-2 border-sky-500 border-t-transparent"></div>
+    </div>
+  )
+}
+
+export default Loading;
+```
+
+### error
+```js
+'use client'
+
+const Error = () => {
+  return (
+    <div>
+      <div className="text-center text-5xl font-bold mb-3">500</div>
+      <div className="text-center text-xl font-bold">Server Error</div>
+    </div>
+  )
+}
+
+export default Error;
+```
+
+### not-found
+```js
+'use client'
+
+
+const NotFound = () => {
+  return (
+    <div>
+      <div className="text-center text-5xl font-bold mb-3">404</div>
+      <div className="text-center text-xl font-bold">Not Found</div>
+    </div>
+  )
+}
+
+export default NotFound;
+```
