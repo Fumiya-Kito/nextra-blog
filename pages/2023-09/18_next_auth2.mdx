@@ -1,0 +1,170 @@
+# Next Auth2【NextAuthApp】
+
+```
+/ 
+├ ...
+└ /app
+  ├ ...
+  ├ /actions
+    └ getCurrentUser.ts
+  ├ /lib
+    └ prisma.ts
+  └ /context
+    └ AuthContext.tsx
+```
+## 認証状態をチェックするためのコンテキストを作成する
+
+### AuthContext
+- client component
+- AuthContextPropsの型定義(Object型は`type`でアノテーション)
+- AuthContext 関数を作成し、`SessionProvider`でラップする
+```tsx filename="AuthContext.tsx"
+'use-client'
+
+import { SessionProvider } from 'next-auth/react';
+
+type AuthContextProps = {
+  children: React.ReactNode
+}
+
+const AuthContext = ({ children }: AuthContextProps) => {
+  return <SessionProvider>{children}</SessionProvider>
+}
+
+export default AuthContext;
+```
+
+
+### Prisma Clientのインスタンスを作成する
+
+```ts filename="prisma.ts"
+import { PrismaClient } from "@prisma/client"
+
+declare global {
+  var prisma: PrismaClient | undefined
+}
+
+// PrismaClientのインスタンス作成
+const client = globalThis.prisma || new PrismaClient()
+
+if (process.env.NODE_ENV !== 'production') {
+  globalThis.prisma = client;
+}
+
+export default client;
+```
+> アンビエント宣言( declare ): JavaScriptコードを生成せず、型推論器にだけ情報を渡すのに使われる
+
+> declare global: モジュールベースで開発していてもグローバル変数を宣言したくなることはあります。
+スクリプトファイルを別に用意したくない事情として、たとえば以下のような状況が考えられます。
+isolatedModules を指定しているため、スクリプトファイルを置くだけでエラーになってしまう。
+`import` でインポートできるようにしたい。
+スクリプトファイルは import でインポートできない。
+そうでなくても、わざわざスクリプトファイルを別に用意するのは面倒です。こういう場合は `declare global { ... }`という特別な構文を使うことでスクリプトと同じ条件で型定義を与えることができます。 (他と同様、他の declare 内では単に `global { ... }`と書きます)
+
+> globalThis は、グローバルオブジェクトを示す特別な変数です。 ES2020 で導入された。 ブラウザ上で実行する JavaScript では、window オブジェクトと同値になる。 Node.js で実行した場合は global オブジェクトと同値となる。
+スクリプトファイルや declare global 内で定義されたもの (let/const/classを除く) はグローバル変数として扱われますが、これは globalThis という特別な名前空間にマウントする ことで実現されています。
+globalThis は他の名前空間と同様、型もマウントすることができます。実はTypeScriptの標準型定義もこの globalThis 上にあります。
+
+
+### ログインユーザーを取得する関数を作成
+- async関数で定義
+- try-catch でエラーハンドリング
+- NextAuthの`getServerSession`からセッション情報を取得する
+- セッション情報のメールアドレスでログインユーザーの情報を取得
+```ts filename="app/actions/getCurrentUser.ts"
+import { getServerSession } from "next-auth";
+import { authOptions } from "../api/auth/[...nextauth]/route";
+import prisma from '@/app/lib/prisma';
+
+
+// ログインユーザーを取得
+const getCurrnetUser = async() => {
+  try {
+    // セッション情報を取得
+    const session = await getServerSession(authOptions);
+    
+    // ログインしていない場合
+    if (!session?.user?.email) {
+      return null;
+    }
+
+    // ログインユーザーの取得
+    const response = await prisma.user.findUnique({
+      where: {
+        email: session.user.email,
+      },
+    })
+
+    if (!response) {
+      return null;
+    }
+
+    return response;
+
+  } catch (err) {
+    return null;
+  }
+}
+
+export default getCurrnetUser;
+```
+
+### レイアウトで認証状態をチェックする
+- `getCurrentUser`でユーザー情報を取得
+- `RootLayout`コンポーネントを async関数であることをチェック
+- `Navigation`にユーザー情報を渡す
+```tsx filename="app/layout.tsx"
+import './globals.css'
+import { Inter } from 'next/font/google'
+import Navigation from '@/app/components/navigation/Navigation'
+import getCurrnetUser from './actions/getCurrentUser'
+const inter = Inter({ subsets: ['latin'] })
+
+export const metadata = {
+  title: 'Prisma Auth',
+  description: 'Prisma Auth',
+}
+
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const currnetUser = await getCurrnetUser();
+
+  return (
+    <html>
+      <body className={inter.className}>
+        <div>
+          <div className="flex min-h-screen flex-col">
+            <Navigation currnetUser={currnetUser}/>
+
+            <main className="container mx-auto max-w-screen-sm flex-1 px-1 py-5">{children}</main>
+
+            <footer className="py-5">
+              <div className="text-center text-sm">
+                Copyright © All rights reserved | FullStackChannel
+              </div>
+            </footer>
+          </div>
+        </div>
+      </body>
+    </html>
+  )
+}
+```
+
+### トップページで認証状態に応じて、テキストを変更する
+- async関数に変更
+```tsx filename="app/page.tsx"
+import getCurrnetUser from "./actions/getCurrentUser";
+
+const Home = async () => {
+  const currnetUser = await getCurrnetUser();
+
+  return(
+    <div className="text-center">
+      {currnetUser ? <div>認証中</div> : <div>未認証</div>}
+    </div>
+  )
+}
+
+export default Home;
+```
