@@ -1,0 +1,151 @@
+# Next auth
+
+## Next Authの環境変数を設定する
+- NextAuth secret
+  - JWTを暗号化しトークンを発行するために使用する
+  - 本番環境ではランダムな値を使用する必要がある
+- NextAuthURL
+  - アプリのドメイン
+```diff filename="/.env"
+DATABASE_URL="postgresql://root:secret@localhost:5432/nextjs_prisma?schema=public"
+
++ NEXTAUTH_SECRET=NEXTAUTH_SECRET
++ NEXTAUTH_URL="http://localhost:3000"
+```
+
+
+## NextAuthの設定
+- dir, `route.ts`ファイルの作成
+```
+/ 
+├ ...
+└ /app
+  ├ ...
+  └ /api
+    └ /auth
+      └ /[...nextauth]
+        └ route.ts
+```
+
+### API Routeの追加
+> プロジェクトにNextAuth.jsを追加するには、`pages/api/auth`に`[...nextauth].js`というファイルを作成します。(appRouterの場合`/app/api/auth/[...nextauth]/route.ts`)
+
+> api/auth/*へのすべてのリクエスト（サインイン、コールバック、サインアウトなど）は、自動的にNextAuth.jsによって処理されます。
+
+- authOptionsの設定 
+  - `adopter`: prismaアダプター設定
+  - `providers` : 認証プロバイダの設定
+    - 今回はGoogle, 他も同様に追記すればよい
+    - メアドとパスワードでも認証できるように`CredentialsProvider`も追加する
+      - email, passのチェックする関数を記述
+  - `session`: セッションの保存方法=`strategu: jwt`
+  - `secret`
+
+- Handlerの設定
+  - NextAuth関数を使用する
+  - exportする
+
+
+```ts filename="/app/api/auth/[...nextauth]/route.ts"
+import NextAuth, { NextAuthOptions } from 'next-auth';
+import CredentialsProvider from 'next-auth/providers/credentials';
+import GoogleProvider from 'next-auth/providers/google';
+import bcrypt from 'bcrypt';
+import { PrismaAdapter } from '@next-auth/prisma-adapter';
+import prisma from '@/app/lib/prisma';
+
+
+// Next Authの設定
+export const authOptions: NextAuthOptions = {
+  // prismaを使うための設定
+  adapter: PrismaAdapter(prisma),
+
+  // 認証プロバイダの設定
+  providers: [
+    // Google
+    GoogleProvider({
+      clientId: process.env.GOOGLE_CLIENT_ID as string,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
+    }),
+
+    // email
+    CredentialsProvider({
+      name: 'credentials',
+      credentials: {
+        // email and password
+        email: { label: 'email', type: 'text'},
+        password: { label: 'password', type: 'password' },
+      },
+
+      async authorize(credentials) {
+        // Email, Password 存在チェック
+        if (!credentials?.email || !credentials?.password) {
+          throw new Error('メールアドレスとパスワードが存在しません')
+        }
+
+        // ユーザーを取得
+        const user = await prisma.user.findUnique({
+          where: {
+            email: credentials.email,
+          }
+        })
+
+        // User 存在チェック
+        if (!user || !user?.hashedPassword) {
+          throw new Error('ユーザーが存在しません')
+        }
+
+        // Passwordチェック(credentialsとuserのパスワード比較)
+        const isCorrectPassword = await bcrypt.compare(credentials.password, user.hashedPassword);
+
+        if (!isCorrectPassword) {
+          throw new Error('パスワードが存在しません');
+        }
+
+        return user;
+      },
+    }),
+  ],
+  session: {
+    strategy: 'jwt',
+  },
+  secret: process.env.NEXTAUTH_SECRET,
+}
+
+const handler = NextAuth(authOptions);
+
+export { handler as GET, handler as POST }
+```
+
+次回、認証状態をチェックするためのコンテキストを作成〜
+
+## (Bcryptについて)
+
+> bcrypt: パスワードのハッシュ化手法のひとつ。
+### Bcryptの安全性が高い理由
+- 理由１：ソルトであること（ハッシュ化に使用する文字列がランダムであること）。
+- 理由２：ストレッチング回数を任意の回数を指定することができること
+
+> ソルトとは、パスワードをハッシュ値へと変換する際に、パスワードに付与するランダムな文字列のことです。
+
+> ストレッチングとは、ハッシュ関数を用いてハッシュ値への計算を数千回～数万回繰り返し行うこと
+
+### bcryptが生成するハッシュ値の構造
+bcryptを利用すると次のようなハッシュ値が生成されます。このハッシュ値からハッシュアルゴリズム、ストレッチング回数、ソルトの値などが分かるようになっています。
+
+`$2y$10$1QVmWNzk.TsaZQLQ/zeI9OAZL02AWP.VdFPPyAc9hSc2Cp4yOXKtG`
+
+- ハッシュアルゴリズム
+  - 先頭の「$2y$」の「2y」は、ハッシュアルゴリズムのバージョンを示します。bcryptには2, 2a, 2b, 2x, 2yなどのバージョンがあります。
+
+- ストレッチング回数（コストパラメータ）
+  - 次に「$10$」の「10」はストレッチング回数を示します。この数字は2のn乗のn部分を示しているので、今回は2の10乗で1024回ストレッチングされています。
+
+- ソルト（22文字）
+  - ストレッチング回数の後の128ビット（22文字）はソルトを示します。上記例では「1QVmWNzk.TsaZQLQ/zeI9O」がソルトです。
+
+- 結果のハッシュ値（31文字）
+  - ソルトの後の184ビット（31文字）は結果のハッシュ値を示します。上記例では「AZL02AWP.VdFPPyAc9hSc2Cp4yOXKtG」が結果のハッシュ値です。
+
+## 参照
+[パスワード】bcryptとは](https://medium-company.com/bcrypt/)
