@@ -1,0 +1,230 @@
+# Navigation【NextAuthApp】
+
+```
+/app
+├ ...
+├ types.ts
+├ /components
+  └ /Navigation
+    ├ Navigation.tsx
+    ├ Menu.tsx
+    └ MenuItem.tsx
+└ /hooks
+  ├ useLoginModal.tsx
+  ├ useSignupModal.tsx
+  └ useProfileModal.tsx
+```
+
+## Navigationにメニューを追加する
+- 引数に認証状態`currnetUser`を追加
+- Menuコンポーネントを追加
+```diff filename="app/components/Navigation.tsx"
+'use client'
+
++ import { User } from '@prisma/client';
++ import Munu '@/app/components/navigation/Menu';
+
+import Link from 'next/link'
+
++ type NavigationProps = {
++   currentUser: User | null,
++ }
+
+// ナビゲーション
+const Navigation: React.FC<NavigationProps> = ({ currentUser }) => {
+  return (
+    <header className="shadow-lg shadow-gray-100">
+      <div className="container mx-auto flex max-w-screen-sm items-center justify-between px-1 py-5">
+        <Link href="/" className="cursor-pointer text-xl font-bold">
+          Next Auth App with Prisma
+        </Link>
++         <div className='flex items-center justify-center space-x-2'>
++           <Menu currentUser={currentUser}/>
++         </div>
+      </div>
+    </header>
+  )
+}
+
+export default Navigation
+```
+
+## Menuコンポーネント
+- Modalのフックを用意・作成していく
+- toggleOpenを用いて開閉を制御、描画
+
+```tsx filename="app/components/Menu.tsx"
+"use client";
+import { useCallback, useState } from "react";
+import { User } from "@prisma/client";
+import { signOut } from "next-auth/react";
+import Image from "next/image";
+
+import useLoginModal from '@/app/hooks/useLoginModal';
+import useSignupModal from '@/app/hooks/useSignupModal';
+import useProfileModal from '@/app/hooks/useProfileModal';
+import MenuItem from '@/app/components/navigation/MenuItem';
+
+
+type MenuProps = {
+  currentUser: User | null;
+};
+
+const Menu: React.FC<MenuProps> = ({ currentUser }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const loginModal = useLoginModal();
+  const signupModal = useSignupModal();
+  const profileModal = useProfileModal();
+
+  // メニューの開閉
+  const toggleOpen = useCallback(() => {
+    setIsOpen((value) => !value);
+  }, []);
+
+  return (
+    <div className="relative">
+      <div className="relative h-10 w-10 cursor-pointer" onClick={toggleOpen}>
+        <Image
+          src={currentUser?.image || "/default.png"}
+          className="rounded-full object-cover"
+          alt="avatar"
+          fill
+        />
+      </div>
+
+      {isOpen && (
+        <div className="absolute right-0 z-10 w-40 overflow-hidden rounded-lg bg-white text-sm shadow-lg shadow-gray-100">
+          <div className="cursor-pointer">
+            {currentUser ? (
+              <>
+                <MenuItem
+                  label="プロフィール"
+                  onClick={() => {
+                    profileModal.onOpen();
+                    setIsOpen(false);
+                  }}
+                />
+                <MenuItem
+                  label="ログアウト"
+                  onClick={() => {
+                    signOut();
+                    setIsOpen(false);
+                  }}
+                />
+              </>
+            ) : (
+              <>
+                <MenuItem
+                  label="ログイン"
+                  onClick={() => {
+                    loginModal.onOpen();
+                    setIsOpen(false);
+                  }}
+                />
+                <MenuItem
+                  label="サインアップ"
+                  onClick={() => {
+                    signupModal.onOpen();
+                    setIsOpen(false);
+                  }}
+                />
+              </>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default Menu;
+```
+- toggleにはuseCallbackを使用。
+- 関数はレンダリングのたびに再評価される。これを防ぐ
+> useCallback: 依存配列(=[deps] コールバック関数が依存している要素が格納された配列)の要素のいずれかが変化した場合のみ、メモ化した値を再計算します。
+
+> メモ化とは同じ結果を返す処理について、初回のみ処理を実行記録しておき、値が必要となった2回目以降は、前回の処理結果を計算することなく呼び出し値を得られるようにすることです。
+イベントハンドラーのようなcallback関数をメモ化し、不要に生成される関数インスタンスの作成を抑制、再描画を減らすことにより、都度計算しなくて良くなることからパフォーマンスを向上が期待できます。
+
+
+## MenuItem
+
+```js filename=""
+'use client';
+
+type MenuItemProps = {
+  onClick: () => void,
+  label: string,
+}
+
+const MenuItem: React.FC<MenuItemProps> = ({ onClick, label }) => {
+  return (
+    <div
+      onClick={onClick}
+      className="px-4 py-3 text-enter font-bold transition hover:bg-neutral-100"
+    >
+      {label} 
+    </div>
+  )
+}
+
+export default MenuItem;
+```
+
+
+## Modalの共通の型定義
+```ts filename="app/types.ts"
+export type ModalType = {
+  isOpen: boolean;
+  onOpen: () => void;
+  ocClose: () => void;
+}
+```
+
+## Hooksの作成
+- 状態管理にはzustandを使用する
+```ts filename="app/hooks/useLoginModal.tsx"
+import { create } from 'zustand';
+import { ModalType } from '../types';
+
+// ログイン状態管理
+const useLoginModal = create<ModalType>((set) => ({
+  isOpen: false,
+  onOpen: () => set({ isOpen: true }),
+  onClose: () => set({ isOpen: false }),
+}))
+
+export default useLoginModal;
+```
+
+```ts filename="app/hooks/useSignupModal.tsx"
+import { create } from 'zustand';
+import { ModalType } from '../types';
+
+// サインアップ状態管理
+const useSignupModal = create<ModalType>((set) => ({
+  isOpen: false,
+  onOpen: () => set({ isOpen: true }),
+  onClose: () => set({ isOpen: false }),
+}))
+
+export default useSignupModal;
+```
+
+```ts filename="app/hooks/useProfileModal.tsx"
+import { create } from 'zustand';
+import { ModalType } from '../types';
+
+// プロフィール状態管理
+const useProfileModal = create<ModalType>((set) => ({
+  isOpen: false,
+  onOpen: () => set({ isOpen: true }),
+  onClose: () => set({ isOpen: false }),
+}))
+
+export default useProfileModal;
+```
+> zustand: Reactの状態管理ライブラリの一つです。
+シンプルで使いやすく、他の状態管理ライブラリと比べてもコード量が少ないです。
+これにより、**状態管理に関連するコードの複雑さを大幅に解消できます**
+[状態管理ライブラリ ''Zustand'' をTypeScriptで使ってみよう](https://zenn.dev/h_tatsuru/articles/f7ad45263fe181)
