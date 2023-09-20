@@ -1,0 +1,267 @@
+# サインアップ【NextAuthApp】
+
+```
+/app
+├ ...
+├ /api
+  ├ ...
+  ├ /signup
+    └ route.ts
+├ components
+  ├ /modals
+    ├ Modal.tsx
+    └ SignupModal.tsx
+  └ /navigation
+    ├ ...
+    └ Navigation.tsx
+└ layout.tsx
+```
+
+## レイアウトにサインアップモーダルを追加
+- toasterとSignupModalを追加
+```diff filename="app/layout.tsx"
+import './globals.css'
+import { Inter } from 'next/font/google'
+import Navigation from '@/app/components/navigation/Navigation'
++ import AuthContext from '@/app/context/AuthContext'
++ import SignupModal from '@/app/components/modal/SignupModal'
++ import ToasterContext from '@/app/context/ToasterContext'
+import getCurrnetUser from '@/app/actions/getCurrentUser'
+const inter = Inter({ subsets: ['latin'] })
+
+export const metadata = {
+  title: 'Prisma Auth',
+  description: 'Prisma Auth',
+}
+
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const currnetUser = await getCurrnetUser();
+
+  return (
+    <html>
+      <body className={inter.className}>
++        <AuthContext>
++          <ToasterContext />
++          <SignupModal />
+
+          <div className="flex min-h-screen flex-col">
+            <Navigation currentUser={currnetUser}/>
+
+            <main className="container mx-auto max-w-screen-sm flex-1 px-1 py-5">{children}</main>
+
+            <footer className="py-5">
+              <div className="text-center text-sm">
+                Copyright © All rights reserved | FullStackChannel
+              </div>
+            </footer>
+          </div>
++        </AuthContext>
+      </body>
+    </html>
+  )
+}
+```
+
+## SignupModal
+- [useForm](https://react-hook-form.com/docs/useform)(from react-hook-form)を利用してフォームの状態管理をする
+  - resolverにはzodで定義したschemaを渡す
+- ログインモーダルを開く処理
+- 送信処理
+  - try-catchでエラーハンドリング
+  - サインインも同時にする
+  - `router.refresh`でキャッシュをクリアする
+- モーダルの内容
+  - `Input`コンポーネントをつかって名前とemailとパスワードの入力欄
+- フッター
+  - Googleでサインイン(OAuth)
+- 共通モーダルを返す
+
+
+```tsx filename="app/modals/SignupModal.tsx"
+"use client";
+
+import axios from "axios";
+import { FieldValues, SubmitHandler, useForm } from "react-hook-form";
+import { FcGoogle } from "react-icons/fc";
+import { useRouter } from "next/navigation";
+import { useCallback, useState } from "react";
+import { signIn } from "next-auth/react";
+import { toast } from "react-hot-toast";
+import * as z from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+
+import useLoginModal from "@/app/hooks/useLoginModal";
+import useSignupModal from "@/app/hooks/useSignupModal";
+import Button from "@/app/components/button/Button";
+import Input from "@/app/components/input/Input";
+import Modal from "./Modal";
+
+// 入力検証のルール
+const schema = z.object({
+  name: z.string().min(2, { message: "2文字以上入力する必要があります" }),
+  email: z.string().email({ message: "メールアドレスの形式ではありません" }),
+  password: z.string().min(6, { message: "6文字以上入力する必要があります" }),
+});
+
+const SignupModal = () => {
+  const router = useRouter();
+  const signupModal = useSignupModal();
+  const loginModal = useLoginModal();
+  const [loading, setLoading] = useState(false);
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<FieldValues>({
+    defaultValues: { name: "", email: "", password: "" },
+    // 入力値の検証
+    resolver: zodResolver(schema),
+  });
+
+  // ログインモーダルを開く
+  const onToggle = useCallback(() => {
+    signupModal.onClose();
+    loginModal.onOpen();
+  }, [signupModal, loginModal]);
+
+  // 送信
+  const onSubmit: SubmitHandler<FieldValues> = async (data) => {
+    setLoading(true);
+
+    try {
+      // サインアップ
+      const res = await axios.post("/api/signup", data);
+
+      if (res.status === 200) {
+        toast.success("アカウント作成に成功しました");
+
+        // ログイン
+        await signIn("credentials", {
+          ...data,
+          redirect: false,
+        });
+      }
+
+      signupModal.onClose();
+      router.refresh();
+    } catch (err) {
+      toast.error("エラーが発生しました" + err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // モーダルの内容
+  const bodyContent = (
+    <div className="flex flex-col gap-4">
+      <Input
+        id="name"
+        label="名前"
+        disabled={loading}
+        register={register}
+        errors={errors}
+        required
+      />
+      <Input
+        id="email"
+        label="メールアドレス"
+        disabled={loading}
+        register={register}
+        errors={errors}
+        required
+      />
+      <Input
+        id="password"
+        label="パスワード"
+        type="password"
+        disabled={loading}
+        register={register}
+        errors={errors}
+        required
+      />
+    </div>
+  );
+  // フッターの内容
+  const footerContent = (
+    <div className="mt-3 flex flex-col gap-4">
+      <hr />
+      {/** Googleログイン */}
+      <Button
+        outline
+        label="Googleでログイン"
+        icon={FcGoogle}
+        onClick={() => signIn("google")}
+      />
+
+      { /** ログインリンク */}
+      <div className="mt-4 text-center">
+        <div onClick={onToggle} className="cursor-pointer text-sm text-neutral-500 hover:underline">
+          ログインする
+        </div>
+      </div>
+    </div>
+  );
+
+  return (
+    <Modal 
+      disabled={loading}
+      isOpen={signupModal.isOpen}
+      title="サインアップ"
+      primaryLabel="サインアップ"
+      onClose={signupModal.onClose}
+      onSubmit={handleSubmit(onSubmit)}
+      body={bodyContent}
+      footer={footerContent}
+    />
+
+  )
+
+};
+
+export default SignupModal;
+```
+> [zod](https://github.com/colinhacks/zod)はTypeScriptファーストのスキーマ宣言・検証ライブラリです。
+
+
+## signupAPIの作成 (バックエンド)
+- `api/signup/route.ts`を追加
+- axios.post で叩いているエンドポイント
+- POST関数(async)を作成
+  - エラーハンドリング
+  - リクエストボディを取得
+  - パスワードのハッシュ化(第二引数はソルト: string or Rounds: number)
+  - `prisma.user.create`によってuserの作成
+
+
+```ts filename="api/signup/route.ts"
+import { NextResponse } from "next/server";
+import bcrypt from 'bcrypt';
+import prisma from '@/app/lib/prisma';
+
+
+export async function POST(request: Request) {
+  try {
+    // リクエストボディの取得
+    const body = await request.json();
+    const { email, name, password } = body;
+
+    // パスワードのハッシュ化
+    const hashedPassword = await bcrypt.hash(password, 12);
+
+    // ユーザーの作成
+    const response = await prisma.user.create({
+      data: {
+        email,
+        name,
+        hashedPassword,
+      },
+    })
+
+    return NextResponse.json(response);
+  } catch (err) {
+    console.error(err);
+    return new NextResponse('Error', { status: 500 });
+  }
+}
+```

@@ -37,7 +37,7 @@ docker run --name postgres15 -p 5432:5432 -e POSTGRES_USER=root -e POSTGRES_PASS
 docker exec -it postgres15 psql -U root 
 ```
 
-- passwordが必要ないのは、localhostからの接続はデフォルトで認証OKにしてるから（Postgreが）
+- passwordが必要ないのは、localhostからの接続はデフォルトで認証OKにしてるため
 
 ```sql
 --ログインできたか確認
@@ -55,8 +55,8 @@ root=# \q
 docker logs postgres15
 ```
 
-### ちなみに
-- Dockerで困ったら`docker cmd —-help`
+### Dockerで困ったら
+- `docker cmd —-help`
 
 | cmd | Explanation |
 | --- | --- |
