@@ -1,0 +1,53 @@
+# グーグル認証【NextAuthApp】
+
+## はじめに
+- グーグル認証(OAuth)をするには、GCPのプロジェクトを作成する必要がある
+1. 新しいプロジェクト (プロジェクト名を入力)
+2. 作成したプロジェクトを選択
+3. メニュー > SPIとサービス > OAuth同意画面
+3. 外部で作成
+4. アプリ名, ユーザーサポートメール, デベロッパーの連絡先情報 > 保存して次へ
+5. スコープ、テストユーザーは設定不要 > ダッシュボードに戻る
+
+6. メニュー > 認証情報 > 認証情報を作成 > OAuthクライアントID
+7. アプリケーションの種類 = ウェブアプリケーション、名前入力
+8. 承認済みのリダイレクトURI = `http://localhost:3000/api/auth/callback/google` > 作成
+9. 生成されたクライアントIDとクライアントシークレットを`.env`ファイルに指定(環境変数)
+
+
+```.env filename=".env"
+# Environment variables declared in this file are automatically made available to Prisma.
+# See the documentation for more detail: https://pris.ly/d/prisma-schema#accessing-environment-variables-from-the-schema
+
+# Prisma supports the native connection string format for PostgreSQL, MySQL, SQLite, SQL Server, MongoDB and CockroachDB.
+# See the documentation for all the connection string options: https://pris.ly/d/connection-strings
+
+DATABASE_URL="postgresql://root:secret@localhost:5432/nextjs_prisma?schema=public"
+
+NEXTAUTH_SECRET=NEXTAUTH_SECRET
+NEXTAUTH_URL="http://localhost:3000"
+
+
+GOOGLE_CLIENT_ID="XXXXXXX"
+GOOGLE_CLIENT_SECRET="YYYYYYY"
+
+
+```
+
+
+## NextJSの設定
+
+- cloudinary(画像用、まだ)とグーグルのドメインを許可する
+```js filename="next.config.js"
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  experimental: {
+    serverActions: true,
+  },
+  images: {
+    domains: ['lh3.googleusercontent.com', 'res.cloudinary.com'],
+  },
+}
+
+module.exports = nextConfig
+```
