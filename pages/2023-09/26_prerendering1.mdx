@@ -1,0 +1,68 @@
+# Page Pre-Rendering1 【Next.js】
+
+## Introduction / これからやっていくこと
+- サーバーサイドのプリレンダリングとは
+- データフェッチング
+- Nextはサーバーサイドとフロントサイドをどうつなぐのか
+- これらが標準的なReactだけ使用する場合とどうちがうのか
+
+## Reactの問題点
+- JSONをリスト表示するだけのアプリを観察する
+```json filename="publc/dummy.json"
+// バックエンドから持ってきていることを想定
+{
+  "products": [
+    { "id": "p1", "title": "Product1"},
+    { "id": "p2", "title": "Product2"},
+    { "id": "p3", "title": "Product3"}
+  ]
+}
+```
+```jsx filename="src/App.jsx"
+import {useEffect, useState} from 'react';
+
+const App = () => {
+  const [products, setProducts] = useState([]);
+
+  useEffect(() => {
+    fetch('/dummy.json')
+      .then((response) => {
+        return response.json();
+      })
+      .then((data) => {
+        setProducts(data);
+      })
+  }, []);
+
+  return (
+    <ul>
+      {products.map((product) => (
+        <li key={product.id}>{product.title}</li>
+      ))}
+    </ul>
+  )
+
+export default App;
+}
+```
+
+初期読み込み時のHTMLにデータは存在しない。`<div id="root"></div>`という骨組みだけである点（読み込み後にRectによってレンダリングされるだけ）
+これには以下の問題点がある
+1. ユーザーはReactによって、データ取得されるのを待つ必要がある（バックエンドAPIから読み込むのに1s以上かかることは珍しくない）
+2. SEOに弱い(最近のクローラーはJSを実行してReactの中身まで見てくれるようになってきているらしいが)
+
+これらを解決するのが、**Page Pre-Rendering**である。
+
+## Page Pre-Rendering
+- Next.jsでは、HTMLコンテンツのすべてを事前に生成し、完成したHTMLをユーザーにレスポンスすることができる
+- このときすべてのJSコードも同時にレスポンスすることでReactのUXも実現できる
+- Next.jsには以下2つのプリレンダリングの方法がある（2つをミックスさせることも可能である）
+  1. Static Site Generation(**SSG**)
+  2. Server-side Rendering(**SSR**)
+
+### SSG
+- すべてのページがビルド時に生成される
+- **デプロイ前**にNextAppを本番用にビルドするタイミング
+
+### SSR
+- **デプロイ後**にリクエストがサーバに到達したタイミングでページが作成される
