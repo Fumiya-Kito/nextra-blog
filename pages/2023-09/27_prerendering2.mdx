@@ -1,0 +1,81 @@
+# Page Pre-Rendering2 【Next.js】
+
+## Introducing Static Generation with "getStaticProps"
+- SSGはビルド時にページを事前生成する方法
+- 一度デプロイされれば、生成されたページはServerやCDNにキャッシュされる
+- SSGを使うのはクライアントが最初にアクセスするページで他のページはReactによってCSRするのが基本
+- ではどうやってNext.jsにSSGの対象ページを伝えるのか?
+
+- 特別な関数をを**ページコンポーネントの中**から`export`する
+- 必ず`/pages`フォルダからasync functionである`getStaticProps`をexportすること
+
+```js
+export async funtion getStaticProps(content) {...}
+```
+※ 注意点
+- Nextjsに伝えるため`getStaticProps`と正確に書く必要がある
+- async 関数である必要がある
+- この中でクライアントサイドのコードを記述しない
+- クライアントサイドAPI(例えば`window`オブジェクト)にアクセスすることができない
+- 逆に、ここに記述したコードはクライアントサイドからアクセスできないため、DB認証情報などを安全に記述することができる
+
+
+## NextJS Pre-renders By Default!
+- Next.jsプロジェクトを立ち上げトップページににJSXを記述すると初期のHTMLにデータが表示される
+- これは標準のReactではありえないこと
+- Next.jsはデフォルトですでに静的生成をしていることに注目してほしい
+
+```jsx filename="pages/index.js"
+function Home(props) {
+  return (
+    <ul>
+      <li>Product1</li>
+      <li>Product2</li>
+      <li>Product3</li>
+    </ul>
+  )
+}
+```
+↓
+```html filename="html in browser"
+...
+<div id="__next"><ul><li>Product1</li>...</ul></div>
+...
+```
+
+
+
+
+## Adding "getStaticProps" To Pages
+- `getStaticProps`関数は任意のページファイルに追加することができる(`export`する必要がある)
+- `getStaticProps`は常にオブジェクトを返す必要がある
+- `getStaticProps`が存在する場合、まずこれが実行されて、コンポーネントのために`props`を用意する 
+- → returnで`props`キーを記述し、値をオブジェクトとする
+- → `props`オブジェクトの中身はを自由である
+- `getStaticProps`の実行が完了された後、コンポーネント関数が実行される
+- Component関数では、propsから設定したデータや関数を分割代入で取得すれば良い
+- この際、`getStaticProps`に記述されたJSコードはブラウザ上で見つけることはできない(サーバーサイド)
+
+```jsx filename="pages/index.js"
+import {useEffect, useState} from 'react';
+
+const Homepage = (props) => {
+  const { products } = props;
+  return (
+    <ul>
+      {products.map(product => <li key={product.id}>{product.title}</li>)}
+    </ul>
+  )
+
+
+export async function getStaticProps() {
+  return {
+    props: {
+      products: [{ id: 'p1', title: 'Product 1'}],
+    }
+  }
+}
+
+export default App;
+}
+```
