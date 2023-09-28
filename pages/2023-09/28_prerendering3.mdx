@@ -1,0 +1,59 @@
+# Page Pre-Rendering2 【Next.js】
+
+
+## Running Server-side Code & Using the Filesystem
+- `getStaticProps`を使ってみたが、コンテンツが静的ではNextデフォルトの機能とやっていることは変わらない
+- node.jsのFileSystem`fs`モジュールを使って実験
+- `fs`をコンポーネント(クライアントサイド)で実行しようとするとエラーになる
+- クライアントサイドではファイルシステムにアクセスできない
+- `import` 自体は一番上でできて、Nextが判断してくれ、クライアントサイドのコードから除いてくれる
+
+```json filename="data/dummy-backend.json"
+// バックエンドから持ってきていることを想定
+{
+  "products": [
+    { "id": "p1", "title": "Product1"},
+    { "id": "p2", "title": "Product2"},
+    { "id": "p3", "title": "Product3"}
+  ]
+}
+```
+
+```jsx filename="pages/index.js"
+import path from 'path';
+import fs from 'fs/promise';
+
+const Homepage = (props) => {
+  const { products } = props;
+  return (
+    <ul>
+      {products.map(product => <li key={product.id}>{product.title}</li>)}
+    </ul>
+  )
+
+
+export async function getStaticProps() {
+  const filePath = path.join(process.cwd(), 'data', 'dummy-backend.json');
+  const jsonData = await fs.readFile(filePath);
+  const data = JSON.parse(jsonData)
+
+  return {
+    props: {
+      products: data.products
+    }
+  }
+}
+
+export default App;
+}
+```
+- `process`はnodeJSでglobalに使用できる
+- `JSON`はクライアント側でもnode上でもglobalに使用できる
+- `parse`することでJSONをJSのオブジェクト型に変換している
+
+## Nextのプリレンダリングの舞台裏
+- `next build`はデプロイする準備ができたときのスクリプト
+- ローカル環境でも、`npm run build`することで本番用に最適化されたビルドがされる
+- `.next`フォルダをみると本番用のコードが格納される
+- Server, Static(default), SSG(getStaticProps), ISRのそれぞれページが生成される
+- `npm run start`で本番用のコードをローカルで動かすことができる
