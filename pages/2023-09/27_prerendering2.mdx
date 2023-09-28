@@ -57,8 +57,6 @@ function Home(props) {
 - この際、`getStaticProps`に記述されたJSコードはブラウザ上で見つけることはできない(サーバーサイド)
 
 ```jsx filename="pages/index.js"
-import {useEffect, useState} from 'react';
-
 const Homepage = (props) => {
   const { products } = props;
   return (
