@@ -1,0 +1,137 @@
+# Page Pre-Rendering5 【Next.js】
+
+
+## A Closer Look At "getStaticProps" & Configuration options
+- `getStaticProps`は引数`context`(Object)を受け取る
+  ```js
+  export async function getStaticProps(context) {...}
+  ```
+
+- return valueであるオブジェクトのキー`notFound`を追加する
+  - `true | false`で値を持ち`true`の場合、404ページを返す
+  - これは**サーバーサイドでデータフェッチングが失敗したとき**のためのキーである
+
+  ```js
+  ... // in getStaticProps function
+    if(data.products.length === 0) {
+      return { notFound: true }
+    }
+  ...
+  ```
+
+- `redirect`キー
+  - こちらもデータフェッチングに失敗したときにユーザを他のページに飛ばすために設定する
+  - 値はオブジェクト型
+  ```js
+  ... // in getStaticProps function
+    if(!data) {
+      return { redirect: { 
+          destination: '/no-data'
+        }  
+      }
+    }
+    if(data.products.length === 0) {
+      return { redirect: true }
+    }
+  ...
+  ```
+
+
+## Working With Dynamic Parameters
+- getStaticPropsのcontext引数はNext.jsが提供する
+- `context`には`params`プロパティが用意されている
+  - `params`はファイル名を`[something].js`(ダイナミックセグメント)にした場合に識別子をオブジェクトで与える
+  - Router hookを使って`useRouter().query`を取得するのと近いが、これはクライアントサイドでしか実行できず、プリレンダリングしたい場合には実行不可能
+  - getStaticPropsの`context.params`はサーバーサイド
+
+- productの詳細ページをつくって`Link`を張る
+- サーバー側でparamを取得しておいて、propsにわたす
+
+```js filename="pages/[pid].js"
+import path from 'path';
+import fs from 'fs/promises';
+import { Fragment } from "react";
+
+const ProductDetailPage = (props) => {
+  const { loadedProduct } = props;
+  return (
+    <Fragment>
+      <h1>{loadedProduct.title}</h1>
+      <p>{loadedProduct.description}</p>
+    </Fragment>
+  )
+}
+
+export async function getStaticProps(context) {
+  const { params } = context;
+  const productId = params.pid;
+
+  const filePath = path.join(process.cwd(), 'data', 'dummy-backend.json');
+  const jsonData = await fs.readFile(filePath);
+  const data = JSON.parse(jsonData);
+
+  const product = data.products.find(product => product.id === productId);
+
+  return {
+    props: {
+      loadedProduct: product,
+    }
+  }
+}
+
+export default ProductDetailPage;
+```
+
+
+```js filename="pages/index.js"
+import path from 'path';
+import fs from 'fs/promises';
+import Link from 'next/link';
+
+const Homepage = (props) => {
+  const { products } = props;
+  return (
+    <ul>
+      {products.map(product => (
+        <li key={product.id}><Link  href={`/${product.id}`}>{product.title}</Link></li>
+      ))}
+    </ul>
+  )
+}
+
+
+export async function getStaticProps() {
+  console.log('ReGenerating...');
+  const filePath = path.join(process.cwd(), 'data', 'dummy-backend.json');
+  const jsonData = await fs.readFile(filePath);
+  const data = JSON.parse(jsonData);
+
+  return {
+    props: {
+      products: data.products
+    },
+    revalidate: 3
+  }
+}
+
+export default Homepage;
+```
+
+```js filename="data/dummy-backend.js"
+{
+  "products": [
+    { "id": "p1", "title": "Product1", "description": "This is product 1"},
+    { "id": "p2", "title": "Product2", "description": "This is product 2"},
+    { "id": "p3", "title": "Product3", "description": "This is product 3"}
+  ]
+}
+```
+
+すると以下のエラーがでる。`getStaticPaths`は必須である。`getStaticPaths`とはなにか？
+```
+Server Error
+Error: getStaticPaths is required for dynamic SSG pages and is missing for '/[pid]'.
+Read more: https://nextjs.org/docs/messages/invalid-getstaticpaths-value
+
+This error happened while generating the page. Any console logs will be displayed in the terminal window.
+```

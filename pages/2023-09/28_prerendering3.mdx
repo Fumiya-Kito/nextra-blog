@@ -21,7 +21,7 @@
 
 ```jsx filename="pages/index.js"
 import path from 'path';
-import fs from 'fs/promise';
+import fs from 'fs/promises';
 
 const Homepage = (props) => {
   const { products } = props;
@@ -30,7 +30,7 @@ const Homepage = (props) => {
       {products.map(product => <li key={product.id}>{product.title}</li>)}
     </ul>
   )
-
+}
 
 export async function getStaticProps() {
   const filePath = path.join(process.cwd(), 'data', 'dummy-backend.json');
@@ -44,8 +44,7 @@ export async function getStaticProps() {
   }
 }
 
-export default App;
-}
+export default Homepage;
 ```
 - `process`はnodeJSでglobalに使用できる
 - `JSON`はクライアント側でもnode上でもglobalに使用できる
