@@ -22,3 +22,16 @@ export async function getStaticPaths() { ... }
 
 - もう一つreturnオブジェクトに必要なキーが`fallback`キーである
   - ここでは`false`とし後述する
+
+```js
+export async function getStaticPaths() {
+  return {
+    paths: [ // 動的ページのうち以下３つを事前生成してねと伝える
+      { params: { pid: 'p1'} },
+      { params: { pid: 'p2'} },
+      { params: { pid: 'p3'} },
+    ],
+    fallback: false,
+  };
+}
+```

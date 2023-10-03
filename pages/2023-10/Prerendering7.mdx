@@ -1,0 +1,108 @@
+# Page Pre-Rendering7 【Next.js】
+
+## "getStaticPaths" & Link Prefetching: Behind The Scenes
+- `npm run build`すると、index, 404に加え、p1, p2, p3のダイナミックページが生成された通知される
+- これは、`getStaticProps`と`getStaticPaths`に指定をしたため
+- 実際に、`.next/server/pages/`には`p1.html`, `p1.json`のように、HTMLとJSONファイルが事前生成されている
+- ホームページ(`index.js`)にアクセスし、ネットーワークタブを見ると、上記のJSONファイルがすでに取得されている
+  > これは、サーバに新たなリクエストをすることなくデータフェッチングが完了していることを示す。
+  最終的にはReactによってページがレンダリングされるが、この際には読み込み済みのJSONをつかってSPAにとどまる。
+  (ページ表示が標準のReactより早くなる)
+
+
+##  Working With Fallback Pages
+> Fallbackとは何ですか？<br/>
+日本語では「縮退運転・縮退運用」と呼びます。
+機器やソフトウェア、システムに異常が生じた際、性能や機能を制限したり、異常箇所を切り離したり、予備の機材などを使用するなどして、不完全ながらも処理や稼動を継続させることを意味します。
+
+- 大量に商品が存在する場合や大量にブログ記事が存在する場合、訪問されないページがほとんどになる
+- これらを事前生成するのは時間とリソースが無駄になる
+- そこで、`fallback`キーが重要となる
+- `fallback: true`とすることで、`paths`に指定した動的ページのみ事前生成するが、それ以外の動的ページは事前生成しないように設定できる
+- 指定しなかった動的ページはリクエスト時にデータフェッチングとレンダリングが行われる
+- 事前に想定していない動的パラメータが入力されても、アプリが止まらないように**fallback**しているということ
+```js
+export async function getStaticPaths() {
+  return {
+    paths: [ // 動的ページのうち以下1つを事前生成、ほかはサーバーに問い合わせて
+      { params: { pid: 'p1'} },
+    ],
+    fallback: true, // falseの場合, p2, p3はNot Foundになる
+  };
+}
+```
+
+> ただし、直接URLに入力しリンク先にリクエストを送るとエラーが発生する。<br/>
+`Cannot read property 'title' of undefined` <br/>
+理由は、動的な事前生成は非同期処理であり、即座に(同期的に)完了しないため。
+
+- このエラーを防ぐためには、`props`からのデータ取得が完了しているかの分岐処理を行い、LoadingSpinnerなどで対応する(標準Reactと同じように)
+```js
+const ProductDetailPage = (props) => {
+  const { loadedProduct } = props;
+
+  if (!loadedProduct) {
+    return <p>Loading...</p>
+  }
+  return (
+    <Fragment>
+      <h1>{loadedProduct.title}</h1>
+      <p>{loadedProduct.description}</p>
+    </Fragment>
+  )
+}
+```
+
+- fallbackの第3のオプションとして`'blocking'`がある
+- blockingにした場合、データフェッチングが完了し、**完全なHTMLページがサーバーで生成されるまで、Next.jsがレンダリングを自動で待ってくれる**（分岐処理は必要なくなる）
+- ただし、データフェッチングに時間がかかる場合は、ページが止まったように感じられUXは低下する
+
+```js
+const ProductDetailPage = (props) => {
+  const { loadedProduct } = props;
+
+  // if (!loadedProduct) {
+  //   return <p>Loading...</p>
+  // }
+  return (
+    <Fragment>
+      <h1>{loadedProduct.title}</h1>
+      <p>{loadedProduct.description}</p>
+    </Fragment>
+  )
+}
+
+export async function getStaticProps(context) {
+  ...
+}
+
+export async function getStaticPaths() {
+  return {
+    paths: [
+      { params: { pid: 'p1'} },
+    ],
+    fallback: 'blocking',
+  };
+}
+```
+
+
+|fallback value | use case |
+| --- | --- |
+| `false` | 動的ページに限りがあり、すべて事前生成したい場合 |
+| `true` | 動的ページが多く、選択的に事前生成したい<br/> かつ <br/>データフェッチングに時間がかかるなど、即座にユーザーにフィードバックしたい場合 |
+| `'blocking'` | 動的ページが多く、選択的に事前生成したい<br/> かつ <br/>完全なページのみユーザーに表示させたい場合 |
+
+
+## 参考
+[[NextJS]ISRのfallbackの挙動が難しかった](https://zenn.dev/reds/articles/242e97b92cee56)より
+
+getStaticPropsで外部データの取得がエラーとなった際
+これは僕がつまったところでもあるが、もしgetStaticPropsの中での外部データの取得が失敗した場合、 どういった挙動になるのかである。
+公式ドキュメントに記載がありました。
+
+> If there is an error inside getStaticProps when handling background regeneration, or you manually throw an error, the last successfully generated page will continue to show. On the next subsequent request, Next.js will retry calling getStaticProps.
+
+> getStaticProps内でエラーが発生した場合、または手動でエラーをthrowした場合、最後に正常に生成されたページが引き続き表示されます。そして後続のリクエストでgetStaticPropsの呼び出しを再試行します
+
+つまり外部データの取得に失敗した際は、エラーをthrowすれば前回までの正常に生成されたHTMLを表示してくれるらしい...
