@@ -56,3 +56,30 @@ export async function getStaticPaths() {
 
 export default ProductDetailPage;
 ```
+
+
+## Fallback Pages & "Not Found" Pages
+- `fallback: false`とすれば、paths以外のパラメータにアクセスされた場合404ページをNextが返してくれる
+- `fallback: true` or `fallback: 'blocking'`とした場合、Nextはそのパラメータをサーバに問い合わせて探そうとするためサーバーエラーとなる
+- この場合、getStaticPropsにおいて、propsに`{ notFound: true }`を返せば良い
+
+```js
+
+export async function getStaticProps(context) {
+  const { params } = context;
+  const productId = params.pid;
+
+  const data = await getData();
+
+  const product = data.products.find(product => product.id === productId);
+  if (!product) {
+    return { notFound: true };
+  }
+  
+  return {
+    props: {
+      loadedProduct: product,
+    }
+  }
+}
+```
