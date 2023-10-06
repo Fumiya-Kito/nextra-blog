@@ -1,0 +1,152 @@
+# Page Pre-Rendering8 【Next.js】
+
+## Introducing "getServerSideProps" for Server-side Rendering (SSR)
+- `getStaticProps`と`getStaticPaths`の組み合わせで動的ページのビルド時に静的生成をしてきた
+1. Static Site Generation(SSG)
+2. Incremental Static (Re)Generation(ISG, ISR)
+- ときに、クライアントからのリクエストごとにページの事前生成が必要となる(クッキーを抽出する場合など)
+1. Server Side Rendering(SSR)
+- SSRは`getServerSideProps`を使うことで実現させる
+- このasync関数はリクエストが来たときに実行される
+- ビルド時に実行される`getStaticProps`と同時に使うことは禁止され、どちらか一方を使用すること
+
+```js
+export async function getServerSideProps() { ... }
+```
+
+## Using "getServerSideProps" for Server-side Rendering
+- `user-profile.js`ページを作成する
+- 「ユーザーIDで動的ページを生成することはできないため、クッキーを使う」という想定
+- クッキーはビルド時に取得することは不可能であるからSSRを使う
+- `getServerSideProps`は基本的に`getStaticProps`と同じ役割でオブジェクトを返す
+- プロパティは以下3つで、唯一の違いは`revalidate`キーが使用できない（そもそも毎リクエストごとに生成するため`incremental`にする意味がない）
+1. `props`キー
+2. `notFound`キー
+3. `redirect`キー
+```js
+function UserProfilePage(props) {
+  return (
+    <h1>{props.username}</h1>
+  )
+}
+
+export default UserProfilePage;
+
+export async function getServerSideProps(context) {
+  return {
+    props: {
+      username: 'Max'
+    }
+  }
+}
+```
+
+## "getServerSideProps" and its Context
+- `context`オブジェクト(getServerSidePropsの引数)から`params`,`req`,`res` を取得する
+- ServerSideでは単にparamsだけ取得するのではなくリクエストオブジェクト全体、レスポンスオブジェクト全体を取得できる
+- Express.jsを触ったことがあれば精通しているかもしれない
+- 例えば`res`のヘッダーにクッキーを加えるといった処理ができる
+- 例えば`req`のヘッダーからクッキー情報を取得するといった処理ができる
+- getStaticPropsとの重要な違いは、「`context`プロパティの差」と「関数実行のタイミング」である
+```js
+export async function getServerSideProps(context) {
+  const { params, req, res } = context;
+
+  console.log(req); // 全体
+  console.log(res); // 全体 
+
+  return {
+    props: {
+      username: 'Max'
+    }
+  }
+}
+```
+
+
+## Dynamic Pages & "getServerSideProps"
+- user-idページを作成する
+- `getServerSideProps`はリクエストごとにHTMLを作成するため、ビルド時に事前生成するわけではない
+- よって、getStaticPropsのようにどのパラメータに対してページを事前生成するかNextに教える必要はない(事前生成しないから)
+```js filename="pages/[uid].js"
+function UserIdPage(props) {
+  return <h1>{props.id}</h1>
+}
+
+export default UserIdPage;
+
+export async function getServerSideProps(context) {
+  const { params } = context;
+
+  const userId = params.uid;
+
+  return {
+    props: {
+      id: 'userid-' + userId,
+    }
+  }
+}
+```
+
+
+## "getServerSideProps": Behind The Scenes
+
+```js filename="pages/user-profile.js"
+export async function getServerSideProps(context) {
+  const { params, req, res } = context;
+
+  console.log('Server side code');
+
+  return {
+    props: {
+      username: 'Max'
+    }
+  }
+}
+```
+
+- buildしてみると、user-profileページは事前生成されていないことがわかる
+- `/user-profile`はλ=SSRである
+```shell
+fumiya@mba sample % npm run build
+
+> sample@0.1.0 build
+> next build
+
+ ✓ Linting and checking validity of types    
+ ✓ Creating an optimized production build    
+ ✓ Compiled successfully
+ ✓ Collecting page data    
+   Generating static pages (0/6)  [    ]ReGenerating...
+ ✓ Generating static pages (6/6) 
+ ✓ Finalizing page optimization    
+
+Route (pages)                              Size     First Load JS
+┌ ● / (ISR: 3 Seconds)                     2.63 kB        80.4 kB
+├   /_app                                  0 B            77.8 kB
+├ λ /[uid]                                 265 B          78.1 kB
+├ ○ /404                                   181 B            78 kB
+├ λ /api/hello                             0 B            77.8 kB
+├ ● /products/[pid]                        329 B          78.1 kB
+├   ├ /products/p1
+├   ├ /products/p2
+├   └ /products/p3
+└ λ /user-profile                          276 B          78.1 kB
++ First Load JS shared by all              78.5 kB
+  ├ chunks/framework-04b2df298aee5fa5.js   45.2 kB
+  ├ chunks/main-12e9c77dbbe57e7c.js        31.5 kB
+  ├ chunks/pages/_app-52ed6a87583e15f8.js  297 B
+  ├ chunks/webpack-f73d82589f972e7d.js     743 B
+  └ css/876d048b5dab7c28.css               706 B
+
+λ  (Server)  server-side renders at runtime (uses getInitialProps or getServerSideProps)
+○  (Static)  automatically rendered as static HTML (uses no initial props)
+●  (SSG)     automatically generated as static HTML + JSON (uses getStaticProps)
+   (ISR)     incremental static regeneration (uses revalidate in getStaticProps)
+```
+
+- `npm run start`をして、`/user-profile`にアクセスすると、サーバのコンソールにログがでる
+- これはリクエスト時にサーバー側で`getServerSideProps`が実行されたということ
+```shell
+> Server side code
+```
