@@ -32,7 +32,7 @@ function LastSalesPage(props) {
       setIsLoading(true);
     
       const response = await fetch(
-        "https://next-example-ac4ec-default-rtdb.asia-southeast1.firebasedatabase.app/sales.json"
+        "https://<firebaseURL>/sales.json"
       );
       const data = await response.json();
     
@@ -91,7 +91,7 @@ function LastSalesPage(props) {
   // const [isLoading, setIsLoading] = useState(false);
 
   const { data, error } = useSWR(
-    "https://next-example-ac4ec-default-rtdb.asia-southeast1.firebasedatabase.app/sales.json",
+    "https://<firebaseURL>/sales.json",
     (url) => fetch(url).then(res => res.json())
   );
   useEffect(() => {
@@ -113,7 +113,7 @@ function LastSalesPage(props) {
   //   (async() => {
   //     setIsLoading(true);
   //     const response = await fetch(
-  //       "https://next-example-ac4ec-default-rtdb.asia-southeast1.firebasedatabase.app/sales.json"
+  //       "https://<firebaseURL>/sales.json"
   //     );
   //     const data = await response.json();
   //     const transformedSales = [];
@@ -165,7 +165,7 @@ function LastSalesPage(props) {
   // const [isLoading, setIsLoading] = useState(false);
 
   const { data, error } = useSWR(
-    "https://next-example-ac4ec-default-rtdb.asia-southeast1.firebasedatabase.app/sales.json",
+    "https://<firebaseURL>/sales.json",
     (url) => fetch(url).then((res) => res.json())
   );
   useEffect(() => {
@@ -204,7 +204,7 @@ function LastSalesPage(props) {
 
 export async function getStaticProps() {
   const response = await fetch(
-    "https://next-example-ac4ec-default-rtdb.asia-southeast1.firebasedatabase.app/sales.json"
+    "https://<firebaseURL>/sales.json"
   );
   const data = await response.json();
   const transformedSales = [];
