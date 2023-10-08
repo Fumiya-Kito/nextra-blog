@@ -1,0 +1,284 @@
+# # Pre-Rendering演習2【Next.js】
+
+## All Events Page
+- このページもSSGが望ましい
+<br/> ←　クローリングされるべきもの、ユーザー固有のものでない
+```js filename="pages/events/index.js"
+import { Fragment } from 'react';
+import { useRouter } from 'next/router';
+
+import { getAllEvents } from '../../helpers/api-util';
+import EventList from '../../components/events/event-list';
+import EventsSearch from '../../components/events/events-search';
+
+function AllEventsPage(props) {
+  const router = useRouter();
+  const { events } = props
+
+  function findEventsHandler(year, month) {
+    const fullPath = `/events/${year}/${month}`;
+    
+    router.push(fullPath);
+  }
+
+  return (
+    <Fragment>
+      <EventsSearch onSearch={findEventsHandler} />
+      <EventList items={events} />
+    </Fragment>
+  );
+}
+
+export default AllEventsPage;
+
+export const getStaticProps = async () => {
+  const events = await getAllEvents();
+  return {
+    props: {
+      events: events,
+    },
+    revalidate: 60,
+  }
+}
+```
+
+## [slug] Page (検索結果)
+- SSGは望ましくない, SSRかCSR。今回はSSRで実装する
+<br/> ← 年月など不特定多数のパラメータが存在する＝不特定多数のページをレンダリングしなければならない
+<br/> ← 検索の組み合わせに重み付けができない＝事前生成すべきページを選ぶことは難しい(特に今回は制約がない)
+
+
+
+```js filename="helpers/api-util.js"
+export async function getFilteredEvents(dateFilter) {
+  const { year, month } = dateFilter;
+
+  const allEvents = await getAllEvents();
+
+  let filteredEvents = allEvents.filter((event) => {
+    const eventDate = new Date(event.date);
+    return eventDate.getFullYear() === year && eventDate.getMonth() === month - 1; 
+  })
+
+  return filteredEvents;
+}
+```
+
+```js filename="pages/events/[...slug].js"
+import { Fragment } from "react";
+import { useRouter } from "next/router";
+
+import { getFilteredEvents } from "../../helpers/api-util";
+import EventList from "../../components/events/event-list";
+import ResultsTitle from "../../components/events/results-title";
+import Button from "../../components/ui/button";
+import ErrorAlert from "../../components/ui/error-alert";
+
+function FilteredEventsPage(props) {
+  const router = useRouter();
+
+  // const filterData = router.query.slug;
+
+  // if (!filterData) {
+  //   return <p className="center">Loading...</p>;
+  // }
+
+  // const filteredYear = filterData[0];
+  // const filteredMonth = filterData[1];
+
+  // const numYear = +filteredYear;
+  // const numMonth = +filteredMonth;
+
+  if (props.hasError) {
+    return (
+      <Fragment>
+        <ErrorAlert>
+          <p>Invalid filter. Please adjust your values!</p>
+        </ErrorAlert>
+        <div className="center">
+          <Button link="/events">Show All Events</Button>
+        </div>
+      </Fragment>
+    );
+  }
+
+  const filteredEvents = props.events;
+
+  if (!filteredEvents || filteredEvents.length === 0) {
+    return (
+      <Fragment>
+        <ErrorAlert>
+          <p>No events found for the chosen filter!</p>
+        </ErrorAlert>
+        <div className="center">
+          <Button link="/events">Show All Events</Button>
+        </div>
+      </Fragment>
+    );
+  }
+
+  const date = new Date(props.date.year, props.date.month - 1);
+
+  return (
+    <Fragment>
+      <ResultsTitle date={date} />
+      <EventList items={filteredEvents} />
+    </Fragment>
+  );
+}
+
+export default FilteredEventsPage;
+
+export const getServerSideProps = async (context) => {
+  const { params } = context;
+  const filterData = params.slug;
+
+  const filteredYear = filterData[0];
+  const filteredMonth = filterData[1];
+
+  const numYear = +filteredYear;
+  const numMonth = +filteredMonth;
+
+  if (
+    isNaN(numYear) ||
+    isNaN(numMonth) ||
+    numYear > 2030 ||
+    numYear < 2021 ||
+    numMonth < 1 ||
+    numMonth > 12
+  ) {
+    return {
+      props: { hasError: true },
+      // notFound: true,
+      // redirect: {
+      //   destination: '/error'
+      // }
+    };
+  }
+
+  const filteredEvents = await getFilteredEvents({
+    year: numYear,
+    month: numMonth,
+  });
+  return {
+    props: {
+      events: filteredEvents,
+      date: {
+        year: numYear,
+        month: numMonth,
+      }
+    },
+  };
+};
+```
+
+
+## Adding Client-Side Data Fetching
+- このアプリケーションにおいてはCSRは必要ないかもしれない（オプション）
+- しかし、上記で実装した検索機能に関してはCSRのほうが適切かもしれない
+<br/> ← サーバー上での処理がなくなり、読み込み速度が早くなる
+<br/> ← ユーザーによってフィルタリングされた結果はSEOにおいて重要でない
+
+```node
+npm install swr
+```
+
+```js filename="pages/events/[slug].js"
+import { Fragment, useEffect, useState } from "react";
+import { useRouter } from "next/router";
+
+import EventList from "../../components/events/event-list";
+import ResultsTitle from "../../components/events/results-title";
+import Button from "../../components/ui/button";
+import ErrorAlert from "../../components/ui/error-alert";
+import useSWR from 'swr'
+
+function FilteredEventsPage(props) {
+  const [loadedEvents, setLoadedEvents] = useState([]);
+  const router = useRouter();
+  const filterData = router.query.slug;
+
+  
+  const { data, error } = useSWR(
+    "<firebaseURL>/events.json",
+    (url) => fetch(url).then(res => res.json()),
+  );
+  
+  useEffect(() => {
+    if (data) {
+      const events = [];
+      for (const key in data) {
+        events.push({
+          id: key,
+          ...data[key],
+        })
+      }
+      setLoadedEvents(events);
+    }
+  }, [data])
+  
+  if (!loadedEvents) {
+    return <p className="center">Loading...</p>;
+  }
+
+
+  const filteredYear = filterData[0];
+  const filteredMonth = filterData[1];
+  
+  const numYear = +filteredYear;
+  const numMonth = +filteredMonth;
+
+  
+  if (
+    isNaN(numYear) ||
+    isNaN(numMonth) ||
+    numYear > 2030 ||
+    numYear < 2021 ||
+    numMonth < 1 ||
+    numMonth > 12 ||
+    error
+    ) {
+      return (
+        <Fragment>
+        <ErrorAlert>
+          <p>Invalid filter. Please adjust your values!</p>
+        </ErrorAlert>
+        <div className="center">
+          <Button link="/events">Show All Events</Button>
+        </div>
+      </Fragment>
+    );
+  }
+
+  const filteredEvents = loadedEvents.filter((event) => {
+    const eventDate = new Date(event.date);
+    return eventDate.getFullYear() === numYear && eventDate.getMonth() === numMonth - 1;
+  });
+  
+
+  if (!filteredEvents || filteredEvents.length === 0) {
+    return (
+      <Fragment>
+        <ErrorAlert>
+          <p>No events found for the chosen filter!</p>
+        </ErrorAlert>
+        <div className="center">
+          <Button link="/events">Show All Events</Button>
+        </div>
+      </Fragment>
+    );
+  }
+
+  const date = new Date(numYear, numMonth - 1);
+
+  return (
+    <Fragment>
+      <ResultsTitle date={date} />
+      <EventList items={filteredEvents} />
+    </Fragment>
+  );
+}
+
+export default FilteredEventsPage;
+
+```
