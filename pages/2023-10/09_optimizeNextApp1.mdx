@@ -1,0 +1,151 @@
+# Optimizing Next.js Apps1
+
+- Next.jsにおけるメタデータとヘッドデータの設定
+- コンポーネントやロジックの再利用
+
+## Analyzing the Need for "head" Metadata
+- ブラウザ上で「検証」を開いて、`<head>`タグを見ると、Nextによって自動的にインポートされるものはたくさんあるが、メタデータがない
+- クローラーは`<head>`タグのタイトルやdescriptionを参照する
+- Next.jsではこれらのメタデータを簡単に設定できる
+
+
+## Configuring the "head" Content
+- ホームページにおいて、`Head from 'next/head'`コンポーネントを使う
+- 注意点としては大文字の`next/head`の`Head`コンポーネントと、標準のHTML由来の`head`JSXコンポーネントを間違えないこと
+- `Head`はHTML要素の`head`に要素を追加する
+- `Head`タグの中身は標準HTMLのタグを使う
+
+```js filename="pages/index.js"
+import { getFeaturedEvents } from "../helpers/api-util";
+import EventList from "../components/events/event-list";
+import Head from "next/head";
+
+function HomePage(props) {
+  const { featuredEvents } = props;
+
+  return (
+    <div>
+      <Head>
+        <title>NextJS Events</title>
+        <meta name="description" content="Find a lot of great events that allow you to evolve..."/>
+      </Head>
+      <EventList items={featuredEvents} />
+    </div>
+  );
+}
+
+export const getStaticProps = async () => {
+  const featuredEvents = await getFeaturedEvents();
+  
+  return {
+    props: {
+      featuredEvents: featuredEvents,
+    },
+    revalidate: 30 * 60  // 30 minutes
+  };
+};
+
+export default HomePage;
+```
+
+
+## Adding Dynamic "head" Content
+- それぞれのページにheadタグを追加していく
+- 動的ページにはJSXの特性を活かして取得したデータからタイトルやディスクリプションを書ける
+```js {5-9} filename="pages/events/[eventId].js"
+...
+  return (
+    <Fragment>
+      <Head>
+        <title>{event.title}</title>
+        <meta
+          name="description"
+          content={event.description}
+        />
+      </Head>
+      <EventSummary title={event.title} />
+      <EventLogistics
+        date={event.date}
+        address={event.location}
+        image={event.image}
+        imageAlt={event.title}
+      />
+      <EventContent>
+        <p>{event.description}</p>
+      </EventContent>
+    </Fragment>
+  );
+...
+```
+
+## Reusing Logic Inside A Component
+- すべてのページに`Head`タグを追加していくのは大変だし、保守性が下がるから使いまわしたい
+- また`return`するJSXのif分岐にすべて対応しようとしたら、かなり冗長となる
+1. Reactの考え方で、Headタグをコンポーネント化、あるいはJSXの変数化をして再利用する
+```js
+let pageHeadData = <Head>...</Head>
+
+if (isLoading) {
+  return (
+    {pageHeadData}
+    <SomeComponent>Loading...</SomeComponent>
+  );
+}
+
+pageHeadData = <Head>...Somthing Changed...</Head>
+
+return (
+  {pageHeadData}
+  <SomeComponent>Body Data...</SomeComponent>
+)
+```
+
+2. `_app.js` ファイルでheadタグを設定する
+- MyApp関数はNextによって実行されるrootコンポーネントである
+- propsは自動的に設定される
+- `<Componet {...pageProps} />`を囲うことで全ページに影響を与えることが可能
+
+```js filename="_app.js"
+import Head from 'next/head';
+import Layout from '../components/layout/layout';
+import '../styles/globals.css';
+
+function MyApp({ Component, pageProps }) {
+  return (
+    <Layout>
+      <Head>
+        <meta name="viewport" content='initial-scale=1.0, width=device-width' />
+      </Head>
+      <Component {...pageProps} />
+    </Layout>
+  );
+}
+
+export default MyApp;
+```
+
+## Merging "head" Content
+- `next/head`の`Head`コンポーネントはどの階層に設置しても自動的にマージしてくれる
+- さらに、同じタグを設定してしまった場合のコンフリクト解除も自動で行う(下層、最新の要素が優先される)
+- `_app.js`で全般的なheadタグを指定しておけば、一つひとつ設定しなくてもよい。設定を変えたい場合のみ子コンポーネントで記述する
+```js filename="_app.js"
+import Head from 'next/head';
+import Layout from '../components/layout/layout';
+import '../styles/globals.css';
+
+function MyApp({ Component, pageProps }) {
+  return (
+    <Layout>
+      <Head>
+        <title>Next Events</title>
+        <meta name="description" content='NextJS Events' />
+        <meta name="viewport" content='initial-scale=1.0, width=device-width' />
+      </Head>
+      <Component {...pageProps} />
+    </Layout>
+  );
+}
+
+export default MyApp;
+
+```
