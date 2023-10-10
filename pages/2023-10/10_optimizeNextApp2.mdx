@@ -1,0 +1,85 @@
+# Optimizing Next.js Apps1
+
+## The "_document.js" File (And What It Does)
+- グローバルで特別なファイルは`_app.js`だけではなく、`_document.js`もある
+- これらは`pages/`直下に配置しなければならない
+- `Document` from `next/document`を継承させるために、classコンポーネントで記述しなければならない
+- また、`Html, Head, Main, NextScript`をNamedでimportする
+<br/> ※Headは `next/head`とは異なるコンポーネントなので注意
+
+まずは基本形
+```js filename="pages/_document.js"
+import Document, { Html, Head, Main, NextScript } from "next/document";
+
+class MyDocument extends Document {
+  render() {
+    return (
+      <Html>
+        <Head />
+        <body>
+          <Main />
+          <NextScript />
+        </body>
+      </Html>
+    );
+  }
+}
+
+export default MyDocument;
+```
+
+次にhtml属性を設定した形(このために`_document.js`を作成する)
+<br/>（反映させるには、`npm run dev`で開発サーバを再起動させる必要あり）
+```js filename="pages/_document.js"
+import Document, { Html, Head, Main, NextScript } from "next/document";
+
+class MyDocument extends Document {
+  render() {
+    return (
+      <Html lang="ja">
+        <Head />
+        <body>
+          {/* コンポーネントツリー外のHTML要素を追加したい場合, React portalなど */}
+          <div id="overlays" /> 
+          <Main />
+          <NextScript />
+        </body>
+      </Html>
+    );
+  }
+}
+
+export default MyDocument;
+```
+
+
+
+## Optimizing Images with the "Next Image" Component & Feature
+- これまでに画像の最適化は全く行わなかった
+- 画像が最適化されていないとは? <br/>
+→ Networkタブを見てハードリロードするとフルサイズの画質で数MBの画像がフェッチングされていることがわかる。
+
+- Next.jsで画像を最適化するには、`next/image`の`Image`コンポーネントを使用すれば簡単に実装できる
+1. リクエストが来ると複数のバージョンの画像を作成
+2. クライアントのOSやデバイスサイズに合わせて最適化
+3. 作成された画像をキャッシュしれくれる
+
+```diff filename="components/event-item.js"
+...
+  return (
+    <li className={classes.item}>
++      <Image src={'/' + image} alt={title} />
+-      <img src={'/' + image} alt={title} />
+      ...
+    </li>
+  );
+...
+```
+
+- `src`, `alt`属性に関しては通常の`img`タグを同じ
+- 追加で`width`,`height`を指定できる
+- これは、元の画像の大きさではなく`Image`コンポーネントに確保させる幅と高さを指す ← Cumulative Layou Shift(CLS)を防ぐため
+- 幅と高さの値はCSSや実装したいレイアウトによって異なる。適宜調整するもの。px数を大きくすればシャープになるがサイズがでかくなる
+([ドキュメント](https://nextjs-ja-translation-docs.vercel.app/docs/api-reference/next/image)）
+- 生成された画像は`.next/cache`フォルダにある(事前生成ではなく、最適化された画像がリクエスト時に作成されキャッシュ。同様のデバイスから次回以降の表示が早くなる)
+- CSSのフレックス実装で横幅を変えた際にも適切な画像がフェッチングされる（必要なときに、必要なものだけ。`img`では予め画像の全パターンがフェッチングされていた）
