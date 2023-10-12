@@ -1,0 +1,152 @@
+# Fullstack React1
+
+## フロントエンドのフォームを用意する
+- Reactでフォームを作成する
+- フロントエンドの送信ボタンを押したときにデータはDBに送信される
+- フロントエンドから直接DBにアクセスするのは危険、フロントにDBの認証情報を公開してはいけない
+- APIRouteを使う、APIに書かれたコードはフロントエンドに公開されることはない
+```js filename="pages/index.js"
+import { useRef } from "react";
+
+function HomePage() {
+  const emailInputRef = useRef();
+  const feedbackInputRef = useRef();
+
+  
+  const submitHandler = (event) => {
+    event.preventDefault();
+    // data 取れているか確認
+    console.log(emailInputRef.current.value);
+    console.log(feedbackInputRef.current.value);
+    // fetch あとでやります
+    fetch();
+  }
+
+  return (
+    <div>
+      <h1>The Home Page</h1>
+      <form onSubmit={submitHandler}>
+        <div>
+          <label htmlFor="email">Your Email Address</label>
+          <input type="email" id="email" ref={emailInputRef} />
+        </div>
+        <div>
+          <label htmlFor="feedback">Your Feedback</label>
+          <textarea id="feedback" rows="5" ref={feedbackInputRef}></textarea>
+        </div>
+        <button>Send Feedback</button>
+      </form>
+    </div>
+  );
+}
+
+export default HomePage;
+```
+
+## Parsing The Incoming Request & Executing Server-side Code
+- fetchAPIを実行したとき、どのHTTPメソッドであっても、バックエンド`handler`関数のトリガーとなる（Node.js上で実行される）
+- handler関数内で`req`引数を使ってHTTPメソッドの種類を調べる必要がある
+- APIが叩かれた時点で`req.method`にはNext.jsによってHTTPリクエストの種類が格納される
+- `req.body`にはfetchAPIで送信されたデータ(JSオブジェクト)がJ格納されている
+- DBへのアクセスについては今回はローカルに`data`フォルダをつくる`data/feedback.json`
+- ファイルの読み込み、データの追加、ファイル書き込み、フロントへのレスポンスを行う
+
+```js filename="pages/api/feedback.js"
+import fs from 'fs';
+
+function handler(req, res) {
+  if (req.method === 'POST') {
+    const { email, text: feedbackText } = req.body;
+
+    const newFeedback = {
+      id: new Date().toISOString, // dummyID
+      email: email,
+      text: feedbackText,
+    }
+
+    const filePath = path.join(process.cwd(), 'data', 'feedback.json');
+    const fileData = fs.readFileSync(filePath);
+    const data = JSON.parse(fileData);
+    data.push(newFeedback);
+    fs.writeFileSync(filePath, JSON.stringify(data));
+
+    res.status(201).json({ message: 'Success!', feedback: newFeedback });
+  } else {
+    res.status(200).json({ message: 'This works!' });
+  }
+}
+
+export default handler
+```
+※ ただし、`feedback.json`は空の配列を初期値として書き込まれている
+
+## Sending Requests To API Routes
+- fetchAPIの第二引数に送信するデータを指定する
+- `method`: HTTPメソッド
+- `body`: JSON形式のリクエストボディ
+- `headers`: メタデータオブジェクト
+<br/>  → `'Content-Type'`は特殊なキー`''`で囲い、大文字小文字も間違えないこと
+<br/>  → `'application/json'`とヘッダでバックエンドに通知することで「これはJSONデータを運搬しています」と示す
+<br/>    → リクエストボディをJSONパースしてくれる
+
+
+```js filename="index.js"
+  const submitHandler = (event) => {
+    event.preventDefault();
+
+    const enteredEmail = emailInputRef.current.value;
+    const enteredFeedback = feedbackInputRef.current.value;
+
+    const reqBody = { email: enteredEmail, text: enteredFeedback };
+
+    fetch("/api/feedback", { // `/`から始めると絶対パスになる root dir = pages/
+      method: "POST",
+      body: JSON.stringify(reqBody),
+      header: {
+        "Content-Type": "application/json",
+      },
+    })
+      .then((response) => response.json())
+      .then((data) => console.log(data));
+  };
+```
+
+### request bodyのparseができなかった話
+- `email`と`text`が`undefined`になった
+- NextJSは自動ではJSONパースしてくれないらしい
+```js filename="API Routesにおいて"
+function handler(req, res) {
+  if (req.method === 'POST') {
+    const { email, text: feedbackText } = JSON.parse(req.body);
+
+    console.log(req.body); // JSONのまま={"email":"aa@aa.com","text":"Does this work?"}
+    console.log(JSON.parse(req.body)); // JSオブジェクト
+    ...
+  }
+  ...
+}
+```
+
+- と思ったら、fetchAPIでタイポしていただけだった
+> chat-GPT: Next.jsでは自動でリクエストボディをパースしません 
+
+> 私(タイポ野郎): リクエストのヘッダー情報で、`'Content-Type': 'application/json'`を指定しているのにもかかわらずですか？
+
+> chat-GPT: 申し訳ありません、ヘッダー情報に `'Content-Type': 'application/json'` を指定している場合、リクエストボディのJSONデータを正しく送信しているはずです。その場合、Next.js APIルートがリクエストボディを自動的にJSONとしてパースするはずです。
+fetch APIのコードは正しいように見えますが、`header` の代わりに `headers` を使用する必要があります。以下のように修正してください：
+これにより、リクエストボディの JSON データが正しく送信され、Next.js APIルート内で `req.body` からアクセスできるはずです
+もし問題が続く場合は、fetch APIのコードやNext.js APIルートの他の部分に問題があるかもしれません。デバッグのために、リクエストとレスポンスの詳細をコンソールに出力して問題を特定できるか確認することをお勧めします。
+
+```js filename="上のコードはあえて直していません"
+fetch("/api/feedback", {
+  method: "POST",
+  body: JSON.stringify(reqBody),
+  headers: {
+    "Content-Type": "application/json"
+  },
+})
+  .then((response) => response.json())
+  .then((data) => console.log(data));
+
+```
+※ 結局、API Routesで`req.body`のJSONパースは不要です
