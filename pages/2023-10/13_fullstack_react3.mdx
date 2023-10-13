@@ -1,0 +1,150 @@
+# Fullstack React3
+
+## Using API Routes To Get Data
+- ブラウザにAPIRouteのURLを入力すると`res.status(200).json({message: 'OK'})`が返される
+<br/> → POSTリクエストでないため
+- `data/feedback.json`表示させる
+
+```js
+import fs from 'fs';
+import path from 'path';
+
+function buildFeedbackPath() {
+  return path.join(process.cwd(), 'data', 'feedback.json');
+}
+
+function extractFeedback(filePath) {
+  const fileData = fs.readFileSync(filePath);
+  const data = JSON.parse(fileData);
+  return data;
+}
+
+function handler(req, res) {
+  if (req.method === 'POST') {
+    // const { email, text: feedbackText } = JSON.parse(req.body);
+    const { email, text: feedbackText } = req.body;
+
+    const newFeedback = {
+      id: new Date().toISOString(), // dummyID
+      email: email,
+      text: feedbackText,
+    }
+
+    const filePath = buildFeedbackPath();
+    const data = extractFeedback(filePath);
+    data.push(newFeedback);
+    fs.writeFileSync(filePath, JSON.stringify(data));
+    
+    res.status(201).json({ message: 'Success!', feedback: newFeedback });
+  } else {
+    const filePath = buildFeedbackPath();
+    const data = extractFeedback(filePath);
+    res.status(200).json({ feedback: data });
+  }
+}
+
+export default handler
+```
+
+index.jsにロードボタンをつくることで、このページをルーティングさせる
+
+```js filename="index.js"
+import { useRef, useState } from "react";
+
+function HomePage() {
+  const [feedbackItems, setFeedbackItems] = useState([]);
+  const emailInputRef = useRef();
+  const feedbackInputRef = useRef();
+
+  const submitHandler = (event) => {
+    event.preventDefault();
+
+    const enteredEmail = emailInputRef.current.value;
+    const enteredFeedback = feedbackInputRef.current.value;
+
+    const reqBody = { email: enteredEmail, text: enteredFeedback };
+
+    console.log(reqBody);
+
+    fetch("/api/feedback", {
+      // `/`から始めると絶対パスになる root dir = pages/
+      method: "POST",
+      body: JSON.stringify(reqBody),
+      headers: {
+        "Content-Type": "application/json",
+      },
+    })
+      .then((response) => response.json())
+      .then((data) => console.log(data));
+  };
+
+  function loadFeedbackHandler() {
+    fetch("/api/feedback")
+      .then((response) => response.json())
+      .then((data) => {
+        setFeedbackItems(data.feedback);
+      });
+  }
+
+  return (
+    <div>
+      <h1>The Home Page</h1>
+      <form onSubmit={submitHandler}>
+        <div>
+          <label htmlFor="email">Your Email Address</label>
+          <input type="email" id="email" ref={emailInputRef} />
+        </div>
+        <div>
+          <label htmlFor="feedback">Your Feedback</label>
+          <textarea id="feedback" rows="5" ref={feedbackInputRef}></textarea>
+        </div>
+        <button>Send Feedback</button>
+      </form>
+      <hr />
+      <button onClick={loadFeedbackHandler}>Load Feedback</button>
+      <ul>
+        {feedbackItems.map((item) => (
+          <li key={item.id}>{item.text}</li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+export default HomePage;
+
+```
+
+## Using API Routes For Pre-Rendering Pages
+- `/feedback`に新たなページを追加し、プリレンダリングをする
+- Firebaseなどの外部APIでは、`getStaticProps`でデータフェッチングしたが、内部の独自のAPIRouteではfetch関数を使ってデータ取得してはいけない
+- 最終的に1つのサーバでじっこうされるため、APIRouteにロジックがあるなら、それを直接実行する。APIで叩かない
+<br/> →`buildFeedbackPath`, `extractFeedback`関数を`export`する
+
+```js filename="pages/feedback/index.js"
+import { buildFeedbackPath, extractFeedback } from "../api/feedback";
+
+function FeedbackPage(props) {
+  return (
+    <ul>
+      {props.feedbackItem.map((item) => (
+        <li key={item.id}>{item.text}</li>
+      ))}
+    </ul>
+  );
+}
+
+export async function getStaticProps() {
+  // バックエンド同士（同じホストで）内部でfetch()すべきでない
+  const filePath = buildFeedbackPath();
+  const data = extractFeedback(filePath);
+  return {
+    props: {
+      feedbackItem: data,
+    }
+  }
+}
+
+export default FeedbackPage;
+
+```

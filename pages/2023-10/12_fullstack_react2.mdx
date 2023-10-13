@@ -1,4 +1,4 @@
-# Fullstack React1
+# Fullstack React2
 
 ## フロントエンドのフォームを用意する
 - Reactでフォームを作成する
@@ -130,7 +130,7 @@ function handler(req, res) {
 - と思ったら、fetchAPIでタイポしていただけだった
 > chat-GPT: Next.jsでは自動でリクエストボディをパースしません 
 
-> タイポ野郎: リクエストのヘッダー情報で、`'Content-Type': 'application/json'`を指定しているのにもかかわらずですか？
+> 私: リクエストのヘッダー情報で、`'Content-Type': 'application/json'`を指定しているのにもかかわらずですか？
 
 > chat-GPT: 申し訳ありません、ヘッダー情報に `'Content-Type': 'application/json'` を指定している場合、リクエストボディのJSONデータを正しく送信しているはずです。その場合、Next.js APIルートがリクエストボディを自動的にJSONとしてパースするはずです。
 fetch APIのコードは正しいように見えますが、`header` の代わりに `headers` を使用する必要があります。以下のように修正してください：
