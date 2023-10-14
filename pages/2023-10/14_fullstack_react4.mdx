@@ -1,0 +1,82 @@
+# Fullstack React4
+## Creating & Using Dynamic API Routes
+- 動的APIRoutesを使ってみる ← すでに動的ページをやっているからほぼ一緒
+- `pages/api/[feedbackId].js`のようにファイルを作成する
+- `[feedbackId]`の値をを知るには`req.query.<feedbackId>`オブジェクトから参照
+- IDを特定したい系のHTTPは`GET, PUT, DELETE`などをif分岐
+
+```js filename="pages/api/[feedbackId].js"
+import { buildFeedbackPath, extractFeedback } from "./feedback";
+function handler(req, res) {
+  // if (req.method === 'DELETE') {}
+  const feedbackId = req.query.feedbackId;
+  const filePath = buildFeedbackPath();
+  const feedbackData = extractFeedback(filePath);
+  const selectedFeedback = feedbackData.find(
+    (feedback) => feedback.id === feedbackId
+  );
+  res.status(200).json({ feedback: selectedFeedback });
+}
+
+export default handler;
+```
+
+- ボタンを配置してルーティングする
+- handlerには`id`を指定したいため引数に渡すが、onClickには`bind()`を呼び出したもを割り当てる
+<br/> →現在レンダリングしているidで実行したい
+<br/> →onClickにはポインタで渡すため、JSX内では実行しない. `bind`しなければパラメータを渡すことができない
+<br/> →`bind()`は関数自体の実行はせず、将来の実行を予め設定しておくだけである`bind(this, params...)`
+
+```js filename="pages/feedback/index.js"
+import { Fragment, useState } from "react";
+import { buildFeedbackPath, extractFeedback } from "../api/feedback";
+
+function FeedbackPage(props) {
+  const [feedbackData, setFeedbackData] = useState();
+
+  const loadFeedbackHandler = (id) => {
+    fetch(`/api/${id}`)
+      .then((response) => response.json())
+      .then((data) => {
+        setFeedbackData(data.feedback);
+      });
+  };
+  return (
+    <Fragment>
+      {feedbackData && <p>{feedbackData.email}</p>}
+      <ul>
+        {props.feedbackItem.map((item) => (
+          <li key={item.id}>
+            {item.text}
+            <button onClick={loadFeedbackHandler.bind(null, item.id)}> 
+              Show Detail
+            </button>
+          </li>
+        ))}
+      </ul>
+    </Fragment>
+  );
+}
+
+export async function getStaticProps() {
+  ...
+}
+
+export default FeedbackPage;
+```
+※ ちなみに、`getStaticProps`で全データを取得しているため`props`からEmailは取得できて、
+今回、再度fetchAPIを叩く必要はない(動的APIRoutesのやり方を紹介)
+
+
+## APIフォルダの構造
+1. `[...allPrams].js`としてすべてのAPIRoutesを受け取る方法
+2. 今回のように`api/feedback.js`と`api/[feedbackId].js`のように静的と動的で分ける
+<br/>→Next.jsは自動判断で`api/feedback`のAPIが叩かれたときに、より具体的な`api/feedback.js`(静的API)の方を実行してくれる
+3. ページフォルダと同様、フォルダ分けして`index.js`をつかう
+```
+/pages 
+└ /api
+  └ /feedback
+    ├ index.js
+    └ [id].js
+```
