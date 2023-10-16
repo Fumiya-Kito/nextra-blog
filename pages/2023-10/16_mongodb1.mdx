@@ -1,0 +1,75 @@
+# MongoDB Atlasを使ってみる
+- Node.jsとの相性が良い
+- MongoDB Atlasはクラウド上で無料で(M0 Snadbox)利用できる
+- クラスターを立ち上げたら、ドライバーをインストール
+<br/> → `npm install mongodb`
+
+### mongodbに接続する
+- mongodbドライバーを使用する場所はAPIRoutesのバックエンドだけ
+<br/>→クライアントサイドでは絶対に実行しない
+- `MongoClient`をimportする
+- `connect()` → connectボタンを押下してURL生成
+  - username → username
+  - password → Database Accessから生成
+  - DBname → 新規作成なら任意(1レコード目の挿入時に作成)
+- IPアドレスの許可 → Network Accessからcurrnet IPを追加
+
+- URLにconnectした後の処理の記述方法として2種類ある
+1. 第二引数にコールバック関数を指定
+2. Promise chainでthenブロックにコールバック関数を追加
+```js filename="api/newsletter"
+import { MongoClient } from "mongodb";
+
+function handler(req, res) {
+  if (req.method === "POST") {
+    const data = req.body;
+
+    if (!userEmail || !userEmail.includes("@")) {
+      res.status(422).json({ message: "invalid" });
+      return;
+    }
+
+    MongoClient.connect(
+      "mongodb+srv://<username>:<password>@cluster0.7ehjbxn.mongodb.net/<dbname>?retryWrites=true&w=majority",
+    ).then((client) => {
+      // insert処理
+    })
+  } else {
+    res.status(405).json({ message: "Method Not Allowed" }); 
+  }
+
+}
+
+export default handler;
+```
+
+
+### insertする
+- コールバック関数内でinsert処理を行う
+- `insertOne`と`insertMany`がある
+<br/>→ key-valueオブジェクトを渡す
+```js
+async function handler(req, res) {
+  if (req.method === "POST") {
+    const userEmail = req.body.email;
+
+    if (!userEmail || !userEmail.includes("@")) {
+      res.status(422).json({ message: "invalid" });
+      return;
+    }
+
+    const client = await MongoClient.connect(
+      "URL",
+    )
+    
+    const db = client.db();
+    await db.collection('emails').insertOne({email: userEmail});
+    client.close();
+
+    res.status(201).json({ mssage: 'signed up'})
+
+  } else {
+    res.status(405).json({ message: "Method Not Allowed" });
+  }
+}
+```
