@@ -48,6 +48,9 @@ export default handler;
 - コールバック関数内でinsert処理を行う
 - `insertOne`と`insertMany`がある
 <br/>→ key-valueオブジェクトを渡す
+- `insertOne`からreturnされるオブジェクトにはmongodbが自動生成したunique idを`<returnObj>.insertedId`で取得できる
+<br/>→ 後にGETしたいときに使用する
+
 ```js
 async function handler(req, res) {
   if (req.method === "POST") {

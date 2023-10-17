@@ -1,0 +1,166 @@
+# Error Hnadling
+- try-catch構文を使ってmongodbアクセスをエラーハンドリングする
+<br/> ← async-awaitを使っているため、`Promise`なら`.catch`か
+
+```js filename="pages/api/newsletter"
+import { MongoClient } from "mongodb";
+
+async function connectDatabase() {
+  const client = await MongoClient.connect(
+    "mongodb+srv://kit-23:LOBqxOz5LmZLk5Fb@cluster0.7ehjbxn.mongodb.net/events?retryWrites=true&w=majority",
+  );
+
+  return client;
+}
+
+async function insertDocument(client, document) {
+  const db = client.db();
+  await db.collection('newsletters').insertOne(document);
+  
+}
+
+async function handler(req, res) {
+  if (req.method === "POST") {
+    const userEmail = req.body.email;
+
+    if (!userEmail || !userEmail.includes("@")) {
+      res.status(422).json({ message: "invalid" });
+      return;
+    }
+
+    let client;
+
+    try {
+      client = await connectDatabase();
+    } catch (err) {
+      res.status(500).json({message: 'Connecting to the database failed'});
+      return;
+    }
+    
+    try {
+      await insertDocument(client, { email: userEmail });
+      client.close();
+    } catch (err) {
+      res.status(500).json({message: 'Inserting data failed!'});
+      return;
+    }
+    
+    res.status(201).json({ mssage: 'signed up'})
+
+  } else {
+    res.status(405).json({ message: "Method Not Allowed" });
+  }
+
+}
+
+export default handler;
+
+```
+
+
+## 共通処理化する
+- `helpers/db-util.js`を作成
+- connect, insertを共通関数としてexportする
+
+```js filename="helpers/db-util.js"
+import { MongoClient } from "mongodb";
+
+export async function connectDatabase() {
+  const client = await MongoClient.connect(
+    "mongodb+srv://kit-23:LOBqxOz5LmZLk5Fb@cluster0.7ehjbxn.mongodb.net/events?retryWrites=true&w=majority"
+  );
+
+  return client;
+}
+
+export async function insertDocument(client, collection, document) {
+  const db = client.db();
+  const result = await db.collection(collection).insertOne(document);
+  return result;
+}
+
+export async function getAllDocuments(client, collection, sort) {
+  const db = client.db();
+
+  const documents = await db
+    .collection("comments")
+    .find()
+    .sort(sort)
+    .toArray();
+
+  return documents;
+}
+```
+
+```js filename="pages/api/newsletter"
+import { connectDatabase, insertDocument } from "@/helpers/db-util";
+...
+```
+
+```js filename="pages/api/comments/[eventId].js"
+import { connectDatabase, insertDocument, getAllDocuments } from "@/helpers/db-util";
+
+async function handler(req, res) {
+  const eventId = req.query.eventId;
+  console.log(req.body);
+
+  let client;
+  try {
+    client = await connectDatabase();
+  } catch (err) {
+    res.status(500).json({ message: 'Connecting to database failed'});
+    return;
+  }
+  
+  if (req.method === "POST") {
+    const { email, name, text } = req.body;
+    
+    // validation
+    if (
+      !email.includes("@") ||
+      !name ||
+      name.trim() === "" ||
+      !text ||
+      text.trim() === ""
+      ) {
+      res.status(422).json({ messgae: "Invalid input." });
+      client.close();
+      return;
+    }
+    const newComment = {
+      email,
+      name,
+      text,
+      eventId,
+    };
+    
+    let result;
+    try {
+      result = await insertDocument(client, 'comments', newComment);
+      newComment._id = result.insertedId;
+      res.status(201).json({ messga: "Added comment. ", comment: newComment });
+    } catch (err) {
+      res.status(500).json({ message: 'Inserting data failed'});
+    }
+    
+
+  } else if (req.method === "GET") {
+    let documents;
+    try {
+      documents = await getAllDocuments(client, 'comments', { _id: -1 })
+      res.status(200).json({ comments: documents });
+    } catch (err) {
+      res.status(500).json({ message: 'Getting commnets failed'});
+    }
+
+  } else {
+    res.status(405).json({ message: "Method Not Allowed" }); // POST メソッド以外は許可しない
+  }
+  console.log(client);
+  client.close();
+}
+
+export default handler;
+```
+
+※ APIRoutesにおいてDBアクセスが頻繁に行われる場合は、mongoDBのコネクションをcloseせず、"connection pooling" をつかうと良い
