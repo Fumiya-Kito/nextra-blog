@@ -7,7 +7,7 @@ import { MongoClient } from "mongodb";
 
 async function connectDatabase() {
   const client = await MongoClient.connect(
-    "mongodb+srv://kit-23:LOBqxOz5LmZLk5Fb@cluster0.7ehjbxn.mongodb.net/events?retryWrites=true&w=majority",
+    "mongodbdbURL",
   );
 
   return client;
@@ -67,7 +67,7 @@ import { MongoClient } from "mongodb";
 
 export async function connectDatabase() {
   const client = await MongoClient.connect(
-    "mongodb+srv://kit-23:LOBqxOz5LmZLk5Fb@cluster0.7ehjbxn.mongodb.net/events?retryWrites=true&w=majority"
+    "<mongoURL>"
   );
 
   return client;
