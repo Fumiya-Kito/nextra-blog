@@ -1,0 +1,173 @@
+# Full Blog【Next.js】
+
+### これまでの主な学習
+1. **file-based routing**
+2. **pre-Rendering**
+3. optimization
+4. **API Routes**
+5. context
+
+の総復習のために、ブログサイトを構築していく。
+主な作成ページ↓
+
+- HomePage
+- Contact page
+- Blog List
+- Blog Detail
+
+※ CSSは無しで記述していく
+
+```a {4-13}filename="ディレクトリ構造 (pages)"
+/ 
+├ components
+├ ...
+└ /pages
+  ├ /api
+    └ ...
+  ├ /contact
+    └ index.tsx
+  ├ /posts
+    ├ [slug].tsx
+    └ index.tsx
+  ├ _app.tsx
+  └ index.tsx
+```
+
+## Home Page
+```a {2-4} filename="ディレクトリ構造(homepage)"
+/ 
+├ components
+  ├ featured-posts.tsx
+  └ hero.tsx
+├ public
+  ├ ...
+  └ /images
+    ├ ...
+    └ /site
+      └ next.png
+```
+
+```tsx filename="components/hero.tsx"
+import Image from "next/image";
+
+function Hero() {
+  return (
+    <section>
+      <div>
+        <Image
+          src="/images/site/next.svg"
+          alt="My Image"
+          width={300}
+          height={300}
+        />
+      </div>
+      <h1>Hi, I'm Kito</h1>
+      <p>I blog about web development.</p>
+    </section>
+  );
+}
+
+export default Hero;
+```
+
+```tsx filename="index.tsx"
+// Heroをレンダリングする
+import Head from 'next/head'
+import Hero from '@/components/home-page/hero'
+
+export default function Home() {
+  return (
+    <>
+      <Head>
+        <title>Udemy Blog</title>
+        <meta name="description" content="Next.jsの総復習 (Udemy Course)" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <link rel="icon" href="/favicon.ico" />
+      </Head>
+      <Hero />
+    </>
+  )
+}
+
+```
+
+##  Adding Layout & Navigation
+
+```a {5-8} filename="ディレクトリ構造(layout)"
+/ 
+├ ...
+└ /components
+  ├ ...
+  └ /layout
+    ├ logo.tsx
+    ├ main-navigation.tsx
+    └ layout.tsx
+```
+
+```tsx filename="_app.tsx"
+// Layoutで囲む
+import Layout from '@/components/layout/layout'
+import '@/styles/globals.css'
+import type { AppProps } from 'next/app'
+
+export default function App({ Component, pageProps }: AppProps) {
+  return <Layout>
+      <Component {...pageProps} />
+    </Layout>
+}
+```
+
+```tsx filename="components/layout/layout.tsx"
+import MainNavigation from "./main-navigation";
+
+interface layoutProps {
+  children: React.ReactNode
+}
+
+function Layout(props: layoutProps) {
+  return (
+    <>
+      <MainNavigation />
+      <main>{props.children}</main>
+    </>
+  );
+}
+
+export default Layout;
+```
+
+```tsx filename="components/layout/main-navigation.tsx"
+import Logo from './logo';
+import Link from "next/link";
+
+function MainNavigation() {
+  return (
+    <header>
+      <Link href="/">
+        <Logo />
+      </Link>
+      <nav>
+        <ul>
+          <li>
+            <Link href="/posts">Posts</Link>
+          </li>
+          <li>
+            <Link href="/contact">Contact</Link>
+          </li>
+        </ul>
+      </nav>
+    </header>
+  );
+}
+
+export default MainNavigation;
+
+```
+
+```tsx filename="components/layout/logo.tsx"
+function Logo() {
+  return <div>Kito's Next Blog</div>
+}
+
+export default Logo;
+```
