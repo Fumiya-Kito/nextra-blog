@@ -1,0 +1,162 @@
+# Full Blog2【Next.js】
+
+## featured-posts
+- homepageのfeatured-postsコンポーネントを作成していく
+- とりあえずダミーデータを出す
+
+
+```a {2-4} filename="ディレクトリ構造(homepage)"
+/ 
+├ components
+  ├ 
+  └ 
+├ pages
+  ├ ...
+  └ posts
+    ├ post-item.tsx
+    └ posts-grid.tsx
+└ images
+  └ posts
+    └ ...
+```
+
+- まずPostの型定義（トップレベルに`types.ts`を作成）
+```tsx filename="/types.ts"
+export type Post = {
+  title: string,
+  image: string,
+  excerpt: string,
+  date: string,
+  slug: string
+}
+```
+
+```tsx filename="pages/index.tsx"
+import Head from "next/head";
+import Hero from "@/components/home-page/hero";
+import FeaturedPosts from "@/components/home-page/featured-posts";
+
+export default function Home() {
+  const DUMMY_POSTS = [
+    {
+      slug: "getting-started1",
+      title: "getting-started1",
+      image: "vercel.svg",
+      excerpt: "NextJS is a the React framework for production",
+      date: "2022-02-01",
+    },
+    {
+      slug: "getting-started2",
+      title: "getting-started2",
+      image: "vercel.svg",
+      excerpt: "NextJS is a the React framework for production",
+      date: "2022-02-01",
+    },
+    {
+      slug: "getting-started3",
+      title: "getting-started3",
+      image: "vercel.svg",
+      excerpt: "NextJS is a the React framework for production",
+      date: "2022-02-01",
+    },
+  ];
+
+  return (
+    <>
+      <Head>
+        <title>Udemy Blog</title>
+        <meta name="description" content="Next.jsの総復習 (Udemy Course)" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <link rel="icon" href="/favicon.ico" />
+      </Head>
+      <Hero />
+      <FeaturedPosts posts={DUMMY_POSTS} />
+    </>
+  );
+}
+```
+
+
+```tsx filename="components/home-page/featured-posts.tsx"
+import { Post } from "@/types";
+import PostsGrid from "../posts/posts-grid";
+
+function FeaturedPosts({ posts } : { posts: Post[]}) {
+
+
+  return (
+    <section>
+      <h2>Featured Posts</h2>
+      <PostsGrid posts={posts}/>
+    </section>
+  )
+}
+
+export default FeaturedPosts;
+```
+
+
+```tsx filename="components/posts/posts-grid.tsx"
+import { Post } from '@/types';
+import PostItem from './post-item';
+
+interface PostsGridProps {
+  posts: Post[],
+}
+
+function PostsGrid(props: PostsGridProps) {
+  const { posts } = props;
+
+  return <ul>
+    {posts.map(post => <PostItem key={post.slug} post={post}/>)}
+  </ul>
+}
+
+export default PostsGrid;
+```
+
+```tsx filename="components/posts/posts-item.tsx"
+import Image from "next/image";
+import Link from "next/link";
+
+import { Post } from "@/types";
+
+interface PostItemProps {
+  post: Post;
+}
+
+function PostItem(props: PostItemProps) {
+  const { title, image, excerpt, date, slug } = props.post;
+  const formattedDate = new Date(date).toLocaleDateString("en-US", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+  const imagePath = `/images/posts/${slug}/${image}`;
+  const linkPath = `/posts/${slug}`;
+
+  return (
+    <li>
+      <Link href={linkPath}>
+        <div>
+          <Image
+            src={imagePath}
+            alt={title}
+            width={300}
+            height={200}
+            layout="responsive"
+          />
+        </div>
+        <div>
+          <h3>{title}</h3>
+          <time>{formattedDate}</time>
+          <p>{excerpt}</p>
+        </div>
+      </Link>
+    </li>
+  );
+}
+
+export default PostItem;
+
+```
