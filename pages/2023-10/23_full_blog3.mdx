@@ -1,0 +1,132 @@
+# Full Blog3【Next.js】
+
+## All Posts Page
+
+
+```a {7-9, 14} filename="ディレクトリ構造(homepage)"
+/ 
+├ components
+  ├ 
+  └ /posts
+    ├ ...
+    ├ all-posts.tsx
+    └ /post-detail
+      ├ post-content.tsx
+      └ post-header.tsx
+├ pages
+  ├ ...
+  └ posts
+    ├ index.tsx
+    └ [slug].tsx
+```
+
+
+```tsx filename="pages/posts/index.tsx"
+import AllPosts from "@/components/posts/all-posts";
+
+function AllPostsPage() {
+  const DUMMY_POSTS = [
+    {
+      slug: "getting-started1",
+      title: "getting-started1",
+      image: "vercel.svg",
+      excerpt: "NextJS is a the React framework for production",
+      date: "2022-02-01",
+    },
+    {
+      slug: "getting-started2",
+      title: "getting-started2",
+      image: "vercel.svg",
+      excerpt: "NextJS is a the React framework for production",
+      date: "2022-02-01",
+    },
+    {
+      slug: "getting-started3",
+      title: "getting-started3",
+      image: "vercel.svg",
+      excerpt: "NextJS is a the React framework for production",
+      date: "2022-02-01",
+    },
+  ];
+
+  return <AllPosts posts={DUMMY_POSTS}/>
+}
+
+export default AllPostsPage;
+```
+
+
+```tsx filename="components/posts/all-posts.tsx"
+import { Post } from "@/types";
+import PostsGrid from "./posts-grid";
+
+function AllPosts(props: { posts: Post[] }) {
+  return <section>
+    <h1>All Posts</h1>
+    <PostsGrid posts={props.posts}/>
+  </section>
+}
+
+export default AllPosts;
+```
+
+
+## Post Detail Page
+- ブログ詳細ページではマークダウン記法を対応させる
+<br/> → `npm install react-markdown` パッケージを使う
+<br/> → `ReactMarkdown`コンポーネントとして使える
+
+```tsx filename="pages/posts/[slug].tsx"
+import PostContent from "@/components/posts/post-detail/post-content";
+
+function PostDetailPage() {
+  return <PostContent />
+}
+
+export default PostDetailPage;
+```
+
+```tsx {1, 18} filename="components/posts/post-detail/post-content.tsx"
+import ReactMarkdown from 'react-markdown';
+import PostHeader from "./post-header";
+
+const DUMMY_POST = {
+  slug: "getting-started1",
+  title: "getting-started1",
+  image: "vercel.svg",
+  excerpt: "NextJS is a the React framework for production",
+  date: "2022-02-01",
+  content: "# This is a first post",
+};
+
+function PostContent() {
+  const imagePath = `/images/posts/${DUMMY_POST.slug}/${DUMMY_POST.image}`
+
+  return <article>
+    <PostHeader title={DUMMY_POST.title} image={imagePath} />
+    <ReactMarkdown>{DUMMY_POST.content}</ReactMarkdown>
+    
+  </article>
+}
+
+export default PostContent;
+```
+
+```tsx filename="components/posts/post-detail/post-header.tsx"
+import Image from "next/image";
+
+interface postHeaderProps {
+  title: string,
+  image: string,
+}
+
+function PostHeader(props: postHeaderProps) {
+  const { title, image } = props;
+  return <header>
+    <h1>{title}</h1>
+    <Image src={image} alt={title} width={200} height={150}/>
+  </header>
+}
+
+export default PostHeader;
+```
