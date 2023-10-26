@@ -1,0 +1,137 @@
+# fetchAPIの使い方
+
+## 参照
+- [Safe Data Fetching in Modern JavaScript](https://www.builder.io/blog/safe-data-fetching)
+- [【JavaScript】プロフェッショナルなfetch apiの使い方【英語記事】](https://www.youtube.com/watch?v=TXYxO7hYhM4&t=291s)
+
+## よくある書き方（間違い）
+```js filename="シンプル"
+const res = await fetch('/user')
+const user = await res.json()
+```
+↑しかし、エラーハンドリングをしていない
+
+```js filename="try-catchする"
+try {
+  const res = await fetch('/user')
+  const user = await res.json()
+} catch (err) {
+  // Handle the error
+}
+```
+↑しかし、`res.status === 200`以外`400`,`401`,`404`,`500`,も正常系(fetchAPIは失敗していないため`throw error`しない)
+
+```js filename="switchでゴリ押しする(uglier way)"
+try {
+  const res = await fetch('/user')
+
+  if (!res.ok) {
+    switch (res.status) {
+      case 400: /* Handle */ break
+      case 401: /* Handle */ break
+      case 404: /* Handle */ break
+      case 500: /* Handle */ break
+    }
+  }
+
+  // User *actually* is the user this time
+  const user = await res.json()
+} catch (err) {
+  // Handle the error
+}
+```
+↑ 正しいが、開発体験が悪い(ハンドルのロジックが散らかっているし、量が多い)
+
+```js filename="not okならthrow Errorする"
+try {
+  const res = await fetch('/user')
+
+  if (!res.ok) {
+    throw new Error('Bad fetch response')
+  }
+
+  const user = await res.json()
+} catch (err) {
+  // Handle the error
+}
+```
+↑ これだと新たにErrorインスタンスが生成されて渡されるためにレスポンス情報が消失してしまう
+
+```js filename="res情報を渡したいならErrorを継承してResponseErrorを作る"
+class ResponseError extends Error {
+  constructor(message, res) {
+    super(message)
+    this.response = res
+  }
+}
+
+try {
+  const res = await fetch('/user')
+
+  if (!res.ok) {
+    throw new ResponseError('Bad fetch response', res)
+  }
+
+  const user = await res.json()
+} catch (err) {
+  // Handle the error, with full access to status and body
+  switch (err.response.status) {
+    case 400: /* Handle */ break
+    case 401: /* Handle */ break
+    case 404: /* Handle */ break
+    case 500: /* Handle */ break
+  }
+}
+```
+↑ エラーを一箇所にまとめられたが、結局、量が多く開発体験悪い
+
+
+
+```js filename="wrapperを作成し、使いたい場所に提供する"
+class ResponseError extends Error {
+  constructor(message, res) {
+    this.response = res
+  }
+}
+
+export async function myFetch(...options) {
+  const res = await fetch(...options)
+  if (!res.ok) {
+    throw new ResponseError('Bad fetch response', res)
+  }
+  return res
+}
+```
+↓
+```js filename="使う場合"
+try {
+  const res = await myFetch('/user')
+  const user = await res.json()
+} catch (err) {
+  // Handle issues via error.response.*
+}
+```
+
+## OSSで解決する
+
+### Axios
+- 人気のデータフェッチングライブラリ
+- レスポンス情報を自動でerrorハンドリングしてくれる
+```js filename="axios"
+try {
+  const { data } = await axios.get('/user')
+} catch (err) {
+  // Handle issues via error.response.*
+}
+```
+
+### Redaxios
+- 一言でいうと「よりモダンなAxios」
+- Axiosはいいライブラリだがデータフェッチングだけにしてはサイズが大きすぎる
+- Axiosが`11kb`に対し、Redaxiosなら`1kb`以下
+- 使い方が同じでimport文を変更するだけ
+```js filename="Redaxios"
+import axios from 'redaxios'
+// use as you would normally
+```
+
