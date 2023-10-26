@@ -112,26 +112,5 @@ try {
 }
 ```
 
-## OSSで解決する
 
-### Axios
-- 人気のデータフェッチングライブラリ
-- レスポンス情報を自動でerrorハンドリングしてくれる
-```js filename="axios"
-try {
-  const { data } = await axios.get('/user')
-} catch (err) {
-  // Handle issues via error.response.*
-}
-```
-
-### Redaxios
-- 一言でいうと「よりモダンなAxios」
-- Axiosはいいライブラリだがデータフェッチングだけにしてはサイズが大きすぎる
-- Axiosが`11kb`に対し、Redaxiosなら`1kb`以下
-- 使い方が同じでimport文を変更するだけ
-```js filename="Redaxios"
-import axios from 'redaxios'
-// use as you would normally
-```
 
