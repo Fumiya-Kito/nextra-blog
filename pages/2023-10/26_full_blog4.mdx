@@ -31,24 +31,17 @@ isFeatured: true
 - `npm install gray-matter` markdownファイルを読み込み、メタデータと本体を分割するライブラリ
 - 読み込むための関数として`posts-util.ts`を用意する
 - `matter()`はオブジェクトを返却し`data: { [key: string]: any}`, `content: string`プロパティを持つ
-- ※型推論でかなり苦戦。要復習
+- ※型推論で少し苦戦。
+<br/>→ `matter()`は`{data: { [key: string]: any}}`を返すため`postData`にスプレッド演算子は使わず、しっかりとプロパティ指定する
+<br/>→ `getPostData`呼び出し時に型推論`Post[]`を指定する
+<br/>→ サードパーティーライブラリを使うときは型推論が抽象化されているため注意。具体化しないと型推論でコンパイルエラー
 
-```ts filename=""
+```ts {5, 18-22, 30} filename="lib/posts-util.ts"
 import fs from "fs";
 import path from "path";
 
 import matter from "gray-matter";
-
-type PostMetaData = {
-  title: string;
-  date: string;
-  image: string;
-  excerpt: string;
-  isFeatured: boolean;
-};
-type MdContent = { slug: string; content: string };
-type PostData = PostMetaData & MdContent;
-
+import { Post } from "@/types";
 
 const postsDirectory: string = path.join(process.cwd(), "posts");
 
@@ -73,7 +66,7 @@ function getPostData(fileName: string) {
 
 export function getAllPosts() {
   const postFiles = fs.readdirSync(postsDirectory);
-  const allPosts: PostData[] = postFiles.map((postFile) => getPostData(postFile));
+  const allPosts: Post[] = postFiles.map((postFile) => getPostData(postFile));
   const sortedPosts = allPosts.sort((postA, postB) => (postA.date > postB.date ? -1 : 1));
 
   return sortedPosts;
