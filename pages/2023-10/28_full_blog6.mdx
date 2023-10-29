@@ -1,0 +1,82 @@
+# Full Blog6【Next.js】
+
+## Rendering Dynamic Post Pages & Paths
+- `posts-util.ts`のデータ取得処理`getPostData`をより一般化しexportする
+- ← PostDetailPageでも使用したいため
+- ← filenameで探すのではなく、mdファイルを特定するための変数`postIdentifier`にする
+
+```ts {1-5} filename="lib/posts-util.ts"
+export function getPostData(postIdentifier: string): Post {
+  // const postSlug = fileName.replace(/\.md$/, "");
+  const postSlug = postIdentifier.replace(/\.md$/, "");
+  // const filePath = path.join(postsDirectory, fileName);
+  const filePath = path.join(postsDirectory, `${postSlug}.md`);
+  const fileContent = fs.readFileSync(filePath, "utf-8");
+  const { data, content } = matter(fileContent);
+
+  const postData = {
+    ...
+  };
+  return postData;
+}
+```
+
+## DetailPageで呼び出す
+```tsx filename="pages/posts/[slug.tsx]"
+import PostContent from "@/components/posts/post-detail/post-content";
+import { getPostData, getPostsFiles } from "@/lib/posts-util";
+import { Post } from "@/types";
+import { ParsedUrlQuery } from "querystring";
+
+interface Params extends ParsedUrlQuery {
+  slug: string
+}
+
+function PostDetailPage(props: {post: Post}) {
+  return <PostContent post={props.post}/>
+}
+
+export function getStaticProps(context: { params: Params}) {
+  const { params } = context;
+  const { slug } = params;
+
+  const postData = getPostData(slug);
+  return {
+    props: {
+      post: postData,
+    },
+    revalidate: 600
+  }
+}
+
+export function getStaticPaths() {
+  const postFilenames = getPostsFiles();
+
+  const slugs = postFilenames.map((filename) => filename.replace(/\.md$/, ''));
+
+  return {
+    paths: slugs.map(slug => ({ params: { slug: slug }})),
+    fallback: false
+  };
+}
+
+export default PostDetailPage;
+```
+
+```tsx filename="components/posts/post-detail/post-content.tsx"
+import ReactMarkdown from 'react-markdown';
+import PostHeader from "./post-header";
+import { Post } from '@/types';
+
+function PostContent({ post }: { post: Post}) {
+  const imagePath = `/images/posts/${post.slug}/${post.image}`
+
+  return <article>
+    <PostHeader title={post.title} image={imagePath} />
+    <ReactMarkdown>{post.content}</ReactMarkdown>
+    
+  </article>
+}
+
+export default PostContent;
+```
