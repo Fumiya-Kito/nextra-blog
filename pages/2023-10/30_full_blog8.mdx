@@ -1,0 +1,150 @@
+# Full Blog7【Next.js】
+
+
+## Sending Data From The Client To The API Route
+- フロントエンドのformだけ作成したため、APIRoutesを実装していく
+
+```tsx filename="components/contact-form.tsx"
+import React, { useState } from "react";
+
+function ContactForm() {
+  const [enteredEmail, setEnteredEmail] = useState<string>();
+  const [enteredName, setEnteredName] = useState<string>();
+  const [enteredMessage, setEnteredMessage] = useState<string>();
+
+  const sendMessageHandler = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    fetch("/api/contact", {
+      method: "POST",
+      body: JSON.stringify({
+        email: enteredEmail,
+        name: enteredName,
+        message: enteredMessage,
+      }),
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+  };
+
+  return (
+    <section>
+      <h1>How Cai I help you?</h1>
+      <form onSubmit={sendMessageHandler}>
+        <div>
+          <label htmlFor="email">Your Email</label>
+          <input
+            type="email"
+            id="email"
+            required
+            value={enteredEmail}
+            onChange={(event) => setEnteredEmail(event.target.value)}
+          />
+        </div>
+        <div>
+          <label htmlFor="name">Your Name</label>
+          <input
+            type="text"
+            id="name"
+            required
+            value={enteredName}
+            onChange={(event) => setEnteredName(event.target.value)}
+          />
+        </div>
+        <div>
+          <label htmlFor="message">Your Message</label>
+          <textarea
+            id="message"
+            rows={5}
+            value={enteredMessage}
+            onChange={(event) => setEnteredMessage(event.target.value)}
+          ></textarea>
+        </div>
+
+        <div>
+          <button>Send Message</button>
+        </div>
+      </form>
+    </section>
+  );
+}
+
+export default ContactForm;
+```
+
+## Storing Messages With MongoDB In A Database
+- バックエンドでコンソールログするだけだったため、データをMongoDBに格納する
+- `npm i mongodb`
+
+```tsx filename=""
+import { ResponseError } from "@/types";
+import { MongoClient, ObjectId } from "mongodb";
+import type { NextApiRequest, NextApiResponse } from "next";
+
+type Data = {
+  message: string;
+  body?: {
+    id?: ObjectId,
+    email: string;
+    name: string;
+    message: string;
+  };
+};
+
+
+
+async function handler(req: NextApiRequest, res: NextApiResponse<Data>) {
+  if (req.method === "POST") {
+    const { email, name, message } = req.body;
+
+    if (
+      !email ||
+      !email.includes("@") ||
+      !name ||
+      name.trim() === "" ||
+      !message ||
+      message.trim() === ""
+    ) {
+      res.status(422).json({ message: "InValid input." });
+      return;
+    }
+    
+    // send it in a DB
+    const newMessage: Data["body"] = {
+      email,
+      name,
+      message,
+    };
+    
+    let client: MongoClient;
+    try {
+      client = await MongoClient.connect(
+        "mongodb+srv://<USER>:<PASS>@cluster0.7ehjbxn.mongodb.net/<DB_NAME>?retryWrites=true&w=majority"
+        );
+      } catch (err) {
+        if (err instanceof ResponseError) {
+          res.status(err.response.status).json({ message: err.message });
+        } else {
+          res.status(500).json({ message: 'Something went wrong!' });
+        }
+        return;
+      }
+      
+    const db = client.db();
+    try {
+      const result = await db.collection('message').insertOne(newMessage);
+      newMessage.id = result.insertedId 
+    } catch (err) {
+      client.close();
+      res.status(500).json({ message: 'Something went wrong!' });
+      return;
+    }
+
+    client.close();
+    res.status(201).json({ message: "Success", body: newMessage });
+  }
+}
+
+export default handler;
+```
