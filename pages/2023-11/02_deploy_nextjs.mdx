@@ -1,0 +1,17 @@
+# Deploy Next.js
+
+## deployする際のビルド方法
+### 通常のビルド、
+- `next build` ← `npm run build`をつかってビルドする方法
+- プロダクトに最適化したバンドルとサーバーサイドアプリケーションを構築する
+- 重要なのはNodeJSサーバーが必要とするビルド方法であるということ
+<br/> →ビルドした成果物を静的なホストに置くことはできない。NodeJSを実行できるホストである必要がある
+- revalidateを指定していないページがある場合、新しくビルドするたびに、Redeployする必要がある
+
+### Full Staticビルド
+- `next export`というコマンドで実行する
+- 完全に静的なサイト(HTML, CSS, JSのみ)としてビルドする
+- NodeJSサーバーを必要としない
+- より簡単に、費用がやすい静的ホストでデプロイできる
+- APIRoutes, revalidate, fallback等は使えない
+- revalidateが使えないためページが増えるたびにredeployする必要がある
