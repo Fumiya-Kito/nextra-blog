@@ -1,0 +1,23 @@
+# Deploy Next.js
+
+## デプロイ手順
+1. ページの再チェック
+> ヘッドメタデータをすべてのページに追加しているか。コンソールログ文を削除などコードの縮小。依存関係に過不足はないか。
+
+2. 設定のチェック
+> 環境変数は正しく設定されているか。devとprodでDBを動的に変更するなど。GoogleMapsSDKなどのAPIキーは通常、環境変数を利用する
+
+```js filename="MongoDBのapi"
+...
+// ハードコードしてる
+try {
+  client = await MongoClient.connect(
+    'mongodb+srv://maximilian:2YkcXq43KyPk0vqp@cluster0.ntrwp.mongodb.net/my-site?retryWrites=true&w=majority'
+  );
+} catch (error) {
+  res.status(500).json({ message: 'Could not connect to database.' });
+  return;
+...
+```
+
+3. ローカルマシンでビルドしプロダクトをテスト環境でテストする
