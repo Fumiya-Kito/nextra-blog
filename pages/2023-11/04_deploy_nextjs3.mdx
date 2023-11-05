@@ -1,0 +1,133 @@
+# Deploy Next.js3
+
+## コードの最適化をチェックする
+- `NextImage`を使っているか（画像を`rawData`で読み込むのはサイズが大きすぎるし、タイミングの最適化もされていない）
+- すべてのページにメタデータが設定されているか
+
+## The NextJS Config File & Working With Environment Variables
+- 環境変数はNextjsにbuiltinでサポートしている
+- すでにデフォルトの設定でアプリを動かしていた
+- 調整したい場合`next.config.js`にて設定する(**プロジェクト直下に追加する必要がある**)
+
+### next.config.js
+> [next.config.js docs](https://nextjs-ja-translation-docs.vercel.app/docs/api-reference/next.config.js/introduction)
+- デフォルト設定で問題ないことが多いが、デプロイされた環境を想定して設定する必要がある
+- 環境変数、独自のWebpackを追加することやbasePathやリダイレクトの設定などを行う
+- 今回やりたいことは、mongoDBの接続先URLを環境変数化すること
+<br/>→ dev環境とprod環境でDBを変更したいのが通常
+- 環境変数化することで、デプロイ時に簡単に値をオーバーライドできる
+
+```js filename="next.config.js"
+module.exports = {
+  env: {
+   mongodb_username: '****',
+   mongodb_password: '****',
+   mongodb_cluster: 'cluster0',
+   mongodb_database: 'udemy-blog',
+  }
+};
+
+```
+- サーバーサイドNodejsのファイルとなる
+- javascriptオブジェクトを`export`する(nodeでは`module.exports`)
+- `env`キーを追加し、値はオブジェクト
+- このオブジェクトのpropは自由に設定する
+- Next App内で使用する際は`process.env.someKey`で取り出す
+(processはnodejsのグローバルオブジェクト)
+
+
+```js {27, 31} filename="pages/api/contact.js"
+import { MongoClient } from 'mongodb';
+
+async function handler(req, res) {
+  if (req.method === 'POST') {
+    const { email, name, message } = req.body;
+
+    if (
+      !email ||
+      !email.includes('@') ||
+      !name ||
+      name.trim() === '' ||
+      !message ||
+      message.trim() === ''
+    ) {
+      res.status(422).json({ message: 'Invalid input.' });
+      return;
+    }
+
+    const newMessage = {
+      email,
+      name,
+      message,
+    };
+
+    let client;
+
+    const connectionStr = `mongodb+srv://${process.env.mongodb_username}:${process.env.mongodb_password}@${process.env.mongodb_cluster}.7ehjbxn.mongodb.net/${process.env.mongodb_database}?retryWrites=true&w=majority`
+
+    try {
+      client = await MongoClient.connect(
+        connectionStr
+      );
+    } catch (error) {
+      res.status(500).json({ message: 'Could not connect to database.' });
+      return;
+    }
+
+    const db = client.db();
+
+    try {
+      const result = await db.collection('messages').insertOne(newMessage);
+      newMessage.id = result.insertedId;
+    } catch (error) {
+      client.close();
+      res.status(500).json({ message: 'Storing message failed!' });
+      return;
+    }
+
+    client.close();
+
+    res
+      .status(201)
+      .json({ message: 'Successfully stored message!', message: newMessage });
+  }
+}
+
+export default handler;
+
+```
+
+以上で`npm run dev`をした場合＝dev環境で問題なく動作する。
+
+ただし、ここでやりたいのはdevとprodで環境変数を分けること。以下のフェーズを持つ`next/constants`を使用する。
+1. PHASE_EXPORT
+2. PHASE_DEVLOPMENT_SERVER
+3. PHASE_PRODUCTION_BUILD
+4. PHASE_PRODUCTION_SERVER
+
+- `module.exports`する対象を関数に変更し(returnしなければいけないのはJSオブジェクト)、`phase`引数を持たせ、これで場合分を行う
+```js filename="next.config.js"
+const { PHASE_PRODUCTION_SERVER } = require('next/constants')
+
+module.exports = (phase) => {
+  if (phase === PHASE_PRODUCTION_SERVER) {
+    return {
+      env: {
+       mongodb_username: '***',
+       mongodb_password: '***',
+       mongodb_cluster: 'cluster1',
+       mongodb_database: 'prod-udemy-blog',
+      }
+    }
+  }
+
+  return {
+    env: {
+     mongodb_username: '***',
+     mongodb_password: '***',
+     mongodb_cluster: 'cluster0',
+     mongodb_database: 'dev-udemy-blog',
+    }
+  }
+};
+```
