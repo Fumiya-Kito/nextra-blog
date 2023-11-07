@@ -1,0 +1,60 @@
+# Deploy Next.js5
+
+## Next.jsをデプロイする
+- NextJS Appがデプロイされるというのは何を指すのか？
+- `npm run build`すると`.next`が作成される。これは本番環境用の出力ファイル。
+- リモートマシン上にnodejsがインストールされ、この「nodeJSサーバー」上にローカルにあるプロジェクト全体が乗っかる
+- 「nodeJSサーバー」上で`npm istall`コマンドで依存関係を取得後、`next start`で本番サーバーを起動する
+- この際に参照されるアプリケーションがbuildのアウトプットである`.next`フォルダである
+
+- `next dev`ではキャッシュされていないページはその都度ビルドされる（その場で変更差分を反映させたいため）
+- `next start`ではビルド済みのためすばやくページを表示する。が差分はもう一度全体をbuildしないと反映されない
+- 実際にデプロイ先のリモートコンピュータで行われることを開発PCでも再現できる（同じことをしているだけ）
+
+## そのリモートコンピュータ（ホスティング先）をどうするか？
+- ホスティングサービスはたくさんあるが、インフラを自分で構築しないのであれば（PaaSを利用）、nodeJSをサポートしている必要がある
+- Dockerや使ったり、OSから自前でインストールしていくならVPSといったサービスを利用するのもあり
+- 1番有名・簡単なのはVercel(Nextの開発元)
+- ついでNetrifyもNextJSをサポートしていると公言しているサービスの一つ
+- Vercelは一回デプロイしてしまえば、mainブランチにpushするだけで自動で際デプロイしてくれる
+
+## Vercelにデプロイする
+githubに上げてしまえば、レポジトリを指定してぽちぽちするだけ
+```shell
+git add .
+git commit -m "some message"
+git push origin main <URL> # 2回目以降は自動でデプロイ
+```
+
+## よくある注意点
+- mongoDB AtlasなどDBサービスを使う場合はアクセスを許可するIPを設定する
+<br/> → ローカルとプロダクションサーバでIPが異なるため再設定が必要
+- 環境変数をもつ`next.config.js`ファイルをgitignoreして、Vercelなどのホスティングサービスで環境変数を設定する
+<br/>→ Vercelはレポジトリを見て変数を利用するが、publicでもprivate(Team開発)でもgithubにパスワード等が晒されるのはダメ
+
+
+## next export
+- サーバーなしの静的アプリを作りたい場合、`next export`を使う
+- 軽量なWebページがNextで作成可能
+- package.jsonのscriptにexportを追加する必要がある
+- 通常のbuildもする必要がある
+```js
+{
+  ...
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "export": "next export"
+  },
+  ...
+}
+```
+
+```shell
+npm install
+npm run build
+npm run export
+```
+上記のようにコマンドを実行すると、`out/_next`フォルダがプロジェクト直下に作成される
+<br/>outフォルダは静的ページをどんな静的ホストにもデプロイできる
