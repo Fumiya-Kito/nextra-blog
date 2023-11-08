@@ -1,0 +1,67 @@
+# 重複排除【Vanila-JS】
+
+### やりたいこと
+- 外部ファイルから取得した以下のようなオブジェクト配列`Array<Object>`をDBにインサートしたい
+- その際、プライマリキー重複を検証し警告・インサート処理を中止したい
+```js
+const objArray = [
+  {id: 1, name: 'Taro'},
+  {id: 2, name: 'Jiro'},
+]
+```
+
+### 問題になったこと → 配列要素がオブジェクト型だと意外と大変
+- 配列要素の重複排除する（あるいは重複があるか調べる）方法`Set`を用いる方法がある
+```js filename="Setを使って重複を削除"
+const numbersSet = new Set([1, 2, 3, 1, 2]);
+const uniqueNumbersArray = Array.from(numbers); // [1, 2, 3]
+```
+
+- しかし、この方法は要素がプリミティブ型のときに限る（今回は要素が`Object`）
+- オブジェクトの内容が全く同じでも参照先が異なるため`Set`では重複を排除してくれない
+```js
+const objArray = [
+  {id: 1, name: 'Taro'},
+  {id: 2, name: 'Jiro'},
+  {id: 3, name: 'Saburo'},
+  {id: 1, name: 'Taro'}, // objArray[0]とは違う参照先
+  {id: 2, name: 'Jiro'},
+]
+
+const objSet = new Set(objArray);
+const notUnique = Array.from(objSet); // 重複は排除されない
+```
+
+## 配列の要素が参照型の場合はMapをつかう
+- `Map`をつかってキーに`id`割り当てる
+- Mapはキーが重複した時点その要素は無視されるため、`id`重複を排除できる
+```js
+const users = [
+  {id: 1, name: 'Taro'},
+  {id: 2, name: 'Jiro'},
+  {id: 2, name: 'Jiro'},
+]
+const userMap = new Map(users.map(user => [user.id, user])); // Map(2): { 1 => {id: 1, name: 'Taro'}, 2 => {id: 2, name: 'Jiro'}}
+const uniqueUsersArray = Array.from(userMap.values()); // [{id: 1, name: 'Taro'}, {id: 2, name: 'Jiro'}]
+
+if (users.length !== userMap.size) {
+  console.log('重複あり');
+}
+```
+
+
+### 複合PKの場合(今回そうだったため)
+プライマリキーが複数の場合は`Map`のキーに結合した値などを割り当てる
+```js
+const users = [
+  {pk1: 1, pk2: 1, name: 'Taro'},
+  {pk1: 1, pk2: 2, name: 'Jiro'},
+  {pk1: 1, pk2: 1, name: 'Saburo'}, // PK重複
+]
+const userMap = new Map(users.map(user => [`${user.pk1}|${user.pk2}` , user])); // Map(2): { '1|1' => {pk1: 1, pk2: 1, name: 'Taro'}, '1|2' => {pk1: 1, pk2: 2, name: 'Jiro'}
+const uniqueUsersArray = Array.from(userMap.values());
+
+if (users.length !== userMap.size) {
+  console.log('重複あり');
+}
+```
