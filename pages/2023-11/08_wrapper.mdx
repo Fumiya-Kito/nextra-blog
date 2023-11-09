@@ -1,0 +1,89 @@
+# 関数をWrapする【JS】
+
+## やりたいこと
+- DBアクセスの際にローディングアニメーションを表示させたい
+- この際に毎回ローディングの表示、非表示を関数呼び出ししていたため、Wrapperを作りたい
+```js filename="やりたいことイメージ"
+showLoading(); // Loadingスピナーを表示
+DbInsert(); // DBインサート処理
+hideLoading(); // Loadingスピナーを非表示
+
+showLoading();
+asyncGetData(); // Promise<Data>が帰ってくるイメージ
+hideLoading();
+// DB処理で毎回呼び出すのは面倒
+```
+
+### 同期関数をWrapする
+- DBアクセス、データフェッチングといった処理は基本的に`Promise`や`async/await`が使われるがまずは同期処理
+```js
+const wrapperFunc = function(syncFunc) {
+  console.log("syncFuncが始まります")
+  syncFunc();
+  console.log("syncFuncが終わりました");
+}
+
+/* 注意点1 ポインタを渡す、実行しない*/
+wrapperFunc(syncDbInsert);
+
+/* 注意点2  ポインタを渡すため、引数がある関数のときはbindした関数(thisと実引数が確定しているポインタ)を渡す */
+const pkId = '001'
+wrapperFunc(syncDbUpdate.bind(null, pkId));
+```
+
+### 非同期処理をWrapする
+- Loadingアニメーションを終了するまで表示させたい場合、非同期処理にする必要がある
+```js filename="NG, showした瞬間hideされる"
+const wrapperFunc = function(syncFunc) {
+  syncShowLoading();
+  syncFunc();
+  /* syncHideLoadingはsyncFuncの実行終了を待たない*/
+  syncHidLoading();
+}
+
+wrapperFunc(syncDbInsert);
+```
+```js filename="setTimeout, 非同期API"
+const wrapperFunc = function(syncFunc) {
+  syncShowLoading();
+  setTimeout(() => {
+    syncFunc();
+    syncHidLoading();
+  }, 0)
+}
+
+wrapperFunc(syncDbInsert);
+```
+```js filename="Promise"
+const wrapperFunc = function(promise) {
+  showLoading();
+  promise.finally(() => hideLoading());
+}
+
+wrapperFunc(
+  asyncFetchData().then(data => console.log(data)).catch(err => console.log(err));
+);
+```
+```js filename="async/await"
+const wrapperFunc = async function(promise) {
+  showLoading();
+  try {
+    const data = await promise;
+    return data;
+  } catch (err) {
+    console.log(err);
+  } finally {
+    hideLoading();
+  }
+}
+
+const fetchDataWithLoading = async () => {
+  const data = await wrapperFunc(asyncFetchData())
+  console.log(`${data}を取得しつつ、ローディングも取得中表示・終了すると非表示となる`)
+}
+```
+
+
+
+### 参照
+[LogRocket: How to write a declarative JavaScript promise wrapper](https://blog.logrocket.com/write-declarative-javascript-promise-wrapper/)
