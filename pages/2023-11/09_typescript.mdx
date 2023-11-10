@@ -1,0 +1,55 @@
+# TypeScript 
+
+## TypeScriptとはなにか?
+- TypeScript is a JavaScript Superset
+<br/> → JSをベースに新しい機能や利点を追加した言語
+<br/> → 唯一の欠点はJSのようにブラウザやNodeなどのランタイムで実行できない
+<br/> → 開発者はTypeScriptを記述し、それをコンパイルすることでJSコードを手に入れる
+
+### TSはどうやってJSに新機能を加えるのか
+- TSでより簡単に、より書きやすく開発者が記述し、TSコンパイラが複雑なJSのスニペット（コードのまとまり）にコンパイルしてくれる
+- 開発者がこの複雑なJSを書こうと思えばかけるため、決して魔法ではない。
+- ランタイム上で実行される実態はJSである
+
+### Type=型を追加する
+- 「型」は開発者を助ける
+<br/> → スクリプトが実行される前に、ブラウザのランタイムでエラーが発生する前に、エラーを知らせてくれる
+
+## TypeScriptを何故使うのか?
+- 足し算を行う関数を考える
+```js
+function add(num1, num2) {
+  return num1 + num2;
+}
+```
+- 想定するのは、数値の足し算である。しかし、jsの動的型付けの特徴を活かせば文字列の結合もできてしまう
+- これは開発者が意図しない挙動である。
+- また、関数の作成者と使用者の間で意思疎通ができず、思わぬエラーが発生する原因となる
+```js
+console.log(add(1, 2)); // 3
+console.log(add('1', '2')); // '12'
+```
+
+- jsでは型チェックや入力検証で対応する必要がある
+```js
+// Numericが確定しているのであればキャストするとか
+function add(num1, num2) { 
+  return Number(num1) + Number(num2);
+}
+// 型チェックをする
+function add(num1, num2) { 
+  if (num1 instanceof Number && num1 instanceof Number) {
+    return num1 + num2;
+  }
+  return;
+}
+```
+
+- TSであれば、文字列を入れた時点でコンパイルエラーとなり、開発者に知らせてくれる
+```ts
+function add(num1: Number, num2: Number) {
+  return num1 + num2;
+}
+
+add('1', '2'); // Error
+```
