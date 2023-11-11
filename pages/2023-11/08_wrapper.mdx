@@ -32,7 +32,7 @@ wrapperFunc(syncDbUpdate.bind(null, pkId));
 ```
 
 ### 非同期処理をWrapする
-- Loadingアニメーションを終了するまで表示させたい場合、非同期処理にする必要がある
+- LoadingアニメーションをデータアクセスやAPIが終了するまで表示させたい場合、非同期処理にする必要がある
 ```js filename="NG, showした瞬間hideされる"
 const wrapperFunc = function(syncFunc) {
   syncShowLoading();
@@ -54,12 +54,14 @@ const wrapperFunc = function(syncFunc) {
 
 wrapperFunc(syncDbInsert);
 ```
+
 ```js filename="Promise"
 const wrapperFunc = function(promise) {
   showLoading();
   promise.finally(() => hideLoading());
 }
 
+// aysncFetchDataはPromiseを返す前提
 wrapperFunc(
   asyncFetchData().then(data => console.log(data)).catch(err => console.log(err));
 );
@@ -77,6 +79,7 @@ const wrapperFunc = async function(promise) {
   }
 }
 
+// aysncFetchDataはPromiseを返す前提
 const fetchDataWithLoading = async () => {
   const data = await wrapperFunc(asyncFetchData())
   console.log(`${data}を取得しつつ、ローディングも取得中表示・終了すると非表示となる`)
