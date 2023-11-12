@@ -1,0 +1,65 @@
+# TypeScript3
+
+
+## TypeScript利点
+- Typeを使うことでどのように動作するのかをより明確にできる
+- IDEのサポートを受けてコンパイル前に自動補完やエラーを与えてくれる
+- 最新のJSの構文で記述した場合でも、古いブラウザに対応したJSにコンパイルしてくれるツールを内蔵する
+- デコレータ機能のようなメタプログラミングを可能にする
+- コンパイラの挙動を設定可能(開発者の望む通りにコンパイルしてくれる)
+
+## 練習用プロジェクトの設定
+```shell filename="dir"
+/ 
+├ index.html
+├ app.ts
+└ package.json
+```
+
+```html filename="index.html"
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Understanding TypeScript</title>
+  <script src="app.js" defer></script>
+</head>
+<body>
+  
+</body>
+</html>
+```
+
+```ts filename="app.ts"
+console.log('Your code goes here...');
+```
+↓ `tsc app.ts`
+```js filename="app.js"
+console.log('Your code goes here...');
+```
+こいつがhtmlに読み込まれて実行される
+
+
+### コード差分反映を自動化する
+- `lite-server`をつかう
+- `npm init` → `npm i --save-dev lite-server`
+- `scripts`に`"start": "lite-server"`コマンドを追加 → `npm start`
+
+```json filename="package.json"
+{
+  "name": "understanding-ts",
+  "version": "1.0.0",
+  "description": "",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "lite-server"
+  },
+  "devDependencies": {
+    "lite-server": "^2.5.4"
+  }
+}
+```
+- 保存してコンパイルすれば、ブラウザをリロードすることなく反映してくれる
