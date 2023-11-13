@@ -6,6 +6,8 @@
 |number|1, 5.3, -2|すべての数値, int, float, double等区別しない|
 |string|'Hi', "hi", \`HI\`|すべてのテキスト値|
 |boolean|true, false|２つのみ、"truthy", "falsy"の意味ではない|
+|object|\{age: 30\}|どんなJS Objectでも良いが、オブジェクトの"型"を指定できる|
+
 
 ```ts filename="app.ts"
 function add(n1: number, n2: number, showResult: boolean, phrase: string) {

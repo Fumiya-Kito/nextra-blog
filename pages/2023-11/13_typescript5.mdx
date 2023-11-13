@@ -1,0 +1,85 @@
+# TypeScript5
+
+## Type Assignment & Type Inference
+
+### 変数定義する際、型を明確にしない場合があるのはなぜか？
+- TypeScriptには**型推論**というビルトイン機能がそなわっているため
+- TSはできるだけ変数の型を具体的に特定しよう努力する↓
+```ts
+const num1 = 5;    // TSはnum1を5として型推論する。これは定数として再代入を禁じていることからである
+let num2 = 5;      // TSはnum1をnumberとして型推論する。これは変数として再代入を許しているため
+let num3: number = 5;      // 型推論できる範囲で開発者が型指定するのは冗長
+let num2: number;          // 逆に、変数定義のみの場合、明確な型指定は有効
+
+num2 = "This is bad" // コンパイルエラー、このエラー吐き出しがTSのコアな仕事
+
+```
+
+
+## object Types
+```ts
+const person = {
+  name: "Bob",
+  age: 18,
+}
+
+// 上記のように変数定義するだけでTSは以下のkey-typesペアのオブジェクトの”型”を型推論する
+const person: {
+  name: string;
+  age: number;
+}
+
+
+console.log(person.nickname); // error
+```
+
+- `object`型を指定する 
+- すると、nameプロパティを記述しているのに、`name`プロパティが存在しないとエラーになる
+```ts
+const person: object = {
+  name: "Bob",
+  age: 18,
+}
+
+console.log(person.name); // Property 'name' does not exist on type 'object'
+```
+- `object`型の場合はプロパティの型まで指定する必要がある
+```ts
+const person: {
+  name: string, 
+  age: number
+} = {
+  name: "Bob",
+  age: 18,
+}
+
+console.log(person.name); // No error
+```
+- ただし、この書き方は型推論があるため冗長
+
+
+### Nested Objects & Types
+- オブジェクトの階層がどれだけ深くなっても、それに合わせて型を記述すれば問題ない
+``` ts
+const product = {
+  id: 'abc1',
+  price: 12.99,
+  tags: ['great-offer', 'hot-and-new'],
+  details: {
+    title: 'Red Carpet',
+    description: 'A great carpet - almost brand-new!'
+  }
+}
+```
+↓ 以下のように記述すれば良い
+```ts 
+{
+  id: string;
+  price: number;
+  tags: string[];
+  details: {
+    title: string;
+    description: string;
+  }
+}
+```
