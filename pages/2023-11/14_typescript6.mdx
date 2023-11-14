@@ -1,0 +1,88 @@
+# TypeScript6
+
+## Array
+```ts 
+let favoriteActivities: string[];
+favoriteActivities = 'sports'; // Error
+favoriteActivities = ['sports', 'dance']; // OK
+favoriteActivities = ['sports', 1]; // Error
+
+let anyActivities: any[];
+anyActivities = ['sports', 100, false]; // OK でもTSの利点を消すこととなる
+
+for (const activity of favoriteActivities) {
+  console.log(activity.toUpperCase()); //型定義をすることで、この(Stringのビルトイン)関数の実行を保証してくれる
+  console.log(activity.map()); //Errorを教えてくれる
+}
+```
+
+
+## Working with Tuples
+- 長さ固定の配列
+- 他のプログラミング言語ではタプルが存在するがVanillaJSには存在しない型
+- TypeScriptで追加された
+- 例えば、長さ2固定で、`index=0`は`id`, `index=1`は`name`役割と固定した配列作成するなどの用途
+```ts
+/** これだけではstringまたはnumber型の配列という型推論 */
+const role = [2, 'author'] // role: (string | number)[]
+role.push('something');
+role[1] = 100; // 自由に追加できてしまう
+
+/** TSの型推論をオーバライドする */
+let tuppleRole: [number, string] = [2, 'author']
+tuppleRole[1] = 100; // Error
+tuppleRole = [2, 'author', 'No'] // Error
+tuppleRole.push('bbbb'); // pushは例外的にコンパイルエラーにしてくれない
+```
+
+
+## Working with Enums
+- 列挙型(一度だけ宣言し番号を振った値を列挙する型)
+- 他のプログラミング言語では使われるがVanillaJSには存在しない
+- TSで追加。しかし、少しクセがある↓
+> [サバイバルTypeScript: Enum](https://typescriptbook.jp/reference/values-types-variables/enum/enum-problems-and-alternatives-to-enums)
+- 固定値を使いたい場合に便利
+
+```js filename="vanilla jsで固定値を使いたい場合、定数化する"
+const ADMIN = 0;
+const READ_ONLY = 1;
+const AUTHOR = 2;
+
+const role = ADMIN;
+
+if (role === READ_ONLY) {
+  console.log('read only!');
+}
+
+if (role === 'READ-ONLY') {} // タイポで詰む
+if (role === 'READ ONLY') {} // タイポで詰む
+if (role === 'READ_ONLT') {} // タイポで詰む
+```
+↓
+```ts filename="typescriptの場合、enumを使用する"
+enum Role { ADMIN, READ_ONLY, AUTHOR}; //慣習的に大文字にするが、どんな値でも良い
+
+const role = Role.ADMIN;
+
+if (role === Role.AUTHOR) {
+  console.log('安全にif分岐ができます');
+}
+```
+↓ コンパイルするとどうなるか? `tsc app.ts`
+```js filename="app.js"
+var Role;
+(function (Role) {
+  Role[Role["ADMIN"] = 0] = "ADMIN";
+  Role[Role["READ_ONLY"] = 1] = "READ_ONLY";
+  Role[Role["AUTHOR"] = 2] = "AUTHOR";
+})(Role || (Role = {}));
+```
+これをTSでは簡単にかける
+
+- デフォルトでは０スタートだが、インデックス番号を指定することも可能
+```ts
+enum Role { ADMIN = 5, READ_ONLY, AUTHOR} //開始番号を指定すれば5, 6, 7と振られる
+enum Role { ADMIN = 5, READ_ONLY = 100, AUTHOR = 21} //これも可能
+enum Role { ADMIN = 'ADMIN', READ_ONLY = 100, AUTHOR = 'AUTHOR'} //これも可能
+```
+重要なのは、「人間に読みやすいこと」と「間違いなくマッピングしてくれること」
