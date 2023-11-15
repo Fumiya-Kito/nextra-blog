@@ -1,0 +1,106 @@
+# TypeScript7
+
+## The "any" Type
+- どんな型でも割り当てられる
+- 便利に聞こえるが、vanillaJSの動的型付けとなんら変わらない
+- ランタイムでの実行まで型のチェック、エラーのチェックをしてくれないということである
+```ts
+let anyVariable: any[];
+anyVariable = ['sprots', 5, false]; // OK
+```
+
+
+## Union Types
+- `|`演算子をつかうことでUNIONタイプを指定できる
+- 以下のように入力が２パターンあるときなどに使用
+```ts
+function combine(input1: number | string, input2: number | string) {
+  let result;
+  if (typeof input1 === 'number' && typeof input2 === 'number') {
+   result = input1 + input2;
+  } else {
+    result = input1.toString() + input2.toString();
+  }
+  return result;
+}
+
+const combineAges = combine(30, 26);
+const combineNames = combine('Max', 'Anna');
+```
+
+
+## Literal Types
+- プリミティブ型の特定の値を型として指定する
+- この型を`Literal Type`(リテラル型)という
+- マジックナンバーやステートを表現するときに使われる(Enumと近い)
+```ts 
+const num1 = 2.8 //型推論で2.8, tsはより型を特定しようとする
+let num2: 1; // それを開発者が指定することも可能＝リテラル型
+num2 = 2; // Error
+
+let state: 'pending' | 'success' | 'error';
+```
+
+```ts filename="例:関数の引数として"
+function combine(
+  input1: number | string,
+  input2: number | string,
+  resultType: 'as-number' | 'as-text'
+) {
+  let result;
+  if (typeof input1 === "number" && typeof input2 === "number" || resultType === "as-number") {
+    result = +input1 + +input2;
+  } else {
+    result = input1.toString() + input2.toString();
+  }
+  return result;
+}
+
+const combineAges = combine(30, 26, "as-number");
+const combineAgesStr = combine('30', '26', "as-number");
+const combineNames = combine("Max", "Anna", "as-tex"); // Error!!!
+
+```
+
+
+## Type Aliases / Custom Types, Object Types
+- `type`キーワードでaliasを作成することが可能
+- 通常、使用前に（上に）定義して、再利用数する(正確・スピード・可読性UP)
+
+
+```ts
+type Combinable = number | string;
+type ConversionDescriptor = 'as-number' | 'as-text';
+
+function combine(
+  // input1: number | string,
+  // input2: number | string,
+  input1: Combinable,
+  input2: Combinable,
+  resultType: ConversionDescriptor
+) {
+  let result;
+  if (typeof input1 === "number" && typeof input2 === "number" || resultType === "as-number") {
+    result = +input1 + +input2;
+  } else {
+    result = input1.toString() + input2.toString();
+  }
+  return result;
+}
+
+const combineAges = combine(30, 26, "as-number");
+const combineAgesStr = combine('30', '26', "as-number");
+const combineNames = combine("Max", "Anna", "as-tex");
+```
+
+```ts filename="object でもaliasを作成可能"
+type User = { name: string; age: number };
+
+function greet(user: User) {
+  console.log('Hi, I am ' + user.name);
+}
+
+function isOlder(user: User, checkAge: number) {
+  return checkAge > user.age;
+}
+```
