@@ -1,0 +1,72 @@
+# TypeScript8
+
+## Function Return Types & "void"
+```ts
+function add(n1: number, n2: number): number {
+  return n1 + n2;
+}
+// 特別な理由がない限り、TSの型推論に任せてよい
+function add(n1: number, n2: number) {
+  return n1 + n2;
+}
+// void: 返り値(return文)がない場合はvoidで型推論する
+function printResult(num: number) {
+  console.log('Result: ' + num);
+}
+
+printResult(add(5, 12));
+```
+- jsの仕様ではvoid型の関数の返り値は`undefined`として返却される
+- つまり、`void`を返り値の型として指定しても、実際に返される値は`undefined`である
+- さらにややこしいのは、「`undefined`は値である」ということ
+- TSも`undefined`を型としてもつことができる
+<br/>→return文ない場合は`void`で指定し、`return;`のみするときは`undefined`で指定する
+<br/>→jsでは`undefined`を返す関数という共通の処理だが、tsでは区別する
+
+```ts
+function printResult(num: number) {
+  console.log('Result: ' + num);
+}
+console.log(printResult(2)) // undefined 
+
+// objectで存在しないプロパティを参照しても同じ
+const user = { age: 3 };
+console.log(user.name); // undefined
+
+
+function printResult(): void {
+  console.log('Result');
+}
+function printResult(): undefined {
+  console.log('Result');
+  return;
+}
+function printResult() { // もちろん、これでもOK
+  console.log('Result');
+  return;
+}
+```
+
+
+
+
+## Functions as Types
+- 関数の**ポインタを**変数格納する際には`Function`型を指定する
+- しかし、上では関数ならなんでも代入できてしまうため、より詳細にアロー関数で型を定義することも可能
+- 以下の例では、数値型の引数を２つ・数値型の返り値を返す関数を割り当てることが可能となる
+```ts
+function add(n1: number, n2: number) {
+  return n1 + n2;
+}
+
+let combineValues: Function;
+combineValues = add;
+combineValues = printResult; // not Error!
+
+console.log(combineValues(1, 2));
+
+let combineValues2: (a: number, b: number) => number;
+combineValues2 = add; // OK
+combineValues2 = printResult; // Error!
+
+```
