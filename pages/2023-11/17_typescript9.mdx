@@ -1,1 +1,77 @@
 # TypeScript9
+
+
+## Function Types & Callbacks
+- コールバック関数に型注釈を入れてみる
+- コールバック関数のパラメータの**数と型**に関して、TypeScriptは厳格であるエラーを出す
+
+```ts
+function addAndHandle(n1: number, n2: number ,cb: (num: number) => void) {
+  const result = n1 + n2;
+  cb(result)
+}
+
+
+addAndHandle(10, 20, (result) => {
+  console.log(result);
+});
+
+addAndHandle(10, 20, (result, 1) => { // Error
+  console.log(result);
+});
+
+/** voidを指定しても, returnすることはできてしまう(コンパイルが通る) */
+addAndHandle(10, 20, (result) => {
+  console.log(result);
+  return true; // OK
+});
+```
+
+### void を使う理由
+- JS関数は基本的に`return;`のみする、またはreturn文を書かないと`undefined`が返ってくる
+- だからといって、`undefined`を関数の返り値の型注釈をつけると、return文を書くことを強制してしまう
+- voidは書いても書かなくともよい、故にうえのように`boolean`を返してもコンパイルが通る
+```ts
+function syaHi(): void {} // better
+function syaHi(): undefined {}
+```
+
+
+## The "unknown" Type
+- `unknown`型はTSにより導入された
+- ユーザー入力項目など、型を特定することができないようなときに使う
+- `unknown`はどんな型でもエラーを出さずに値を格納できる
+- `any`と同じようだが、`any`とは異なる
+<br/> → 型注釈されている変数に`unkown`型を代入することはできない(anyはできる)
+<br/> → `any`型は「型注釈を諦めます」という型
+<br/> → `unknown`型は「型が一旦分からないが、後で特定するなど型注釈を諦めない」
+<br/> → `unknown`は`any`より制限が強く、違いとしては`unknown`は明確に1つの型であるということ
+- 例えばtry-catch構文の`catch (err) {...}`の`err`は`err: unkown`が初期値
+```ts
+let userInput: unknown;
+
+userInput = 5;
+userInput = 'Str'; // OK
+
+
+let userName: string;
+userName = userInput; // Error: string型にunknown型は代入できない！
+
+if (typeof userInput === 'string') {
+  userName = userInput; // OK
+}
+```
+
+
+## The "never" Type
+- `throw`文などスクリプトをクラッシュさせる明示的に意図するための型
+- 以下の関数はデフォルトでは`void`と型推論される(tsの初期には存在しない型で、あとから追加されたため)
+- 開発者の意図は、「何も返さすスクリプトをクラッシュさせる関数」であり、**決して何も`return`しない=`never`を返す関数**として型注釈をつける
+```ts
+function generateError(message: string, code: number): never {
+  throw { message: message, errorCode: code };
+}
+
+generateError('An error occurred', 500);
+```
+※ `throw`以外のもう一つのケースとしては`while(true)`の無限ループ処理をする関数も`never`型の関数といえる
