@@ -1,0 +1,125 @@
+# 変数宣言: `var`はなぜもう使わないのか?
+
+当たり前に`var`は使わなくなったが、なぜ非推奨となっているのか今一度整理したい
+> [参照: 読んで学ぶTypeScript/varはもう使わない](https://typescriptbook.jp/reference/values-types-variables/vars-problems)
+
+- ES2015で`let`と`const`宣言が追加された ← `var`はいくつか問題を抱えていたため
+
+## varの問題点
+### 同名の変数宣言
+- 一度、変数宣言した変数`x`をもう一度変数宣言することができてしまい、意図しない挙動になる可能性がある
+```js
+function test () {
+  var x = 1;
+  // ...
+
+  // 忘れた頃に、あるいは別の開発者が
+  var x = 2;
+  console.log('xは1だよね: ', x); // xは1だよね: 2
+}
+```
+
+- `let, const`はsyntax errorとなる
+```js {3, 7}
+let x = 1;
+let x = 2;
+> SyntaxError: Identifier 'x' has already been declared
+
+const y = 1;
+const y = 2;
+> SyntaxError: Identifier 'y' has already been declared
+```
+
+
+## グローバル変数の上書き
+- varはグローバル変数として定義されたときに、windowオブジェクトのプロパティとして定義されるため、既存のプロパティを上書きする危険性がある
+- 例えば、ブラウザ上で`innerWidth`変数をグローバル変数として定義してしまうと、標準APIの`window.innerWidth`が上書きされるため、ブラウザの幅を変更しても常に同じ値が返ってくるようになってしまう
+```js
+var innerWidth = 10;
+console.log(window.innerWidth); // 常に10
+```
+
+- `let`, `const`はグローバルスコープでは定義されない
+```js
+const innerWidth = 10;
+console.log(window.innerWidth); // 500
+```
+
+
+## 変数の巻き上げ
+- `var`宣言された変数は、スコープの先頭で生成されて**undefinedで値が初期化**されます
+- 次の例では`greeting`変数への参照はエラーとならずに`undefined`となる
+```js
+console.log(greeting); // undefined
+
+var greeting = "こんにちは";
+
+console.log(greeting); // こんにちは
+```
+
+- `let`, `const`でも巻き上げが起こるが、**変数の初期化が行われない**ため`Refference Error`となる
+```js {2-3, 7-8}
+console.log(x);
+> Block-scoped variable 'x' used before its declaration.
+> Variable 'x' is used before being assigned.
+let x = 1;
+
+console.log(y);
+> Block-scoped variable 'y' used before its declaration.
+> Variable 'y' is used before being assigned.
+const y = 2;
+```
+
+- `let`, `const`でも巻き上げ自体は起こっている
+```js {5-6}
+function output() {
+  var x = 1;
+  {
+    console.log(x); // 1が出力されそうだが, ブロックスコープ内でlet x; が巻き上がって、RefferenceError
+> Block-scoped variable 'x' used before its declaration.
+> Variable 'x' is used before being assigned.
+    let x = 2;
+  }
+}
+ 
+output();
+```
+
+※アロー関数 vs `function`宣言でも同じく巻き上げの議論が成立する
+```js
+a(); // a
+function a () {console.log('a')};
+
+b(); // Reference Error
+const b = () => console.log('b');
+
+c(); // Uncaut TypeError: a is not Function (undefinedだから)
+var c = () => console.log('c');
+```
+
+
+## スコープ
+- `var`宣言は関数スコープ
+
+```js
+function print() {
+  var x = 1;
+  if (true) {
+    var x = 2; // xを上書きする
+    console.log(x); // 2
+  }
+  console.log(x); // 2
+}
+```
+
+- `let`, `const`はブロックスコープ
+```js
+function print() {
+  const x = 1;
+  if (true) {
+    const x = 2;
+    console.log(x); // 2
+  }
+  console.log(x); // 1
+}
+```
