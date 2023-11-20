@@ -1,0 +1,145 @@
+# TypeScript Compiler
+
+これまででは一つのファイルを指定してコンパイルしてきた。
+この方法は大規模プロジェクトでは現実的でない。
+TSコンパイラのプロセス・設定方法などをみていく
+
+
+##  Using "Watch Mode"
+- `tsc app.ts --watch` or `tsc app.ts -w`とすることでwatchモードでコンパイルできる
+- watchモードでは、ファイルの任意の変更を察知して、保存した際に再コンパイルしてくれる
+
+
+## Compiling the Entire Project / Multiple Files
+```shell filename="dir"
+/ 
+├ index.html
+├ app.ts
+├ added.ts  #複数ファイル同時にコンパイルしたい
+└ tsconfig.json
+```
+
+- プロジェクト全体をコンパイルしたい場合は`tsconfig.json`という設定ファイルが必要である
+- プロジェクトにconfigファイルがない場合は`tsc --init`コマンドで作成可能
+- このときにtsプロジェクトのフォルダ構成を判断するため、正しくフォルダ構成を作成しておく必要がある
+- configを作成後、全体をコンパイルしたい場合、単に`tsc`を実行する→すべての`.ts`ファイルがコンパイルされる
+- `tsc -w`も可能
+
+
+
+## Including & Excluding Files
+- `tsconfig.json`ファイルを観察する
+- このファイルはTypeScriptがプロジェクト内のファイルをどのようにコンパイルするのかを指示するもの
+```json filename="tsconfig.json"
+{
+  "compilerOptions": {
+    ...
+    /* Language and Environment */
+    "target": "es2016",                                  /* Set the JavaScript language version for emitted JavaScript and include compatible library declarations. */
+    ...
+    /* Modules */
+    "module": "commonjs",                                /* Specify what module code is generated. */
+    ...
+    /* Interop Constraints */
+    "esModuleInterop": true,                             /* Emit additional JavaScript to ease support for importing CommonJS modules. This enables 'allowSyntheticDefaultImports' for type compatibility. */
+    "forceConsistentCasingInFileNames": true,            /* Ensure that casing is correct in imports. */
+    ...
+    /* Type Checking */
+    "strict": true,                                      /* Enable all strict type-checking options. */
+    /* Completeness */
+    ...
+    "skipLibCheck": true                                 /* Skip type checking all .d.ts files. */
+    ...
+  },
+  "exclude": [
+    "added.ts",
+    "*.dev.ts",
+    "**/*.dev.ts", //どのフォルダに存在する.dev.tsもコンパイルされない
+    "node_modules" // デフォルトでは除外されるが、excludeオプションを記述する場合は必要
+  ],
+  "include": [
+    "app.ts",
+    "something.ts"
+  ]
+}
+
+```
+- 初期ではほとんどコメントアウトされているが`compilerOptions`が設定されている
+- このブロックの外に`exclude`オプションを追加してみる→ tscでコンパイルした際に、コンパイル対象外のパスを配列形式で指定することができる
+- 逆に`include`キーを指定することもできる(優先度としてはexcludeの方が上。コンパイル対象=include - exclude)
+- `files`キーは個別のファイルを指定する、includeと違いフォルダ全体を指定することはできない
+
+
+
+## Setting a Compilation Target
+- `compilerOptions`を観察していく
+- コンパイラがどのような挙動をするのか、`.ts`ファイルがTypeScriptによってどのように扱われるのかを設定するキーである
+- 大量のオプションがあり、初期では短い説明とともにコメントアウトされている
+
+- `target`はESのバージョンを指定する、言い換えればどのブラウザのどのバージョンに対応させたいかということである
+- `es6`からlet, constに対応したため`es5`を指定し、TS上で`let`宣言したものはJS上では`var`でトランスパイルされる
+
+
+## Understanding TypeScript Core Libs
+- `lib`オプションはTSがどのグローバルオブジェクトを持つのかを指定する
+- グローバルオブジェクトは実行環境、ランタイムによって変化し、JSは決してブラウザ上だけで動く言語ではないことを覚えておく
+- 例えば、nodeJS上でも動くし、Webアプリケーションだけでなくデスクトップアプリも作れる
+- デフォルトではコメントアウトされ、`target`で指定したESバージョンが取りうるすべてのグローバルオブジェクトをTSは知っている状態になる
+- コメントアウトを外し、空の配列を渡すと、逆にどんなグローバルオブジェクトのプロパティも知らないこととなる
+<br/>→ 例えば、`console`も`document`も知らないということ
+<br/>→ 配列内に`dom`を指定してあげれば理解してくれる
+```json filename="このように設定してあげればデフォルトと同値である"
+...
+  "lib": [
+    "dom",
+    "es6",
+    "dom.literable",
+    "scripthost"
+  ],
+...
+```
+
+
+## More Configuration & Compilation Options
+- `allowJs`オプション
+  - `true`とすれば、`.js`ファイルもTSによってコンパイルされる対象となる
+- `checkJs`オプション
+  - `true`とすれば、`.js`ファイルで構文チェックをしてエラーを発する
+- 上記使う場合は`.ts`ファイルがコンパイルされた`.js`ファイルが再度コンパイルされないために`include`を調整する必要がある
+
+
+## Working with Source Maps
+- `sourceMap`はデバッグや開発に役立つ
+- デベロッパーツールのsourceでJSファイルを見ることができるが、これはコンパイルされたファイルである
+- TSを表示させてデバッグしたい場合は`"sourceMap": true`とする
+- `app.js.map`というファイルも同時にコンパイルされるようになり開発者ツールで見ること、ブレークポイント貼ることも可能
+
+
+## rootDir and outDir
+- プロジェクトが大きくなり、ファイルの整理をしたくなる
+- `src`フォルダ(tsファイルを格納)と`dist`フォルダ(jsファイルを出力)をつくることがよくある
+- `outDir` オプションはコンパイルしたjsファイルの出力先を指定できる(ex. `"outDir": "./dist"`)
+- srcフォルダ内にサブディレクトリを作成した場合もディレクトリ構成をdistに再現してくれる(import, exportの状態は崩れない)
+- `srcDir`はプロジェクトに含めたいTsファイルのルートディレクトリを指定する
+- これを指定しないと`project/src`より上位にTSファイルがあった場合、自動的に`project/`がルートディレクトリとなる
+- `src`と`dist`を対応させた場合は`"srcDir": "./src"` と明確に指定する必要がある
+
+```json filename="tsconfig.json"
+{
+  "compilerOptions": {
+    ...
+    "outDir": "./dist",
+    "srcDir": "./src",
+    ...
+  }
+  ...
+}
+```
+
+## removeCommnets, noEmit, noEmitOnError
+- `removeCommnets`はTSに記述したコメント文を自動的に削除してコンパイルしてくれる機能
+- `noEmit`はJSファイルを出力したい場合に使う→単に型チェックをしたいだけ、大規模プロジェクトでコンパイルに時間がかかる等
+- `noEmitOnError`はエラー発生時にコンパイルを通すか決めるオプション
+<br/>→ `false`にすると、型が不明でコンパイルエラーの警告が出ていたとしても、`tsc`すればJSファイルは生成される
+<br/>→ 型不明だけであればJSは動作する可能性が高いし、このコンパイルは望まれているかもしれないし、望まれていないかもしれない
+<br/>→ `true`にすると、エラーがあると完全にJSが生成されなくなる（普通はtrueにしたくなる）
