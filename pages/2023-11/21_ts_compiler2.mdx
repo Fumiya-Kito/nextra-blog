@@ -1,0 +1,99 @@
+
+## Working with Source Maps
+- `sourceMap`はデバッグや開発に役立つ
+- デベロッパーツールのsourceでJSファイルを見ることができるが、これはコンパイルされたファイルである
+- TSを表示させてデバッグしたい場合は`"sourceMap": true`とする
+- `app.js.map`というファイルも同時にコンパイルされるようになり開発者ツールで見ること、ブレークポイント貼ることも可能
+
+
+## rootDir and outDir
+- プロジェクトが大きくなり、ファイルの整理をしたくなる
+- `src`フォルダ(tsファイルを格納)と`dist`フォルダ(jsファイルを出力)をつくることがよくある
+- `outDir` オプションはコンパイルしたjsファイルの出力先を指定できる(ex. `"outDir": "./dist"`)
+- srcフォルダ内にサブディレクトリを作成した場合もディレクトリ構成をdistに再現してくれる(import, exportの状態は崩れない)
+- `srcDir`はプロジェクトに含めたいTsファイルのルートディレクトリを指定する
+- これを指定しないと`project/src`より上位にTSファイルがあった場合、自動的に`project/`がルートディレクトリとなる
+- `src`と`dist`を対応させた場合は`"srcDir": "./src"` と明確に指定する必要がある
+
+```json filename="tsconfig.json"
+{
+  "compilerOptions": {
+    ...
+    "outDir": "./dist",
+    "srcDir": "./src",
+    ...
+  }
+  ...
+}
+```
+
+## removeCommnets, noEmit, noEmitOnError
+- `removeCommnets`はTSに記述したコメント文を自動的に削除してコンパイルしてくれる機能
+- `noEmit`はJSファイルを出力したい場合に使う→単に型チェックをしたいだけ、大規模プロジェクトでコンパイルに時間がかかる等
+- `noEmitOnError`はエラー発生時にコンパイルを通すか決めるオプション
+<br/>→ `false`にすると、型が不明でコンパイルエラーの警告が出ていたとしても、`tsc`すればJSファイルは生成される
+<br/>→ 型不明だけであればJSは動作する可能性が高いし、このコンパイルは望まれているかもしれないし、望まれていないかもしれない
+<br/>→ `true`にすると、エラーがあると完全にJSが生成されなくなる（普通はtrueにしたくなる）
+
+## Strict Compilation
+- "strict`: true`オプションは厳密な型チェックを有効にする
+- 厳密とは?→ 以下、コメントアウトされている箇所をすべてtrueにすると`strict: true`と同等になる
+```json
+    /* Type Checking */
+    "strict": true,                                      /* Enable all strict type-checking options. */
+    // "noImplicitAny": true,                            /* Enable error reporting for expressions and declarations with an implied 'any' type. */
+    // "strictNullChecks": true,                         /* When type checking, take into account 'null' and 'undefined'. */
+    // "strictFunctionTypes": true,                      /* When assigning functions, check to ensure parameters and the return values are subtype-compatible. */
+    // "strictBindCallApply": true,                      /* Check that the arguments for 'bind', 'call', and 'apply' methods match the original function. */
+    // "strictPropertyInitialization": true,             /* Check for class properties that are declared but not set in the constructor. */
+    // "noImplicitThis": true,                           /* Enable error reporting when 'this' is given the type 'any'. */
+    // "useUnknownInCatchVariables": true,               /* Default catch clause variables as 'unknown' instead of 'any'. */
+    // "alwaysStrict": true,                             /* Ensure 'use strict' is always emitted. */
+    // "noUnusedLocals": true,                           /* Enable error reporting when local variables aren't read. */
+    // "noUnusedParameters": true,                       /* Raise an error when a function parameter isn't read. */
+    // "exactOptionalPropertyTypes": true,               /* Interpret optional property types as written, rather than adding 'undefined'. */
+    // "noImplicitReturns": true,                        /* Enable error reporting for codepaths that do not explicitly return in a function. */
+    // "noFallthroughCasesInSwitch": true,               /* Enable error reporting for fallthrough cases in switch statements. */
+    // "noUncheckedIndexedAccess": true,                 /* Add 'undefined' to a type when accessed using an index. */
+    // "noImplicitOverride": true,                       /* Ensure overriding members in derived classes are marked with an override modifier. */
+    // "noPropertyAccessFromIndexSignature": true,       /* Enforces using indexed accessors for keys declared using an indexed type. */
+    // "allowUnusedLabels": true,                        /* Disable error reporting for unused labels. */
+    // "allowUnreachableCode": true,                     /* Disable error reporting for unreachable code. */
+```
+- `noImplicitAny`: `true`の場合、`any`の可能性があると、エラーにする
+<br/> → 変数が`any`で宣言されても良いが、関数の引数は許されない。これはTSは変数の値を追跡することができるあめ
+- `strictNullChecks`: プロパティ呼び出し時などに`null`の可能性があるとエラーにする
+- `strictBindCallApply`: 関数を引数に渡す際、その”関数の引数”をバインドしたいことがある。その`bind`, `apply`, `call`関数が意味のあるものかを判定してくれる
+```ts
+const button = document.querySelector('button')!;
+function clickHandler(message: string) {
+  console.log(message);
+}
+
+button.addEventListener('click', clickHandler.bind(null)) // これはバインドする意味がないからエラー
+button.addEventListener('click', clickHandler.bind(null, "この引数をバインドしたい")) // これはバインドする意味がないからエラー
+```
+- `alwaysStrict`: コンパイルされたJSファイルに`"use strict"`が常に記述されるためのオプション
+
+
+## Code Quality Options
+- `noUnusedLocals`, `noUnusedParameters`, `noUnusedParameters`はコード品質に関わるオプション
+```ts filename="上記オプションがtrueの場合"
+let appId = 'XXX'; // グローバル変数を使ってないとエラー(警告だけどコンパイル通らなくなる)
+
+function clickHandler(age: number) { // 引数を使ってないとエラー
+  let userName = 'K'; // // functionのローカル変数を定義し未使用だとエラー
+  console.log('AAAA');
+}
+
+function add(n1: number, n2: number) {
+  if (n1 + n2 > 0) {
+    return n1 + n2;
+  }
+  // return文がないとエラー
+  // 意図的に返さないといけない
+  return;
+}
+```
+
+tsconfigのオプションはTSが成長するに連れて増加していくため、公式Docsでキャッチアップしていく必要がある
