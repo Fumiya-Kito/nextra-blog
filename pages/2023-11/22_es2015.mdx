@@ -1,0 +1,33 @@
+# ES6(ES2015)以降の文法
+
+モダンJS(ES6)以降の基本的な文法の復習
+
+## Rest Parameters
+- 関数の引数に任意の長さを指定したいときスプレッド演算子を使う
+- 下記のnumbersは引数をリスト化した変数(仮引数)として扱われる
+
+```ts
+function add(...numbers: number[]) {
+  numbers.reduce((curResult, curItem) => {
+    return curResult + curItem;
+  }, 0)
+}
+
+add(1, 2, 3, 4);
+add(1, 2, 3, 4, 5);
+
+// Array.pushメソッドは任意の数の引数を受け取る
+Array<string>.push(...items: string[]): number
+
+// 数が決まっている場合、タプルを使用することも可能
+function add2(...numbers: [number, number, number]) {}
+```
+
+
+## Array & Object Destructuring
+- 分割代入(ディストラクチャー)は配列から値を取り出し変数に格納することである
+- 分割代入では元の配列に影響はない
+```ts
+const [p1, p2, ...remainProducts] = products; // 配列はインデックスで取り出す
+const { name: AiliasName, age } = person; // オブジェクトはキーで取り出す
+```
