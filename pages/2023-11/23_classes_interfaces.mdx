@@ -1,0 +1,256 @@
+# Class & Interfaces 【TypeScript】
+
+## Whats's Object-oriented Programming(OOP)?
+- コードの中で現実の実体(Entities)を扱う考え方
+- ECサイトを構築するのであれば、「商品リスト」「商品」「カート」オブジェクトをもち、それぞれに必要なプロパティや関数などのロジックを持たせる
+- これは現実でスーパーマーケットに買い物に行った際と同じことを再現しようとしている
+  - 棚に商品が並べられている(`ShohinList.show()`)
+  - 商品の詳細を見ることができる(`Shohin.name, Shohin.price`)
+  - カートに追加できる(`Cart.add()`) などなど
+
+
+### Classes & Instances
+- `Class`とは、オブジェクトの設計図である
+- そのオブジェクトがどのように見えるのか？(プロパティ)どのような振る舞いをするのか？(メソッド)を定義する
+- Classがあることで(同じ特徴を持つ)オブジェクトを簡単に作成・複製することができる
+- Classに基づくオブジェクトを`Instance`という
+
+### Classを作成する
+- 今回は、「部署」クラスを作って、会社でつかう何らかのツールを作成することを想定
+- ClassはClassであることを強調するために大文字で始める
+- プロパティは変数ではないため、letもconstもつけない
+- キー・バリューを保持するが、クラス作成時には**キーとその型**のみ
+
+- クラス内の関数は単に`メソッド`と呼ばれる
+- `constructor`はコンストラクタ・メソッドと呼ばれる予約語
+- コンストラクタメソッドは、このクラスのインスタンスが作成された際に実行されるもの（初期化作業である）
+
+- クラスの定義が終了したらインスタンスを作る
+- `new`キーワードを使うだけである
+```ts filename="app.ts"
+class Department {
+  name: string;
+
+  constructor(n: string) {
+    this.name = n;
+  }
+}
+
+const accounting = new Department('Accounting');
+
+console.log(accounting); // Department型のJSオブジェクトで以下のように表示される
+//Department 
+//  name: "Accounting"
+```
+
+
+### Compiling to JavaScript
+- コンパイルされたJSファイルを見てみる
+```js filename="app.js"
+/** ES6 */
+"use strict";
+class Department {
+    constructor(n) { // constructor methodがサポートされている
+        this.name = n;
+    }
+}
+const accounting = new Department('Accounting');
+console.log(accounting);
+
+/** ES5 */
+"use strict";
+var Department = (function () {
+    function Department(n) { //コンストラクタ関数でクラスを記述
+        this.name = n;
+    }
+    return Department;
+}());
+var accounting = new Department('Accounting');
+console.log(accounting);
+```
+
+
+## Constructor Functions & The "this" Keyword
+- インスタンスメソッドを追加する
+- フィールドと同様に、function宣言は必要なく、関数名を直接記述する
+- インスタンスメソッドを含めクラス内、フィールドを参照したい場合は`this`キーワードを使う
+- `this`が指すのは、`new`演算子でインスタンス化されたインスタンス自身である
+- ただし、`this`は基本的に`.`の前の変数を指すため、`describe`メソッドのポインタをコピーした場合`this.name`は`undefined`となる
+- `this`正しく使うには`new`演算子でインスタンス化する必要がある
+```ts
+class Department {
+  name: string;
+
+  constructor(n: string) {
+    this.name = n;
+  }
+
+  describe() {
+    console.log('Department: ' + this.name);
+  }
+}
+
+const accounting = new Department('Accounting');
+
+console.log(accounting);
+accounting.describe(); // Department: Accounting
+
+
+const accountingCopy = { describe: accounting.describe };
+
+accountingCopy.describe(); // Department: undefined
+```
+- これを防ぐためにTSではインスタンスメソッドの引数に`this: ClassName`を渡すことができる(仮引数ではなく、ヒントとするだけ)
+- こうすることで、`this`の型が定義され、外部からメソッドをコピーするようなことはコンパイルエラーを出してくれる
+- （ただし、必ず`Department`型である必要はなく）今回の場合、`name`プロパティを持たないオブジェクトは弾かれる
+
+```ts
+class Department {
+  name: string;
+
+  constructor(n: string) {
+    this.name = n;
+  }
+
+  describe(this: Department) {
+    console.log('Department: ' + this.name);
+  }
+}
+```
+
+
+## "private" and "public" Access Modifiers
+- employeesフィールドを追加する
+- フィールドを通常通りに定義するだけだと、外部から自由にいじれてしまう
+- 複雑なアプリケーションになればなるほど、クラス内部からしかフィールドの更新はされたくないものである(単一の方法で管理したい)
+```ts
+class Department {
+  employees: string[] = [];
+...
+  addEmployee(employee: string) {
+    // ここで入力検証したり、共通化したいもの
+    this.employees.push(employee);
+  }
+}
+
+const accounting = new Department('Accounting');
+
+accounting.addEmployee('Dummy');
+accounting.employees[1] = 'OUT'; // これができてしまうのは困る
+```
+
+- アクセス修飾子`private`キーワードを使用することでクラス内部からの参照しか許さないことを指定できる
+- `private`は関数にも指定できる
+- `public`キーワードもあるが、デフォルトはpublicで、TSでは特別強調したい場合以外不要
+- JSにアクセス修飾子は存在せずすべて`public`だった
+- ランタイムでは機能せず、TSの機能である(ただし、最新のESではアクセス修飾子が追加され、区別する)
+```ts
+// Code goes here!
+class Department {
+  private employees: string[] = [];
+
+  addEmployee(employee: string) {
+    this.employees.push(employee);
+  }
+}
+
+const accounting = new Department('Accounting');
+
+accounting.addEmployee('Dummy');
+accounting.employees[1] = 'OUT'; // Property 'employees' is private and only accessible within class 'Department'.
+```
+
+
+## Shorthand Initialization
+- フィールド変数が増えてくると、`constructor`で初期化するのが大変になる
+- コンストラクタの引数で`public`演算子などを利用してフィールドの定義を省略する方法がある
+
+```ts
+class Department {
+  // フィールド定義は不要
+  // private name: string;
+  // private employees: string[] = [];
+
+  constructor(private id: number, public name: string, private employees: string[]) {
+    // this.name = n;
+  }
+  ...
+}
+
+const accounting = new Department(1, 'Accounting', []);
+
+```
+
+
+## "readonly" Properties
+- `private`, `public`に続き、最後のアクセス修飾子として`readonly`がある
+- これは初期化後に変更されたくないフィールドにつける
+- `id`なんかは`private readonly`にすべきことが多い
+- `readonly`はTSが採用したものでJSには存在しない
+```ts
+class Department {
+  constructor(private readonly _id: number, public name: string, private employees: string[]) {
+    // this.name = n;
+  }
+
+  describe() {
+    console.log(`Department: ${this._id}` + this.name);
+  }
+
+  addEmployee(employee: string) {
+    this.employees.push(employee);
+  }
+
+  printEmployees() {
+    console.log(this.employees);
+  }
+}
+
+const accounting = new Department(1, 'Accounting', []);
+```
+
+↓コンパイル
+
+```js filename="app.js"
+"use strict";
+var Department = (function () {
+    function Department(_id, name, employees) {
+        this._id = _id;
+        this.name = name;
+        this.employees = employees;
+    }
+    Department.prototype.describe = function () {
+        console.log("Department: ".concat(this._id) + this.name);
+    };
+    Department.prototype.addEmployee = function (employee) {
+        this.employees.push(employee);
+    };
+    Department.prototype.printEmployees = function () {
+        console.log(this.employees);
+    };
+    return Department;
+}());
+var accounting = new Department(1, 'Accounting', []);
+
+```
+- jsを見ると、`private`などアクセス修飾子がないことがわかる→TSの機能
+- `prototype`が記述されているが、次節を参照
+- Classで多くを賄えるため、TSで`prototype`を使うことは少ない
+
+
+## prototype
+> prototypeは、オブジェクトの内部プロパティのひとつである。
+内部プロパティ[prototype]には、何らかのオブジェクト（またはnull）が設定される。
+内部プロパティ[prototype]は、あるオブジェクトが自身で保有していないプロパティを命令されたとき、自身の代わりにそのプロパティを、内部プロパティ[prototype]に設定されたオブジェクトから探索しに行く参照先である。
+命令されたプロパティを自身の代わりに内部プロパティ[prototype]が保有している場合、オブジェクトはそれを返却する。
+以上の性質により、結果的にprototypeはあるオブジェクトが他のオブジェクトの性質を引き継ぐ仕組みであるかのように振る舞います。正確には引き継いだわけではなく、内部的には自身の代わりに他のオブジェクトの性質を参照し、自身のものであるかのように振る舞うという仕組みであることを注意しておくとよいでしょう。
+
+### メリット
+1. コードの簡略化、同じメソッドを何度も書く必要がない
+2. プログラム実行時の省メモリ化
+
+### 参照
+[TECH PLAY](https://techplay.jp/column/618)
+
+
+次回「継承」について
