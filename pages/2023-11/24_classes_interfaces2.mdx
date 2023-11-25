@@ -1,2 +1,77 @@
 # Class & Interfaces 【TypeScript】
 ## 継承 
+- 部門クラスを更に細かく分けて、IT部門クラスをつくるようなことを考える
+- 部門クラスがもつプロパティ・メソッドの他に、IT部門専用のプロパティ・メソッドを作成したくなる
+- このようなときに「継承」をつかいクラスの親子関係を構築すると便利である
+- 継承には`class`宣言時に`extends`キーワードを使う(`class Child extends ParentClass {}`といった具合)
+- クラスに何も追記しない上記の場合、実質`ParentClass`として`const child = Child('a', 'b')`のようにインスタンス化できるしプロパティ、メソッドも継承する
+- 注意としては複数のクラスは継承することはできない、親は常に１つである
+- コンストラクタ内で`super()`メソッドを呼び出すことで親のコンストラクタを呼び出せる
+```ts
+class Department {
+  // private readonly id: string;
+  // private name: string;
+  private employees: string[] = [];
+
+  constructor(private readonly id: string, public name: string) {
+    // this.id = id;
+    // this.name = n;
+  }
+
+  describe(this: Department) {
+    console.log(`Department (${this.id}): ${this.name}`);
+  }
+
+  addEmployee(employee: string) {
+    // validation etc
+    // this.id = 'd2';
+    this.employees.push(employee);
+  }
+
+  printEmployeeInformation() {
+    console.log(this.employees.length);
+    console.log(this.employees);
+  }
+}
+
+class ITDepartment extends Department {
+  admins: string[];
+  constructor(id: string, admins: string[]) {
+    super(id, 'IT');
+    this.admins = admins;
+  }
+}
+
+
+class AccountingDepartment extends Department {
+  constructor(id: string, private reports: string[]) {
+    super(id, 'Accounting');
+  }
+
+  addReport(text: string) {
+    this.reports.push(text);
+  }
+
+  printReports() {
+    console.log(this.reports);
+  }
+}
+
+const it = new ITDepartment('d1', ['Max']);
+
+it.addEmployee('Max');
+it.addEmployee('Manu');
+
+
+it.describe();
+it.name = 'NEW NAME';
+it.printEmployeeInformation();
+
+console.log(it);
+
+const accounting = new AccountingDepartment('d2', []);
+
+accounting.addReport('Something went wrong...');
+
+accounting.printReports();
+```
