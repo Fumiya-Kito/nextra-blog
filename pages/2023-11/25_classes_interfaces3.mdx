@@ -1,0 +1,85 @@
+# Class & Interfaces3 【TypeScript】
+
+## Overriding Properties & The "protected" Modifier
+- 親クラスと同名のプロパティ・メソッドを子クラスで定義することでオーバライドすることが可能
+- 子クラスでの振る舞いを変えたい場合に使用する
+- `addEmployee`をオーバライドすることを考える、このとき`employees`はprivateプロパティなため子クラスからは呼び出せないことに注意
+- アクセス修飾子`protected`をつけることで、private同様、外部からのアクセスはできないが、継承したクラスだけはプロパティを変更することを許可する
+- classは一般的にJSでサポートされているが、アクセス修飾子はTSの特徴である
+```ts {2, 19-24}
+class Department {
+  protected employees: string[] = [];
+  ...
+
+  addEmployee(employee: string) {
+    // validation etc
+    // this.id = 'd2';
+    this.employees.push(employee);
+  }
+  ...
+}
+
+
+class AccountingDepartment extends Department {
+  constructor(id: string, private reports: string[]) {
+    super(id, 'Accounting');
+  }
+
+  addEmployee(name: string) { // オーバライド
+    if (name === 'XXX') {
+      return;
+    }
+    this.employees.push(name); // privateでは無理、protectedなら可能
+  }
+  ...
+}
+
+```
+
+
+## Getters & Setters
+- ゲッターとセッターはバニラJSでサポートされている
+- reportsの最後のテキストを`lastReports`フィールドに持つ、このときprivate修飾子をつけカプセル化する
+- lastReportsは外部からアクセスできないが、外部から参照したいものである
+- こういった場合にゲッターを使う
+- ゲッターは`get`キーワードを使って定義する
+- ゲッターは必ず`return`しなければならない
+- ゲッターは単にカプセル化したフィールドを返すだけでなく、内部にロジックをもたせることができる
+- ゲッタを呼び出すときは`someGetter()`と実行をしない、クラス内部で実行されるため、プロパティのように扱う`someClass.someGetter`
+- セッターもほぼ同様に扱える
+- セッターとゲッターは同じ名前で定義できる(むしろ同じプロパティに対するものであれば統一すべき)
+- セッターは必ず1つ以上の引数を必要とする
+```ts
+
+class AccountingDepartment extends Department {
+  private lastReport: string;
+
+  get mostRecentReport() {
+    if (this.lastReport) { // ロジックを追加できる
+      return this.lastReport;
+    }
+    throw new Error('レポートがありません');
+  }
+
+  set mostRecentReport(value: string) {
+    if (!value) {
+      throw new Error('値は必須です')
+    }
+    this.addReport(value);
+  }
+
+  addReport(text: string) {
+    this.reports.push(text);
+    this.lastReport = text;
+  }
+}
+
+const accountDep = new AccountingDepartment('d2', []);
+console.log(accountDep.mostRecentReport); // Error: レポートがありあません
+console.log(accountDep.lastReport); // コンパイルエラー, privateをつけなければundefined これは望ましくない
+
+accountDep.addReport('report1');
+console.log(accountDep.mostRecentReport); // report1
+
+accountDep.mostRecentReport = ''; // セッターを呼び出す(falsyなのでエラー)
+```
