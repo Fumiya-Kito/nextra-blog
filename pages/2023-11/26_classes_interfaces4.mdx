@@ -1,0 +1,89 @@
+# Class & Interfaces3 【TypeScript】
+
+##  Static Methods & Properties
+- ES6以降のJSとTSで対応しているstaticメソッドとプロパティについて
+- 静的とは、「クラスがインスタンス化されないでも呼び出せ、インスタンスに依存しないこと」を指す(インスタンスは動的である)
+- 逆に`this`, `constructor`などインスタンスとして振る舞う処理では、静的プロパティは使用できない
+- グローバル定数、グループ化・マッピングなどのユーティリティ関数に使用する
+- 例えば、`Math.PI`などは静的プロパティである
+- 静的メソッドは通常のメソッドに`static`修飾子をつけるだけである
+- クラス内部で`this`を使用したい場合、外部と同様`Department.fisicalYear`のようにアクセスする
+```ts
+
+class Department {
+  ...
+  static fisicalYear = 2020;
+
+  static createEmployee(name: string) {
+    return { name: name };
+  }
+}
+
+const employee1 = Department.createEmployee('XXX');
+const year = Department.fisicalYear;
+```
+
+##  Abstract Classes
+- 子クラスごとに情報や機能を追加し、親クラスのメソッドdescribeをオーバライドすることを考える
+- このとき、親クラスの開発者からすると、常にオーバライドされる可能性があり、意図しない継承がされる可能性がある
+- 逆に、`abstract`キーワードを使えば「これは、子クラスごとに決まるメソッドだから、必ずオーバーライドして」伝えることができる
+- `abstract`キーワードは`abstract`クラスでしかしようできないため、クラス宣言の前にもつける
+- 抽象クラスを継承した場合、`abstract`メソッドをオーバライドしないとエラーとなる
+- 抽象クラスはインスタンス化できない
+- `abstract`メソッドを定義するときは、処理を書かず「引数と返り値」の型のみ定義する
+
+
+```ts {1, 5, 9-12}
+abstract class Department {
+  constructor(protected readonly id: string, public name: string) {
+  }
+...
+  abstract describe(this: Department): void;
+}
+
+class AccountingDepartment extends Department {
+  // オーバライド
+  describe() {
+    console.log('Accounting Department - ID: ' + this.id);
+  }
+
+}
+
+
+```
+
+
+## Singletons & Private Constructors
+- シングルトンパターンは、あるクラスのインスタンスを常にたった１つだけ持つことを保証するもの
+- 例えば、「経理部門は会社に1つだけであるべき」といったケース
+- 実装方法としては、コンストラクタに`private`をつける
+- プライベートコンストラクタを定義すると、`new`演算子が使えずインスタンス化できない(クラス内部からしかコンストラクタを呼び出せないということ)
+- newをつかえないのであればどうするか → 静的メソッド(Instanceが一つであるか確認するロジックを持つ)を利用する
+```ts {3, 7, 12-18}
+class AccountingDepartment extends Department {
+  private lastReport: string;
+  private static instance: AccountingDepartment;
+
+  ...
+
+  private constructor(id: string, private reports: string[]) {
+    super(id, 'Accounting');
+    this.lastReport = reports[0];
+  }
+
+  static getInstance() {
+    if(AccountingDepartment.instance) {
+      return this.instance;
+    }
+    this.instance = new AccountingDepartment('d2', []);
+    return this.instance;
+  }
+
+  ...
+}
+
+
+// const accounting = new AccountingDepartment('d2', []);
+const accounting = AccountingDepartment.getInstance();
+
+```
