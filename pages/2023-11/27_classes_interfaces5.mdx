@@ -1,0 +1,91 @@
+# Class & Interfaces5 【TypeScript】
+
+## Interfaces
+- インターフェースTSで追加され、JSでは使用できない
+- インターフェースとはオブジェクトの構造を記述する
+- クラスとの違いは「設計図」ではなく、「カスタム型」にすぎないということ
+- プロパティ・メソッドを持たせることができるが型を定義するだけで具体的な値は格納できない
+```ts
+interface Person() {
+  name: string;
+  age:  number;
+
+  greet(phrase: string): void;
+}
+
+```
+
+
+### インターフェースをなぜ使うのか？
+- 型チェックができる
+
+
+```ts
+interface Person() {
+  name: string;
+  age:  number;
+
+  greet(phrase: string): void;
+}
+
+const user1: Person = {
+  name: 'Fumi',
+  age: 30,
+  greet(phrase: string) { // 重要なのは、引数が一つでvoidを返すこと
+    console.log(phrase + ' ' + this.name);
+  }
+}
+
+user1.greet('Hi, I\'m');
+```
+
+## Using Interfaces with Classes
+- カスタムタイプであるのならば、以下でよいのでは？という疑問がある(コンパイルは通る)
+```ts
+type Person = {
+  name: string;
+  age:  number;
+
+  greet(phrase: string): void;
+}
+```
+
+- `interface`と`type`は互換性があるが、完全には一致しない
+1. typeはユニオンなどをして柔軟に型を変えられ、interfaceの方が**オブジェクトとして明確に定義している**と言える
+2. interfaceはクラスが実装すべき動作を指示することができる(→インターフェースとは、クラスが実装する必要がある動作を宣言するために使用される抽象型)
+
+```ts
+interface Greetable = {
+  name: string;
+  greet(phrase: string): void;
+}
+
+class Person implements Greetable, AnotherInterface {
+  name: string; // これは必須
+  age: number;  // これは追加可能
+
+  constructor(n: string) {
+    this.name = n;
+  }
+
+  greet() { // これは必須
+    console.log(phrase + ' ' + this.name);
+  }
+}
+```
+- `implements`は継承`extends`と違い、複数のインターフェースを遵守させることが可能
+- インターフェースは異なるクラスで機能を共有される際に使われることが多い
+- インターフェースは**抽象型**であり、抽象クラスとの違いとして、具体的な値と処理をもたいないこと、オーバーライドの必須でないことがある
+
+
+
+## Why Interfaces?
+- インターフェースを使うことで、一定の機能を強制することができる
+- 「あいさつができる`Greetable`なユーザーを求めていて、それ以外どんな`Person`でもよい」場合は以下のコードとなる
+```ts
+let user1: Greetable; // Greetableで型指定する
+
+user1 = Person('Fumi'); // Personがどんなプロパティ・メソッドを持っていようが
+
+user1.greet('Hi'); // とにかく挨拶ができればいい
+```
