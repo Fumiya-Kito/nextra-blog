@@ -1,0 +1,32 @@
+# Class & Interfaces7 【TypeScript】
+
+## Optional Parameters & Properties
+- あるプロパティに関して「存在する可能性があるが、存在する必要はない」という場合には`optionalVar?: type`という形で定義できる
+- これにより、変数・関数・クラスなどをより柔軟に型の定義を行うことができる
+- 例えば、インスタンス化したときに名前を指定してくれないかもしれない場合を考えると以下のようなコードとなる
+```ts
+interface Named {
+  readonly name?: string;
+  outputName?: string;
+}
+
+class Person implements Greetable {
+  name?: string;
+  age = 30;
+
+  constructor(n?: string) {
+    if(n) {
+      this.name = n;
+    }
+  }
+}
+```
+
+
+
+## Compiling Interfaces to JavaScript
+- インターフェースをJSにコンパイルするとどのように実装されているのか？確認する
+- 答えは、「全くもってインターフェースは翻訳されない」である
+- JSにインターフェース機能はなく、開発とコンパイル時にしか利用されない
+- インターフェースとクラスの決定的な違いである
+

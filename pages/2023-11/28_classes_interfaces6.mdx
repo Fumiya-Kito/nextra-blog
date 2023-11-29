@@ -1,0 +1,101 @@
+# Class & Interfaces6 【TypeScript】
+
+## Readonly Interface Properties
+- インターフェースでは、`readonly`修飾子をつけることが可能
+- ここでの`readonly`は一度だけ定義できて、それ以降変更できない`const`に近い役割である
+- 逆に、`private`, `public`といったアクセス修飾子はつけられない
+
+```ts
+interface Greetable {
+  readonly name: string;
+  greet(phrase: string): void;
+}
+
+class Person implements Greetable {
+  name: string;
+  age: 30;
+  constructor(n: string) {
+    this.name = n;
+  }
+
+  greet(phrase: string) {
+    console.log(phrase + ' ' + this.name);
+  }
+}
+
+let user1: Greetable;
+user1 = new Person('Fumi'); ここでの一回だけ
+user1.name = 'No Change'; // コンパイルエラー
+
+```
+
+
+## Extending Interfaces
+- クラスに複数のインターフェース`implements`することが可能
+- インターフェース間でも継承を行うことが可能
+- インターフェースを分ける理由としては、`Named`だけ強制したいオブジェクトやクラスがあるからである
+
+```ts
+interface Named {
+  readonly name: string;
+}
+
+interface Greetable {
+  greet(phrase: string): void;
+}
+
+class Person implements Greetable, Name {
+  name: string;
+  age: 30;
+  constructor(n: string) {
+    this.name = n;
+  }
+
+  greet(phrase: string) {
+    console.log(phrase + ' ' + this.name);
+  }
+}
+
+/** =============または================== */
+interface Named {
+  readonly name: string;
+}
+
+interface Greetable extends Named {
+  greet(phrase: string): void;
+}
+
+class Person implements Greetable {
+  name: string;
+  age: 30;
+  constructor(n: string) {
+    this.name = n;
+  }
+
+  greet(phrase: string) {
+    console.log(phrase + ' ' + this.name);
+  }
+}
+```
+
+## Interfaces as Function Types
+- 関数の構造を定義するためにもインターフェースは利用される
+- しかし、一般的には関数は`type`でカスタムタイプで定義される
+- interfaceは一般的にオブジェクト構造の記述に利用される
+```ts
+type AddFn = (a: number, b: number) => number; // カスタムタイプの利用
+
+let add: AddFn
+
+
+// interfaceでも関数の型を指定できる
+interface AddFnIfc {
+  (a: number, b: number): number;  // 無名だが、アロー関数ではない
+}
+
+let add2: AddFnIfc;
+add = (n1: number, n2: number) => {
+  return n1 + n2;
+}
+```
+
