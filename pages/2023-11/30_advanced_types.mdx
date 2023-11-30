@@ -1,0 +1,117 @@
+# Advanced Types
+
+- `IntersetionTypes`: 交差型
+- `Type Guards`: 型ガード
+- `Discriminated Unions`: 判別可能なユニオン型
+- `Type Casting`
+- `Function Overloads`
+
+
+## Intersection Types
+- 交差型は、UNION型と対照に2つのTypeのプロパティを必須で持つ必要がある型
+- typeを`&`で結合する
+- interfaceの継承で同じことができる
+```ts
+type Admin = {
+  name: string;
+  privileges: string[];
+}
+
+type Employee = {
+  name: string;
+  startDate: Date;
+}
+
+type ElevatedEmployee = Admin & Employee;
+
+const e1: ElevatedEmployee = {
+  name: 'fumi', // 必須
+  privileges: ['create-server'], // 必須
+  startDate: new Date(), // 必須
+}
+
+
+// ---- interfeace でも同じことができる ----------
+interface Admin {...}
+interface Employee {...}
+
+interface ElevatedEmployee extends Admin, ElevatedEmployee {}
+
+// ---- ユニオン型から抽出する(結局、積集合の考え) ---
+type Combinable = string | number;
+type Numeric = number | boolean;
+
+type Universal = Combinable & Numeric; // = number
+```
+
+
+
+## More on Type Guards
+- タイプガードとは実行前に、変数はその型を使って何ができるかをチェックするアプローチである
+- タイプガードはUnion型に対して有効に使える
+- Union型は柔軟性があり便利だが、やはり実行時にはどちらの型なのか正確に知りたい場合は多い
+
+```ts filename="typeofを使ったタイプガード"
+type Combinable = string | number;
+type Numeric = number | boolean;
+
+function add(a: Combinable, b: Combinable) {
+  if (typeof a === 'string' || typeof b === 'string') { // このif文がタイプガードと呼ばれる
+    return a.toString() + b.toString();
+  }
+  return a + b; // 数値型の足し算を保証
+}
+```
+
+
+```ts filename="inキーワードをつかったタイプガード"
+type UnknownEmployee = Employee | Admin;
+
+function printEmployeeInfomation(emp: UnknownEmployee) {
+  console.log('Name:' + emp.name);
+  console.log('Privileges: ' + emp.privileges); // コンパイルエラー
+  //--- typeofでは判定できない ----
+  if (typeof emp === 'object') {} // privilegesプロパティを持っているとは限らない
+  if (typeof emp === 'Employee') {} // JSはEmployee型を知らない
+
+  if ('previleges' in emp) { // JSで可動するオブジェクトのプロパティチェック
+
+  }
+}
+```
+
+```ts filename="instanceofキーワードをつかったタイプガード(クラスを扱う場合)"
+class Car {
+  drive() {
+    console.log('Driving...');
+  }
+}
+
+class Track {
+  drive() {
+    console.log('Driving a track');
+  }
+
+  loadCargo(amount: number) {
+    console.log('Loading cargo ...' + amount);
+  }
+}
+
+type Vehicle = Car | Track;
+
+const v1 = new Car();
+const v2 = new Track();
+
+function useVehicle(vehicle: Vehicle) {
+  vehicle.drive();
+  if ('loadCargo' in vehicle) { // OKだがStringの直打ちはタイポの危険性がある
+    vehicle.loadCargo(1000);
+  }
+  if (vehicle instanceof Track) {// クラスの場合はinstanceof をつかったタイプガードが有効、JSで動く
+    vehicle.loadCargo(1000);     // JSはクラスは知らないが、コンストラクタ関数は知っていて、クラスはこれにコンパイルされる
+  }                              // また、instanceof をつかうことでTrackがクラスなのか、カスタムタイプなのか区別できる
+}
+
+useVehicle(v1);
+useVehicle(v2);
+```
