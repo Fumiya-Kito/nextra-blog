@@ -1,0 +1,77 @@
+## Discriminated Unions
+- ユニオン型を使う際にタイプガードを容易にする型
+- interfaceに`type`を持たせる
+- この`type`プロパティはリテラル型である(`bird`という文字列の型)
+
+```ts
+interface Bird {
+  type: 'bird';
+  flyingSpeed: number;
+}
+
+interface Horse {
+  type: 'horse';
+  runningSpeed: number;
+}
+
+type Animal = Bird | Horse;
+
+function moveAnimal(animal: Animal) {
+  let speed;
+  switch (animal.type) {
+    case 'bird':
+      speed = animal.flyingSpeed;
+      break;
+    case 'horse':
+      speed = animal.runningSpeed;
+  }
+  console.log('speed is ' + speed);
+}
+
+moveAnimal({ type: 'bird', runningSpeed: 3 }); //コンパイルエラー
+moveAnimal({ type: 'bird', runningSpeed: 3 }); //OK
+```
+
+### メリット
+- `'flyingSpeed' in animal`のタイプミスを防ぐ
+- interfaceが`instanceof`キーワードを使えない点を回避する
+- switch文の`case`では`animal.type`をIDEが感知してくれるため、タイプミスはエラーとなる
+
+
+##  Type Casting
+- type castingは「ある値=特定の型であること」をTSに伝える行為
+- つまり、TSの型推論では知り得ないが、開発者は型を明確に知っているときに使える便利な構文
+- ただし、type castingを使うからには、型間違いによるランタイムエラーは開発者の責任となる
+- `<Type>value`を使ってキャストする方法と
+- `value as Type`をつかってキャストする方法があるが、プロジェクトで一貫性を持つこと
+
+- 例えば以下のpタグを考える、このときTSはpタグのidの存在、値を解析することをしない
+```html
+<body>
+  <p id="message-output"></p>
+  <input type="text" id="user-input">
+</body>
+```
+
+```ts
+// どちらも型がHTMLElement | nullということまでしか知らない＝どのタグが特定できない
+const para = document.querySelector('p')
+const para2 = document.getElementById('message-output')
+
+const userInput = document.getElementById('user-input');
+userInput.value = 'sample'; // エラー, nullの可能性がある、HTMLElementはvalueプロパティを持っていない
+
+// userInputはHtmlInputElementであることを教えてあげる必要がある
+// それがタイプキャスティングで実装できる
+// 記述方法は2つだが、どちらも等価である
+// パターン1: JSX構文と衝突する可能性があるため非推奨
+const userInput = <HTMLInputElement>document.getElementById('user-input')!;
+// パターン2: asキーワードを使用する
+const userInput2 = document.getElementById('user-input') as HTMLInputElement;
+
+if (userInput2) {
+  (userInput2 as HTMLInputElement).value = 'something';
+}
+```
+- また`value!`の感嘆符もタイプキャスティングでvalueが`null`ではないことをTSに伝えている
+- 開発者が型を完全に特定できないのであればタイプキャスティングはしてはいけない。`if`分岐をすべきである
