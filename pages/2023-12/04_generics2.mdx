@@ -1,0 +1,106 @@
+# Generics2
+
+##  Another Generic Function
+- 変数の長さによって処理を変えるロジックを考える
+- `Lengthy`インターフェースを制約に加えることで、文字列でも配列でも受け取れる関数ができる
+- まさに”汎用的な”関数をつくることができた
+```ts
+interface Lengthy {
+  length: number;
+}
+
+function countAndDescription<T extends Lengthy>(element: T): [T, string] {
+  let descriptionText = 'Got no value.';
+  if (element.length === 1) {
+    descriptionText = 'Got 1 element';
+  } else if (element.length > 1) {
+    descriptionText = 'Got ' + element.length + ' elements.';
+  }
+
+  return [element, descriptionText];
+}
+
+console.log(countAndDescription('Hi there!')); // one element
+console.log(countAndDescription(['Sports', 'Cooking'])); // two element
+console.log(countAndDescription([])); // no element
+```
+
+
+## The "keyof" Constraint
+- objectとkeyを受け取る関数を考える
+- `obj: object`と`key: string`を引数とするときは、`obj[key]`が本当に存在するかは不明
+- `keyof`キーワードを制約に加えることで、objectのキーであることを型注釈できる
+
+```ts
+function extractAndConvert<T extends object, U extends keyof T>(obj: T, key: U) {
+  return 'Value ' + obj[key];
+}
+
+extractAndConvert({}, name); // error: nameは{}のキーではない
+extractAndConvert({ name: 'Fumi'}, name); // OK
+```
+
+
+## Generic Classes
+- 汎用クラスも作成可能
+- データストレージクラスを考えたときのデータを配列で持つ
+- 配列の要素の型は任意だが、全要素が同じ型であって欲しい
+- このような場合にGenericsが役立つ
+```ts
+class DataStrage<T> {
+  private data: T[] = [];
+
+  addItem(item: T) {
+    this.data.push(item);
+  }
+
+  removeItem(item: T) {
+    if (this.data.indexOf(item) === -1) { // 見つからなかった場合
+      return;
+    }
+    this.data.splice(this.data.indexOf(item), 1);
+  }
+
+  getItems() {
+    return [...this.data];
+  }
+}
+
+const textStrage = new DataStrage<string>(); // ここでTを確定させる
+textStrage.addItem(10); // Error: Argument of type 'number' is not assignable to parameter of type 'string'.
+textStrage.addItem('Max'); 
+textStrage.addItem('Manu');
+textStrage.removeItem('Max');
+console.log(textStrage.getItems()); // ['Manu'];
+
+
+const numberStrage = new DataStrage<number>();
+
+const objStrange = new DataStrage<object>();
+objStrange.addItem({ name: 'Max'});
+objStrange.addItem({ name: 'Manu'});
+objStrange.removeItem({ name: 'Max'}); // 参照型だから想定通りに消せない, 上で追記したものと同じアドレスでない
+// indexof で見つからず-1を返す
+
+console.log(objStrange.getItems());
+```
+↓これを回避するには
+
+```ts
+// 定数化して、同じアドレスを参照する
+const objMax = { name: 'Max' };
+
+objStrange.addItem(objMax);
+objStrange.removeItem(objMax); // OK
+
+// しかし、これは現実的でないから、諦めてプリミティブ型だけのDataStrageにするのは良いアイデア
+class DataStrage<T extends string | number | boolean> {
+  ...
+  // ちなみに、インスタンスメソッドにもGenericsは使える
+  addItem<U>(item: T) {
+    this.data.push(item);
+  }
+  ...
+}
+
+```
