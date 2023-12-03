@@ -1,0 +1,111 @@
+## Index Properties
+
+- インデックスタイプはプロパティが柔軟なオブジェクトを作成することが可能
+- 例えば入力フォームの各値を保持するオブジェクトはたくさんのプロパティの組み合わせが考えられる
+```ts
+interface ErrorContainer {
+ [prop: string]: string; // プロパティ名は文字列、値が文字列
+} 
+
+const errorBag: ErrorContainer = { // 複数のプロパティを持つことができる
+  email: 1, // error
+  username: 'Mike', // OK
+  1: 'This is OK' // 1はストリングに変換できるためOK, 
+}
+```
+
+
+## Function Overloads
+- 関数のオーバーロードは１つの関数に対して、複数の関数シグネチャを定義する機能
+- 関数シグネチャとは、どのような引数を取るか、どのような戻り値を返すかといった関数の型
+- オーバーロードする方法は、関数シグネチャは関数宣言の上に記述するだけである
+```ts
+function add(a: string | number, b: string | number) {
+  if (typeof a === 'string' || typeof b === 'string') {
+    return a.toString() + b.toString();
+  }
+  return a + b;
+}
+
+const result = add('F.', 'Kito'); // 開発者はstringだとわかるのに、TSはresult: string|numberだと判断
+result.split('') // numberの可能性があるからコンパイルエラー
+```
+↓こんなときにオーバーロードが役立つ
+- メイン関数の直上で、同名の関数で`function`宣言し、型のみを記述する(=関数シグネチャ)
+- ポイントは、型を明確にすること、複数シグネチャを記述できること
+- 関数の形を変換することも可能
+```ts
+function add(a: number, b: number): number;
+function add(a: string, b: string): string;
+function add(a: string, b: number): string;
+function add(a: number, b: string): string;
+// function add(n: string): string; 引数を減らす
+// function add(a: string, b?: string): string; オプショナルにする
+function add(a: string | number, b: string | number) {
+  if (typeof a === 'string' || typeof b === 'string') {
+    return a.toString() + b.toString();
+  }
+  return a + b;
+}
+
+const result = add('F.', 'Kito'); // TSはresult: stringだと判断 + ３パターンのオーバーロードを知っている
+result.split('.') // 使用可能
+```
+
+```ts filename="例2"
+// 関数シグネチャ部分
+function hello(person: string): void; // シグネチャ1
+function hello(persons: string[]): void; // シグネチャ2
+// 関数の実装部分
+function hello(person: string | string[]): void {
+  if (typeof person === "string") {
+    console.log(`Hello ${person}`);
+  } else {
+    console.log(`Hello ${person.join(",")}`);
+  }
+}
+```
+
+
+## Optional Chaining
+- 値の存在性を確かめながらより下層の値を取りに行く方法
+- `Object?.prop?.prop`のように記述する
+- ユースケースとしては、バックエンドから取得するデータをJSオブジェクトに変換した際、各プロパティの存在や型が不明確である場合など
+- ver3.7以上が必要
+```ts
+const userData = {
+  id: 'u1',
+  name: 'fum',
+  job: { title: 'ceo', description: 'my own company' },
+};
+
+console.log(userData.job.title); // ceo
+
+// しかし、バックエンドから取得した場合
+const fetchedUserData = fetch(...);
+console.log(fetchedUserData.job.title); // 設定されておらずundefinedかもしれない 
+
+// jsのやり方として、プロパティの存在をチェックしながらアクセスする
+console.log(fetchedUserData.job && fetchedUserData.job.title);
+
+// optional chaining: コンパイルするとifチェックが入る
+console.log(fetchedUserData?.job?.title);
+```
+
+## Nullish Coalescing
+- `nullish`データを扱うときにフォールバックする機能
+```ts
+// nullishな変数
+const userInput = null;
+// falsyを回避するフォールバック方法として論理和をつかう方法がメジャー
+const storedData = userInput || 'DEFAULT';
+
+// もし空文字は有効な値として扱いたい場合、上記ではDEFAULTになってしまう
+const userInput2 = '';
+const storedData2 = userInput2 || 'DEFAULT'; // DEFAULT
+
+// nullish coalescingを使えば、nullとundefinedに限りフォールバックされる
+const storedData3 = userInput2 ?? 'DEFAULT'; // 空文字
+const storedData3 = userInput ?? 'DEFAULT'; // DEFAULT
+
+```

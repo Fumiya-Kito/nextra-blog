@@ -1,0 +1,87 @@
+# Generics
+- ジェネリックスと呼ばれる概念に飛び込む
+- GenericsはTypeScriptに存在し､ バニラJavaScriptには存在しない
+
+
+## Built-in Generics & What are Generics?
+- 変数に`Array`で型注釈をつけてみる
+- 「`Array`はGeneric type(汎用型)であり、一つの引数を必要とする」とエラーとなる
+- `Array<T>`という記法は奇妙だが、汎用型を使っているという印である
+- 汎用型とは、「他の型とつながりがあり、その型に柔軟性を持たせることができる汎用的な」型である
+- 文字列の配列は`string[]`と型注釈をつけたが、`Arrya<string>`と100%同等である(これまでもGenericsを使っていた)
+```ts
+const names: Array = []; // Generic type 'Array<T>' requires 1 type argument(s)
+const names2: Array<string> = []; // = names2: string[]
+```
+
+- `Promise`型もgenericsである
+```ts
+const promise = new Promise((resolve) => { // Promise<unknwn>
+  setTimeout(() => {
+    resolve('This is done')
+  }, 2000);
+}); 
+
+const promise: Promise<string> = new Promise((resolve, reject) => { // このように指定する
+  ...
+}); 
+
+promise.then(data => data.split(' ')); // OK: string型だと知っている
+```
+
+
+## Creating a Generic Function
+- 独自のGenericsをつくってみる
+- 例として、以下のmerge関数を考える
+- 問題点: プロパティの存在をTSに知らせることができない
+
+```ts
+function merge(objA: object, objB: object) {
+  return Object.assign(objA, objB);
+}
+
+console.log(merge({name: 'fumi'}, {age: 30}));
+
+const mergedObj = merge({name: 'fumi'}, {age: 30});
+mergedObj.name; // Property 'name' does not exist on type 'object'
+```
+
+- 関数名の直後にアングルブラケット`<T, U>`のようにジェネリックスを型注釈できる
+- 慣例的に1文字で`T`, `U`などがつかわれやすい
+- 完全に`{name: string}`のように特定するわけではなく、`T`がオブジェクト型であり、`U`との交差型`T & U`ですよと伝える
+- こうすることで、TSは実引数のプロパティ`name`, `age`は`mergedObj`が持っていることを知ることができる
+- ポイントは関数実行時に動的に型が特定されること、TとUが違う型である可能性を伝えていることである
+```ts
+function merge<T extends object, U>(objA: T, objB: U) { // function merge(T, U): T & U と判断してくれる
+  return Object.assign(objA, objB);
+}
+const mergedObj = merge({name: 'fumi'}, {age: 30}); // mergedObj: { name: string } & { age: number } 
+mergedObj.name; // OK
+```
+- 呼び出し時にジェネリックスの型を特定してあげている
+- 以下は実行可能だが、型推論に任せるの普通で冗長
+```ts
+const mergedObj2 = merge<{name: string}, {age: number}>(
+  { name: 'fumi' },
+  { age: 30 }
+)
+```
+
+
+## Working with Constraints
+- 上記merge関数の引数`T, U`はどんな種類のオブジェクトであってもよいという柔軟性を持たせた
+- しかし、`Object.assign(T, U)`をつかうからには、`T, U`はオブジェクトでなければならない
+```ts filename="コンパイルが通ってしまう"
+mergedObj = merge({ name: 'XXX'}, 30);
+console.log(mergedObj); // { name: 'XXX' } 第二引数がオブジェクト以外の場合、そのまま表示される
+```
+- このような場合にはconstraints(汎用型の制約)を使う
+- `extends`をつかうことで、汎用型のベースとなる型を注釈できる
+(`Object.assign`の第一引数はオブジェクト型である必要があり、コンパイルを通すためにすでに使っていし待っているが)
+- extendsの後ろはカスタムタイプ、ユニオン型などなんでも型注釈できる
+```ts
+function merge<T extends object, U extends object>(objA: T, objB: U) { // function merge(T, U): T & U と判断してくれる
+  return Object.assign(objA, objB);
+}
+const mergedObj = merge({name: 'fumi'}, 30); // Error: Argument of type 'number' is not assignable to parameter of type 'object'.
+```
