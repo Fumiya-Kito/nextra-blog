@@ -1,0 +1,73 @@
+# Generics
+
+## Generic Utility Types
+- tsには、組み込みのGenericsが存在する
+
+```ts filename="Parcial"
+// Paracialはオブジェクトのプロパティをすべてoptionalに変更するGenerics
+interface Goal {
+  title: string;
+  description: string;
+  untilDate: Date;
+}
+
+function createGoal(
+  title: string,
+  description: string, 
+  date: Date
+): Goal {
+  let courseGoal: Parcial<Goal> = {}; // 最終的にはGoal型になりますよという宣言
+  courseGoal.title = title; // JSならこれはできるが、TSだとParcialを使わないとコンパイルエラー(使っているのでOK)
+  courseGoal.description = description;
+  courseGoal.untilDate = date;
+
+  return courseGoal; // courseGoalはGoal型ではないのでコンパイルエラー
+  return courseGoal as Goal; // キャストする
+}
+```
+
+
+```ts filename="Readonly"
+// 配列を読み取り専用にしたい場合(pushさせたくない)
+const names: Readonly<string[]> = ['Max', 'Sports'];
+names.push('AAAAA'); // Error
+names.pop('BBBBB');  // Error
+```
+
+[その他のUtility Types](https://www.typescriptlang.org/docs/handbook/utility-types.html)
+
+## Generic Types vs Union Types
+- ジェネリックとユニオン型の違いについて
+
+```ts filename="これは同じではないのか？"
+class DataStrage<T> {
+  private data: T[] = [];
+  ...
+}
+// ユニオン型に置き換えてみる
+class DataStrage {
+  private data: (string | number | boolean)[] = [];
+  ...
+}
+```
+
+```ts filename="ユニオン型だと"
+// ユニオン型では型を特定して初期化できない
+const textStrage = new DataStrage<string>();
+
+class X {
+  // dataフィールドの配列の中身は１種でなくてもよい
+  private data: (string | number | boolean)[] = [];
+  // このときメソッドはstringであろうとnumberであるとbooleaenであろうと、同じように動作させてしまう
+  addItem(item: string| number| boolean) {}
+  // これを回避するなら
+  private data: string[] | number[] | boolean [] = [];
+  addItem(item: string| number| boolean) {
+    data.push(item); // しかしこれはエラーとなる、違う型が入ってしまう可能性があるから
+  } 
+}
+
+```
+
+- ユニオン型は「型はどれかでいい」のに対して、ジェネリックスは「型をロックする」
+- 上の例のインスタンスのように、機能全体で同じ型を利用したい場合はジェネリックスを使わなければならない
