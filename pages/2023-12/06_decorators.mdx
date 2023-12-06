@@ -1,0 +1,129 @@
+# Decorators
+
+- デコレータはメタプログラミングの一つである(ロジックを直接コーディングするのではなく、あるパターンをもったロジックを生成する高位ロジックによってプログラミングを行う方法)
+
+## A First Class Decorator
+- デコレータはクラスに対して行われることがほとんどである
+- その例を見ていく前に、Decoratorを使うための設定を行う
+- `tsconfig.json`において、`experimentalDecorators`オプションをtrueにしないといけない
+```ts filename="tsconfig.json"
+{
+  "compilerOptions": {
+    ...
+    /* Experimental Options */
+    "experimentalDecorators": true /* Enables experimental support for ES7 decorators. */
+    // "emitDecoratorMetadata": true,         /* Enables experimental support for emitting type metadata for decorators. */
+  },
+  ...
+}
+```
+
+- デコレータの実態は関数である("何か"に適用させる関数)
+```shell filename="何かの対象、デコレータを追加できる場所"
+1. class 
+2. property
+3. getter/setter
+4. method
+5. parameter
+```
+
+- 慣例的に大文字始まりで命名する、が必須ではない
+- 引数にはターゲット関数(Classではconstructor)が必須である
+
+- デコレータを適用する場合は`@`マークを使い、”何か”をデコレートする
+- このとき実行せずポインタを渡すだけである
+- デコレータが実行されるのは**クラスの定義時**であり、インスタンス化されたときではない
+ 
+```ts
+function Logger(constructor: Function) {
+  console.log('Logging...');
+  console.log(constructor);
+}
+
+@Logger
+class Person {
+  name = 'Max';
+
+  constructor() {
+    console.log('creating person object');
+  }
+}
+
+// const pers = new Person();
+// console.log(pers);
+```
+↓
+```shell
+> Logging...
+> 
+class Person {
+  constructor() {
+      this.name = 'Max';
+      console.log('creating person object');
+  }
+}
+```
+
+
+## Working with Decorator Factories
+- デコレータファクトリーはデコレータをカスタマイズするものであり、最終的にはデコレータを返す
+- 例えば、デコレータ(関数)に引数を与えたい場合など使用する
+- 実装方法としては、デコレータファクトリー内に無名関数(デコレータ)を`return`し、その無名関数に引数をもたせる
+- `@`宣言時にデコレータファクトリー実行することで、無名関数のポインタを渡す
+```ts
+function Logger(param: string) { // デコレータファクトリ
+  return function(constructor: Function) { // デコレータ
+    console.log('param:', param);
+    console.log(constructor);
+  }
+}
+
+@Logger('パラメータを渡せる, Loggerはデコレータファクトリ')
+class Person {
+  name = 'Max';
+
+  constructor() {
+    console.log('creating person object');
+  }
+}
+```
+
+## Building More Useful Decorators
+- HTMLテンプレートをレンダリングするデコレータを考える
+```html {11} filename="index.html"
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Understanding TypeScript</title>
+  <script src="dist/app.js" defer></script>
+</head>
+<body>
+  <div id="app"></div>
+</body>
+</html>
+```
+```ts
+unction WithTemplate(template: string, hookId: string) {
+  return function(constructor: any) {
+    const hookEl = document.getElementById(hookId);
+    const p = new constructor();
+    if (hookEl) {
+      hookEl.innerHTML = template;
+      hookEl.querySelector('h1')!.textContent = p.name;
+    }
+  }
+}
+
+// id="app"の<div>タグを取得してinnerHTMLに<h1>タグを埋め込み、そのテキストをクラスのnameとする
+@WithTemplate('<h1>My Person Object</h1>', 'app')
+class Person {
+  name = 'Max';
+
+  constructor() {
+    console.log('creating person object');
+  }
+}
+```
