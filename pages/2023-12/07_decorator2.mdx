@@ -1,0 +1,109 @@
+## Adding Multiple Decorators
+- デコレータは複数つけることができる
+- 気になるのがその実行順
+1. ファクトリー: 上から下(JSのコールスタック通り)
+2. デコレータ: 下から上(ボトムアップで実行されていく)
+```ts
+function Logger(logString: string) {
+  console.log('[1] LOGGER FACTORY');
+  return function(constructor: Function) {
+    console.log('[4]', logString);
+    console.log('[5]', constructor);
+  };
+}
+
+function WithTemplate(template: string, hookId: string) {
+  console.log('[2] TEMPLATE FACTORY');
+  return function(constructor: any) {
+    console.log('[3] Rendering template');
+    const hookEl = document.getElementById(hookId);
+    const p = new constructor();
+    if (hookEl) {
+      hookEl.innerHTML = template;
+      hookEl.querySelector('h1')!.textContent = p.name;
+    }
+  }
+}
+
+// @Logger('LOGGING - PERSON')
+@Logger('LOGGING')
+@WithTemplate('<h1>My Person Object</h1>', 'app')
+class Person {
+  name = 'Max';
+
+  constructor() {
+    console.log('Creating person object...');
+  }
+}
+
+const pers = new Person();
+console.log(pers);
+```
+↓
+```shell
+[1] LOGGER FACTORY
+[2] TEMPLATE FACTORY
+[3] Rendering template
+Creating person object...
+[4] LOGGING
+[5] class Person {
+    constructor() {
+        this.name = 'Max';
+        console.log('Creating person object...');
+    }
+}
+Creating person object...
+Person {name: 'Max'}
+```
+
+## Diving into Property Decorators
+- デコレータが適用できるのはクラスだけではない
+- プロパティに適用する場合を考える
+- プロパティのデコレータは２つの引数を必要とする
+
+1. target: コンストラクタ関数の状態を参照する
+2. propName: プロパティ名
+
+```ts
+
+function Log(target: any, propName: string | Symbol) {
+  console.log('Propaty Decorator');
+  console.log(target, propName);
+}
+
+class Product {
+  @Log
+  title: string;
+  private _price: number;
+
+  set price(value: number) {
+    if (value > 0) {
+      this._price = value;
+    } else {
+      throw new Error('only positive');
+    }
+  }
+
+  constructor(t: string, p: number) {
+    this.title = t;
+    this._price = p;
+  }
+
+  getPriceWithTax(tax: number) {
+    return this._price * (1 + tax);
+  }
+}
+```
+↓ インスタンス化はしていないため、プロパティ定義時にデコレータが実行されていることがわかる
+```shell
+Propaty Decorator
+
+{
+  constructor: class Product
+  getPriceWithTax: ƒ getPriceWithTax(tax)
+  set price: ƒ price(value)
+  [[Prototype]]: Object
+}
+```
+
+
