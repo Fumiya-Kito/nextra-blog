@@ -1,0 +1,122 @@
+## Accessor & Parameter Decorators
+- Accessor(setter/getter)にもデコレータは追加できる
+1. target:
+2. name:
+3. descriptor:
+
+```ts
+function Log2(target: any, name: string, descriptor: PropertyDescriptor) {
+  console.log('Accessor decorator');
+  console.log(target);
+  console.log(name);
+  console.log(descriptor);
+}
+
+... // in class
+  @Log2
+  set price(value: number) {
+    if (value > 0) {
+      this._price = value;
+    } else {
+      throw new Error('only positive');
+    }
+  }
+...
+```
+
+```shell
+Accessor decorator
+
+constructor: class Product
+getPriceWithTax: ƒ getPriceWithTax(tax)
+set price: ƒ price(value)
+[[Prototype]]: Object
+
+
+
+price
+
+configurable: true
+enumerable: false
+get: undefined
+set: ƒ price(value)
+[[Prototype]]: Object
+```
+
+- メソッドにも追加できる
+- 引数はAccessorと同じ
+```ts
+function Log3(target: any, name: string | Symbol, descriptor: PropertyDescriptor) {
+  console.log('method decorator');
+  console.log(target);
+  console.log(name);
+  console.log(descriptor);
+}
+
+... // in class
+  @Log3
+  getPriceWithTax(tax: number) {
+    return this._price * (1 + tax);
+  }
+...
+```
+
+- パラーメータにデコレータを追加する
+- 引数に`position`を取り、デコレートするパラメータの位置をとる（第?引数なのか）
+```ts
+function Log4(target: any, name: string | Symbol, position: number) {
+  console.log('parameter decorator');
+  console.log(target);
+  console.log(name);
+  console.log(position);
+
+}
+
+...
+  getPriceWithTax(@Log4 tax: number) {
+    return this._price * (1 + tax);
+  }
+...
+```
+
+##  Returning (and changing) a Class in a Class Decorator
+
+- デコレータの返り値について考える
+- デコレータが何を返せるかは、どのタイプのデコレータなのか？`target`は何なのかに依存する
+- クラスデコレータでは、古いコンストラクタを継承した、新しいコンストラクタを返すこともできる
+- どんな引数でも受け取れるようにGenericsを用いて以下のようにデコレータを定義する
+- デコレータはクラス定義時に実行されるが、コンストラクタをreturnすることで**インスタンス化したときに**デコレータが実行される
+- しかも、`super`によりデコレートされる側のコンストラクタも継承する
+
+```ts filename="Person.nameをインスタンス化したときに、HTMLElementでレンダリングするデコレータ"
+function WithTemplate(template: string, hookId: string) {
+  console.log('[2] TEMPLATE FACTORY');
+  return function<T extends {new(...args: any[]): {name: string}}>(originalConstructor: T) {
+    return class extends originalConstructor {
+      constructor(..._: any[]) {
+        super();
+        console.log('[3] Rendering template');
+        const hookEl = document.getElementById(hookId);
+        // const p = new originalConstructor(); // superしてるから不要
+        if (hookEl) {
+          hookEl.innerHTML = template;
+          hookEl.querySelector('h1')!.textContent = this.name;
+        }
+      }
+    }
+  }
+}
+
+@WithTemplate('<h1>My Person Object</h1>', 'app')
+class Person {
+  name = 'Max';
+
+  constructor() {
+    console.log('Creating person object...');
+  }
+}
+
+const pers = new Person();
+
+console.log(pers);
+```
