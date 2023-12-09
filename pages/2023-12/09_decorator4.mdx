@@ -1,0 +1,161 @@
+## Other Decorator Return Types
+- メソッドデコレータやアクセサーデコレータでは`PropertyDescriptor`を引数にとる
+- これは通常のオブジェクトと異なり`configurable`, `enumerable`などの設定値が定義されている
+- これは`Object.defineProperty()`というメソッドで記述できる(バニラJSの機能)
+- デコレータでは、`PropertyDescriptor`にアクセスできるため、こういった設定値の変更を行うことも可能
+```ts {7}
+function Log2(target: any, name: string, descriptor: PropertyDescriptor): PropertyDescriptor {
+  console.log('Accessor decorator');
+  console.log(target);
+  console.log(name);
+  console.log(descriptor);
+
+  return { set: Function, get: ... };
+}
+```
+
+# Object.defineProperty()について
+[MDN > Object.defineProperty()](https://developer.mozilla.org/ja/docs/Web/JavaScript/Reference/Global_Objects/Object/defineProperty)
+> 静的メソッドの Object.defineProperty() は、あるオブジェクトに新しいプロパティを直接定義したり、オブジェクトの既存のプロパティを変更したりして、そのオブジェクトを返します。
+
+```js filename="構文"
+Object.defineProperty(obj, prop, descriptor);
+```
+### 引数
+1. `obj`: プロパティを定義する対象(オブジェクト)
+2. `prop`: 定義or変更するプロパティの名前または`Symbol`
+3. `descriptor`: 定義or変更するプロパティの記述子
+
+### 返値
+引数で渡された`obj`
+
+### 用途
+- オブジェクトのプロパティの追加・変更をより詳細に、より明示的に行う
+- 代入によるプロパティの定義・変更(ex.`obj.prop = 1`)に関して
+  1. `prop`は列挙に出現(`for...in`, `Object.keys`など)
+  2. `prop`は、変更可能
+  3. `prop`は削除可能
+- 対して、`defineProperty()`によるプロパティの定義・変更は既定値(上記の列挙・変更・削除可否など)から設定できる
+- `defineProperty()`によるプロパティはデフォルトで不変となる
+
+## 解説
+- プロパティの**記述子は２種類**ある
+1. データ記述子: 値を持つ、値は書き換え可能にも不可能にもできる
+2. アクセサー記述子: 関数のゲッターとセッターの組みで表されるプロパティ
+- 記述子はどちらかでなければならず、両方であることはできない
+- 両者が持つ共通キーとそれぞれがオプションで持つキーがある
+
+### 共通キー
+- `configurable`: `true`の場合のみ、記述子の変更と削除が可能、デフォルトでは`false`
+- `enumerable`: `true`の場合のみ、プロパティ列挙に出現。デフォルトでは`false`
+
+### データ記述子のオプションキー
+- `value`: プロパティに関連づけられた値。JSの値(`number`,`object`,`function`など)である必要がある。デフォルト`undefined`
+- `writable`: `true`の場合のみ、代入演算子で変更可能。デフォルト`false`
+
+### アクセサー記述子のオプションキー
+`get`: ゲッター関数
+- ゲッターを設けない場合`undefined`
+- プロパティにアクセスするとこの関数が引数なしでコールされる
+- ゲッター関数内の`this`はプロパティが記述されているオブジェクト
+- 返値はプロパティの値
+- 既定値は`undefined`
+
+`set`: セッター関数
+- セッターを設けない場合`undefined`
+- プロパティに値が割り当てられたとき、この関数がその値を引数としてコールされる
+- セッター関数内の`this`は割り当てようとするプロパティが記述されているオブジェクト
+- 既定値は`undefined`
+
+> これらのキーは必ずしも記述子が直接所有しているとは限らないことに留意してください。継承されたプロパティも同様です。これらの既定値が存在することを保証するには、先行して Object を凍結しておくか、すべてのオプションを明示的に指定するか、Object.create(null) で null に設定するかします。
+
+```js
+// __proto__ を使うやり方
+var obj = {};
+var descriptor = Object.create(null); // 意図しないキーの継承を防止します。
+descriptor.value = "static";
+
+// 既定で継承不可、変更不可、書換不可のプロパティとなります。
+Object.defineProperty(obj, "key", descriptor);
+
+// 明示的な指定
+Object.defineProperty(obj, "key", {
+  enumerable: false,
+  configurable: false,
+  writable: false,
+  value: "static",
+});
+
+// 同じオブジェクトを再利用
+function withValue(value) {
+  var d =
+    withValue.d ||
+    (withValue.d = {
+      enumerable: false,
+      writable: false,
+      configurable: false,
+      value: value,
+    });
+
+  // 値の代入で重複操作を防ぐ
+  if (d.value !== value) d.value = value;
+
+  return d;
+}
+// このように使います。
+Object.defineProperty(obj, "key", withValue("static"));
+
+// freeze が利用できるなら、オブジェクトのプロトタイプのプロパティ
+// (value, get, set, enumerable, writable, configurable) を
+// 追加・削除することを防ぐことができます。
+(Object.freeze || Object)(Object.prototype);
+
+```
+
+### 例
+```js
+var o = {}; // 新しいオブジェクトの生成
+
+// データ記述子により、defineProperty を用いて
+// オブジェクトプロパティを追加する例
+Object.defineProperty(o, "a", {
+  value: 37,
+  writable: true,
+  enumerable: true,
+  configurable: true,
+});
+// o オブジェクトに 'a' プロパティが存在するようになり、その値は 37 となります
+
+// アクセサー記述子により、defineProperty を用いて
+// オブジェクトプロパティを追加する例
+var bValue = 38;
+Object.defineProperty(o, "b", {
+  // メソッド名ショートハンドを利用しています(ES2015 の機能)。
+  // 次のように書いているのと同じことです:
+  // get: function() { return bValue; },
+  // set: function(newValue) { bValue = newValue; },
+  get() {
+    return bValue;
+  },
+  set(newValue) {
+    bValue = newValue;
+  },
+  enumerable: true,
+  configurable: true,
+});
+o.b; // 38
+// o オブジェクトに 'b' プロパティが存在するようになり、
+// その値は 38 となります
+// o.b は再定義されない限り、その値は常に bValue と同じです。
+
+// (訳注:データとアクセサーを)両方を混在させることはできません:
+Object.defineProperty(o, "conflict", {
+  value: 0x9f91102,
+  get() {
+    return 0xdeadbeef;
+  },
+});
+// TypeError が発生します。value はデータ記述子にのみ、
+// get はアクセサー記述子にのみ存在していなければなりません。
+
+```
