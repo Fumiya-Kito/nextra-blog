@@ -1,0 +1,66 @@
+## Example: Creating an "Autobind" Decorator
+- jsでは`this`の値が動的に変わってしまうことがよくあり、それを防ぐために`bind`というビルトイン関数が用意されている
+- `addEventListener`内で呼び出した`Printer`のインスタンスメソッドの`this`は`Printer`のインスタンスではなく`addEventListener`となる
+- この現象を防ぐために`bind`関数が用意されているが、これをデコレータで解決するn
+```html
+<body>
+  <div id="app"></div>
+  <button>Click me</button>
+</body>
+```
+
+```ts
+class Printer {
+  message = 'This works!';
+
+  showMessage() {
+    console.log(this.message);
+  }
+}
+
+const p = new Printer();
+p.showMessage();
+
+const button = document.querySelector('button')!;
+button.addEventListener('click', p.showMessage); // undefined
+button.addEventListener('click', p.showMessage.bind(p)); // This works!: 「毎回bindする」をデコレータで解決する
+```
+↓ Autobindデコレータを使用する
+```ts {17}
+function Autobind(_: any, _2: string, descriptor: PropertyDescriptor) {
+  const originalMethod = descriptor.value; // デコレートする関数を取得
+  const adjDescriptor: PropertyDescriptor = {
+    configurable: true,
+    enumerable: false, // 列挙に現れないように
+    get() { // ユーザーがメソッドにアクセスしたときに呼ばれるゲッター: 関数実行前にこれを行う
+      const boundFn = originalMethod.bind(this);
+      return boundFn;
+    }
+  };
+  return adjDescriptor;
+}
+
+class Printer {
+  message = 'This works!';
+
+  @Autobind
+  showMessage() {
+    console.log(this.message);
+  }
+}
+
+const p = new Printer();
+p.showMessage();
+
+const button = document.querySelector('button')!;
+button.addEventListener('click', p.showMessage);
+```
+- `Autobind`はメソッドにアクセスするデコレータ
+- デコレートする対象の関数にアクセスするには第３引数の`descriptor`の値を参照する
+- ゲッターに前処理として`bind(this)`を呼び出す
+- ここでの`this`は**ゲッターをトリガーとするものを参照する**
+- ゲッターを呼び出すのはインスタンスである
+- よって安全に`originalMethod`を持つインスタンスオブジェクトでバインドすることができる
+- このデコレータでやっていることは、古い`descriptor`を受け取り、新しい`adjDescriptor`を返して、`originalMethod`の設定値を変更している
+- 第1,2引数の`target`, `methodName`には興味がないことに留意
+
