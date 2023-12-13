@@ -1,0 +1,131 @@
+# TypeScript in a Project
+
+実際にプロジェクトでどのようにTSをしようしていくのか、でもプロジェクトを作成して学んでいく
+
+- ユーザーインプットの検証・読込・レンダリングを実装する
+- このアプリケーションはあえて`app.ts`の1つのファイルにすべてを書き込み分割はのちに行う
+- テンプレートは以下
+```html
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <title>ProjectManager</title>
+    <link rel="stylesheet" href="app.css" />
+    <script src="dist/app.js" defer></script>
+  </head>
+  <body>
+    <template id="project-input">
+      <form>
+        <div class="form-control">
+          <label for="title">Title</label>
+          <input type="text" id="title" />
+        </div>
+        <div class="form-control">
+          <label for="description">Description</label>
+          <textarea id="description" rows="3"></textarea>
+        </div>
+        <div class="form-control">
+          <label for="people">People</label>
+          <input type="number" id="people" step="1" min="0" max="10" />
+        </div>
+        <button type="submit">ADD PROJECT</button>
+      </form>
+    </template>
+    <template id="single-project">
+      <li></li>
+    </template>
+    <template id="project-list">
+      <section class="projects">
+        <header>
+          <h2></h2>
+        </header>
+        <ul></ul>
+      </section>
+    </template>
+    <div id="app"></div>
+  </body>
+</html>
+
+```
+- templateタグは最近導入されたもので、即時にレンダリングせずJSによってコントロールされることを前提としたタグ
+
+
+## DOM Element Selection & OOP Rendering
+- `npm i`, `npm start`と`tsc -w`でアプリケーションを動作させても空のページである(templateタグをつかっているから)
+- `form`タグを表示させるところから開始する(id="app"のdivタグにアクセス、その中にtemplate>formタグをレンダリングする)
+- OOPで記述していく
+```ts 
+class ProjectInput {
+  templateElement: HTMLTemplateElement;
+  hostElement: HTMLDivElement;
+  element: HTMLFormElement;
+
+  constructor() {
+    this.templateElement = document.getElementById('project-input')! as HTMLTemplateElement; // templateを参照
+    this.hostElement = document.getElementById('app')! as HTMLDivElement; // hostがtemplateのコンテンツを参照
+
+    const importedNode = document.importNode(this.templateElement.content, true);
+    this.element = importedNode.firstElementChild as HTMLFormElement;
+    this.attach();
+  }
+
+  private attach() {
+    this.hostElement.insertAdjacentElement('afterbegin', this.element); // 先頭に挿入
+  }
+}
+
+const prjInput = new ProjectInput();
+```
+
+## Interacting with DOM Elements
+- formのinputelementを取得する
+1. title
+2. description
+3. people
+
+
+```ts
+class ProjectInput {
+  templateElement: HTMLTemplateElement;
+  hostElement: HTMLDivElement;
+  element: HTMLFormElement;
+
+  titleInputElement: HTMLInputElement;
+  descriptionInputElement: HTMLInputElement;
+  peopleInputElement: HTMLInputElement;
+
+  constructor() {
+    this.templateElement = document.getElementById('project-input')! as HTMLTemplateElement; // templateを参照
+    this.hostElement = document.getElementById('app')! as HTMLDivElement; // hostがtemplateのコンテンツを参照
+
+    const importedNode = document.importNode(this.templateElement.content, true);
+    this.element = importedNode.firstElementChild as HTMLFormElement;
+    this.element.id = 'user-input'; // id プロパティを編集できる
+
+    this.titleInputElement = this.element.querySelector('#title') as HTMLInputElement;
+    this.descriptionInputElement = this.element.querySelector('#description') as HTMLInputElement;
+    this.peopleInputElement = this.element.querySelector('#people') as HTMLInputElement;
+
+    this.configure();
+    this.attach();
+  }
+
+  private submitHandler(event: Event) {
+    event.preventDefault();
+    console.log(this.titleInputElement.value);
+  }
+
+  private configure() {
+    this.element.addEventListener('submit', this.submitHandler.bind(this));
+  }
+
+  private attach() {
+    this.hostElement.insertAdjacentElement('afterbegin', this.element); // 先頭に挿入
+  }
+}
+
+const prjInput = new ProjectInput();
+```
