@@ -1,0 +1,92 @@
+## Creating a Re-Usable Validation Functionality
+- 入力検証(validation)を行う関数を作成する
+```ts filename="最終結果イメージ"
+if (
+  validate({value: enteredTitle, required: true, minLength: 5}) &&
+  validate({value: enteredDescription, required: true, minLength: 5}) &&
+  validate({value: enteredPeople, required: true, minLength: 5}) 
+) {
+
+}
+```
+
+- validation関数が受け取る引数は、同じような構造体のはず(そうであって欲しい)であるから、`interface Validatable`を作成する
+```ts
+interface Validatable {
+  value: string | number;
+  required?: boolean;   // === boolean | undefined
+  minLength?: number; // 文字列長を測る
+  maxLength?: number;
+  min?: number; // 数字の大きさを測る
+  max?: number;
+}
+```
+
+- validate関数
+```ts 
+function validate(validatableInput: Validatable) {
+  let isValid = true;
+  if (validatableInput.required) {
+    isValid = isValid && validatableInput.value.toString().trim().length !== 0;
+  }
+
+  if (typeof validatableInput.value === 'string') {
+    if (validatableInput.minLength != null) { // nulishではない
+      isValid = isValid && validatableInput.value.length > validatableInput.minLength;
+    }
+    if (validatableInput.maxLength != null) { 
+      isValid = isValid && validatableInput.value.length < validatableInput.maxLength;
+    }
+  }
+
+  if (typeof validatableInput.value === 'number') {
+    if (validatableInput.min != null) { // nulishではない, 0はfalsyである
+      isValid = isValid && validatableInput.value > validatableInput.min;
+    }
+    if (validatableInput.max != null) { 
+      isValid = isValid && validatableInput.value < validatableInput.max;
+    }
+  }
+
+  return isValid;
+}
+```
+
+- `gatherUserInput`にvalidationを追加するう
+- 各インプットの検証内容(`Validatable`オブジェクト)を定義する
+```ts
+
+  private gatherUserInput(): [string, string, number] | void {
+    const enteredTitle = this.titleInputElement.value;
+    const enteredDescription = this.descriptionInputElement.value;
+    const enteredPeople = this.peopleInputElement.value;
+
+
+    const titleValidatable: Validatable = {
+      value: enteredTitle,
+      required: true,
+    }
+    const descriptionValidatable: Validatable = {
+      value: enteredDescription,
+      required: true,
+      minLength: 5,
+    }
+    const peopleValidatable: Validatable = {
+      value: +enteredPeople,
+      required: true,
+      min: 1,
+    }
+
+    if ( // のちにアウトソース化すべきロジック
+      !validate(titleValidatable) ||
+      !validate(descriptionValidatable) ||
+      !validate(peopleValidatable)
+    ) {
+      alert('Invalid input');
+      return;
+    } else {
+      return [enteredTitle, enteredDescription, +enteredPeople];
+    }
+  };
+
+```
