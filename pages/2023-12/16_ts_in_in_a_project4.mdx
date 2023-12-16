@@ -1,0 +1,201 @@
+## Rendering Project Lists
+
+- ユーザーインプットを収集してconsole.logしていただけのものレンダリングする
+- `ProjectList`クラスを追加する
+- HTMLのtemplateIDは`project-list`に対応する
+
+```ts
+class ProjectList {
+  templateElement: HTMLTemplateElement;
+  hostElement: HTMLDivElement;
+  element: HTMLFormElement;
+
+  constructor(private type: 'active' | 'finished') {
+    this.templateElement = document.getElementById(
+      'project-list'
+    )! as HTMLTemplateElement;
+    this.hostElement = document.getElementById('app')! as HTMLDivElement;
+
+    const importedNode = document.importNode(
+      this.templateElement.content,
+      true
+    );
+    this.element = importedNode.firstElementChild as HTMLFormElement;
+    this.element.id = `${this.type}-projects`; // id プロパティを編集できる
+    this.attach();
+    this.renderContent();
+  }
+
+  private renderContent() {
+    const listId = `${this.type}-projects-list`;
+    this.element.querySelector('ul')!.id = listId;
+    this.element.querySelector('h2')!.textContent = this.type.toUpperCase() + ' PROJECT';
+  }
+
+  private attach() {
+    this.hostElement.insertAdjacentElement('beforeend', this.element); // 先頭に挿入
+  }
+}
+```
+
+- インスタンス化して、レンダリングする
+
+
+```ts
+const activePrjList = new ProjectList('active');
+const finishedPrjList = new ProjectList('finished');
+```
+
+
+
+
+## Managing Application State with Singletons
+- プロジェクトリストの項目を格納していく
+- アプリケーションの状態を管理するクラスを作成し、Reduxのようなアプローチをとる
+- `private`変数に`projects`リストを持ち、そこユーザーインプットを追加していくことを考える
+```ts
+class ProjectState {
+  private projects: any[] = [];
+  private static instance: ProjectState;
+
+  private constructor() {}
+
+  static getInstance() {
+    if (this.instance) {
+      return this.instance;
+    }
+    this.instance = new ProjectState();
+    return this.instance;
+  }
+
+  addProject(title: string, description: string, numOfPeople: number) {
+    const newProject = {
+      id: Math.random().toString(),
+      title,
+      description,
+      people: numOfPeople,
+    };
+    this.projects.push(newProject);
+  }
+}
+
+```
+
+- 他クラスのメソッドである`submitHandler`から、今作成しているプロジェクトリストにどうやって参照するのか？
+<br/>→グローバル変数として`PrjectState`をインスタンスする
+<br/>→このときprivate constructorを使用することでシングルトンパターンとする(1つしかインスタンスが存在しない)
+
+```ts
+const projectState = ProjectState.getInstance(); // シングルトンでインスタンス化
+
+class ProjectInput {
+  ...
+  @autobind
+  private submitHandler(event: Event) {
+    event.preventDefault();
+    const userInput = this.gatherUserInput();
+
+    if (Array.isArray(userInput)) {
+      const [title, description, people] = userInput;
+      projectState.addProject(title, description, people);
+      this.clearInputs();
+    }
+  }
+  ...
+}
+```
+
+- `listener`フィールドを追加する
+- 関数を要素とする配列で、projectが追加されるたびに, stateに持つすべてのプロジェクトを
+- アタッチとレンダリングする前にlistenerを追加する
+
+- ProjectList クラスにassignedProjectsフィールドを追加する
+- projectListがインスタンス化されたタイミングで全プロジェクトをレンダリング
+```ts
+class ProjectState {
+  private listener: any[] = [];
+  private projects: any[] = [];
+  private static instance: ProjectState;
+
+  private constructor() {}
+
+  static getInstance() {
+    if (this.instance) {
+      return this.instance;
+    }
+    this.instance = new ProjectState();
+    return this.instance;
+  }
+
+  addListener(listenerFn: Function) {
+    this.listener.push(listenerFn);
+  }
+
+  addProject(title: string, description: string, numOfPeople: number) {
+    const newProject = {
+      id: Math.random().toString(),
+      title,
+      description,
+      people: numOfPeople,
+    };
+    this.projects.push(newProject);
+
+    for(const listenerFn of this.listener) {
+      listenerFn(this.projects.slice()); // コピーを渡す, listenerFnから元のプロジェクトを編集されないように
+    }
+  }
+}
+
+const projectState = ProjectState.getInstance();
+
+
+class ProjectList {
+  templateElement: HTMLTemplateElement;
+  hostElement: HTMLDivElement;
+  element: HTMLFormElement;
+  assignedProjects: any[];
+
+  constructor(private type: 'active' | 'finished') {
+    this.templateElement = document.getElementById(
+      'project-list'
+    )! as HTMLTemplateElement;
+    this.hostElement = document.getElementById('app')! as HTMLDivElement;
+    this.assignedProjects = [];
+
+    const importedNode = document.importNode(
+      this.templateElement.content,
+      true
+    );
+    this.element = importedNode.firstElementChild as HTMLFormElement;
+    this.element.id = `${this.type}-projects`; // id プロパティを編集できる
+
+    projectState.addListener((projects: any[]) => {
+      this.assignedProjects = projects;
+      this.renderProjects();
+    });
+
+    this.attach();
+    this.renderContent();
+  }
+
+  private renderProjects() {
+    const listEl = document.getElementById(`${this.type}-projects-list`)!;
+    for(const prjItem of this.assignedProjects) {
+      const listItem = document.createElement('li');
+      listItem.textContent = prjItem.title;
+      listEl.appendChild(listItem);
+    }
+  }
+
+  private renderContent() {
+    const listId = `${this.type}-projects-list`;
+    this.element.querySelector('ul')!.id = listId;
+    this.element.querySelector('h2')!.textContent = this.type.toUpperCase() + ' PROJECT';
+  }
+
+  private attach() {
+    this.hostElement.insertAdjacentElement('beforeend', this.element); // 先頭に挿入
+  }
+}
+
+```
