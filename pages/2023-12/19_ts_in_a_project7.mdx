@@ -1,0 +1,114 @@
+## Rendering Project Items with a Class
+
+- Projectをリスト形式でレンダリングするのではなく、Projectクラスでインスタンス化することでレンダリングしていく
+- `ProjectItem`は以下でレンダリングされている
+```ts {8-11} filename="as-is"
+class ProjectList extends Component<HTMLDivElement, HTMLElement> {
+  ...
+  private renderProjects() {
+    const listEl = document.getElementById(
+      `${this.type}-projects-list`
+    )! as HTMLUListElement;
+    listEl.innerHTML = "";
+    for (const prjItem of this.assignedProjects) {
+      const listItem = document.createElement("li");
+      listItem.textContent = prjItem.title;
+      listEl.appendChild(listItem);
+    }
+  }
+  ...
+}
+```
+- この`renderProjects`の`for`文内で`ProjectItem`クラスをインスタンス化することが目標
+- `ProjectItem`クラスはレンダリングするために`Component`クラスを継承する
+- レンダリング対象は`<ul>`とその中の`<li>`エレメントである
+- さらに`li`タグの中に`h2`タグなどを複数入れたいため抽象メソッド`renderContent`で挿入を行う
+
+```html {2-8} filename="index.html(これを前提とする)"
+...
+    <template id="single-project">
+      <li>
+        <h2></h2>
+        <h3></h3>
+        <p></p>
+      </li>
+    </template>
+    <template id="project-list">
+      <section class="projects">
+        <header>
+          <h2></h2>
+        </header>
+        <ul></ul>
+      </section>
+    </template>
+    <div id="app"></div>
+  </body>
+</html>
+
+```
+
+```ts filename="ProjectItem Class"
+class ProjectItem extends Component<HTMLUListElement, HTMLLIElement> {
+  private project: Project;
+
+  constructor(hostId: string, project: Project) {
+    super('single-project', hostId, false, project.id);
+    this.project = project;
+
+    this.configure();
+    this.renderContent();
+  }
+
+  configure() {}
+
+  renderContent() {
+    this.element.querySelector('h2')!.textContent = this.project.title;
+    this.element.querySelector(
+      'h3'
+    )!.textContent = this.project.people.toString();
+    this.element.querySelector('p')!.textContent = this.project.description;
+  }
+}
+```
+- レンダリングをする
+
+```ts {10} filename="ProjectList Class"
+class ProjectList extends Component<HTMLDivElement, HTMLElement> {
+  ...
+  private renderProjects() {
+    const listEl = document.getElementById(
+      `${this.type}-projects-list`
+    )! as HTMLUListElement;
+    listEl.innerHTML = '';
+    for (const prjItem of this.assignedProjects) {
+      //this.element=project-listテンプレートをであることに注意、ulを取りに行く必要がある
+      new ProjectItem(this.element.querySelector('ul')!.id, prjItem); 
+    }
+  }
+}
+```
+
+## Using a Getter
+- 現状、peopleの出力が数字だけとなっているため、これを「5名アサイン」などとしたい
+- 参照時に処理を付け加え、そこでロジック分岐するような場合、ゲッターで実装するのが望ましい
+```ts {5-11, 16} filename="ProjectItem Class"
+// ProjectItem Class
+class ProjectItem extends Component<HTMLUListElement, HTMLLIElement> {
+  private project: Project;
+
+  get persons () {
+    if (this.project.people === 1) {
+      return '1 person';
+    } else {
+      return `${this.project.people} persons`;
+    }
+  }
+...
+
+  renderContent() {
+    this.element.querySelector('h2')!.textContent = this.project.title;
+    this.element.querySelector('h3')!.textContent = this.persons + ' assinged';
+    this.element.querySelector('p')!.textContent = this.project.description;
+  }
+}
+```
