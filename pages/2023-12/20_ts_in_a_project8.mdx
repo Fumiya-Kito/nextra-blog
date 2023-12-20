@@ -1,0 +1,205 @@
+## Utilizing Interfaces to Implement Drag & Drop
+- ProjectItemをドラッグアンドドロップしてProjectList間を移動できるようにする
+- UIと裏の状態管理の更新を同時に行う
+- ドラッグアンドドロップから実装する
+- ドラッグアンドドロップは複数のリスナーを組み合わせることでバニラJSだけで実装可能である
+- `Draggable`, `DragTarget`のインターフェースをつくる
+
+
+```ts filename="Draggable Interface"
+// ドラッグ開始リスナーとドラッグ終了リスナーが必要
+// `DragEvent`型はビルトインで用意されている
+interface Draggable {
+  dragStartHandler(event: DragEvent): void;
+  dragEndHandler(event: DragEvent): void;
+}
+```
+
+---
+
+```ts filename="DragTarget Interface"
+interface DragTarget {
+  dragOverHandler(event: DragEvent): void;   // ドラッグ先として有効か判定
+  dropHandler(event: DragEvent): void;       // ドロップ処理: データやUIを更新
+  dragLeaveHandler(event: DragEvent): void;  // ドラッグ終了時のフィードバックを担当
+}
+```
+
+- `ProjectItem`にDragableインターフェースを強制させる(実装:implementsする)
+- `configure`関数内で`'dragstart'`イベントのたびに、`dragStartHandler`を呼び出す
+- addEventListenerを使うときは、コールバックをバインドする必要があることに注意(デコレータを仕様)
+```ts {3, 6-9, 11-13, 15-18} filename="一旦コンソールするだけのテスト"
+class ProjectItem
+  extends Component<HTMLUListElement, HTMLLIElement>
+  implements Draggable
+{
+  ...
+  @autobind
+  dragStartHandler(event: DragEvent): void {
+    console.log(event);
+  }
+
+  dragEndHandler(_: DragEvent): void {
+    console.log('DragEnd');
+  }
+
+  configure() {
+    this.element.addEventListener('dragstart', this.dragStartHandler);
+    this.element.addEventListener('dragend', this.dragEndHandler);
+  }
+}
+```
+
+- ドラッグするにはHTMLを操作するということである
+- 対象の`<li>`タグに`draggable`プロパティを設定する
+
+```html {4}
+<html lang="en">
+...
+    <template id="single-project">
+      <li draggable="true">
+        <h2></h2>
+        <h3></h3>
+        <p></p>
+      </li>
+    </template>
+...
+</html>
+```
+
+
+## Drag Events & Reflecting the Current State in the UI
+- 次にドロップをできるようにする
+- `ProjectList`クラスに`DragTarget`をimplementsする
+```ts {3, }
+class ProjectList
+  extends Component<HTMLDivElement, HTMLElement>
+  implements DragTarget
+{
+  ...
+
+  @autobind
+  dragOverHandler(_: DragEvent) { // ドロップ可能なのか可視化する
+    const listEl = this.element.querySelector('ul')!;
+    listEl.classList.add('droppable');
+  }
+  
+  dropHandler(_: DragEvent) {}
+
+  @autobind
+  dragLeaveHandler(_: DragEvent) {
+    const listEl = this.element.querySelector('ul')!;
+    listEl.classList.remove('droppable');    
+  }
+
+  configure() {
+    this.element.addEventListener('dragover', this.dragOverHandler);
+    this.element.addEventListener('dragleave', this.dragLeaveHandler);
+    this.element.addEventListener('drop', this.dropHandler);
+    ...
+  }
+}
+```
+
+
+
+## Adding a Droppable Area
+- `dragStartHandler`で`DragEvent.dataTransfer`プロパティを操作する
+- このプロパティはドラッグイベントにデータを添付することができ、後から抽出することで差分を測ることができる
+- `dataTransfer`はすべてのドラッグイベントでtruethyな値を持つわけではない。しかし、dragStartではnullになることはない。
+- `setData`関数は以下２つの引数を持つ
+1. `format`: データ形式
+2. `data`: 文字列でドラッグオブジェクトに追加するデータを表す
+- `DataTransfer.effectAllowed`はカーソルの見え方を指定する(ブラウザに教える)プロパティ.`move, copy`など
+```ts filename="ProjectItem class"
+  ...
+  @autobind
+  dragStartHandler(event: DragEvent): void {
+    event.dataTransfer!.setData('text/plain', this.project.id);
+    event.dataTransfer!.effectAllowed = 'move';
+  }
+  ...
+```
+
+- Drop側の設定
+- どんなコンポーネントでもドラッグできないように、`dataTransfer`が`text/plain`で設定されているか確認する
+```ts filename="ProjectList"
+  ...
+  @autobind
+  dragOverHandler(event: DragEvent) { // ドロップ可能なのか調べ可視化する
+    if (event.dataTransfer && event.dataTransfer.types[0] === 'text/plain') {
+      event.preventDefault(); // デフォルトではドラッグアンドドロップイベントは無効
+      const listEl = this.element.querySelector('ul')!;
+      listEl.classList.add('droppable');
+    }
+  }
+
+  dropHandler(event: DragEvent) {
+    console.log(event.dataTransfer!.getData('text/plain')); // data=liタグのidを抽出する
+  }
+  ...
+```
+
+- ProjectState Classに`moveProject`関数を追加する(Projectステータスの変更を行う)
+- 状態が更新されたかチェックしてレンダリングを行う
+- レンダリング関数`updateListeners`を共通化する
+```ts
+class ProjectState extends State<Project> {
+  private projects: Project[] = [];
+  private static instance: ProjectState;
+
+  private constructor() {
+    super();
+  }
+
+  static getInstance() {
+    if (this.instance) {
+      return this.instance;
+    }
+    this.instance = new ProjectState();
+    return this.instance;
+  }
+
+  addProject(title: string, description: string, numOfPeople: number) {
+    const newProject = new Project(
+      Math.random().toString(),
+      title,
+      description,
+      numOfPeople,
+      ProjectStatus.Active
+    );
+    this.projects.push(newProject);
+    this.updateListeners();
+  }
+
+  moveProject(projectId: string, newStatus: ProjectStatus) {
+    const project = this.projects.find(prj => prj.id === projectId);
+    if (project) {
+      project.status = newStatus;
+      this.updateListeners();
+    }
+  }
+
+  private updateListeners() {
+    for (const listenerFn of this.listeners) {
+      listenerFn(this.projects.slice());
+    }
+  }
+}
+```
+
+
+
+- `dropHandler`はautobindしてid取得後moveProjectで状態を更新する
+```ts
+  ...
+  @autobind
+  dropHandler(event: DragEvent) {
+    const prjId = event.dataTransfer!.getData("text/plain"); // data=liタグのidを抽出する
+    projectState.moveProject(
+      prjId,
+      this.type === "active" ? ProjectStatus.Active : ProjectStatus.Finished
+    );
+  }
+  ...
+```
