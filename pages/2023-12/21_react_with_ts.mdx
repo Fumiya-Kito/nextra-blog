@@ -12,3 +12,80 @@ npx create-react-app . --template typescript
 - `jsx`ファイルではなく、`tsx`ファイルが作成される
 
 ## How Do React + TypeScript Work Together?
+- `index.tsx`にTSとJSで変更点はない
+- `React.FC`はファンクショナルコンポーネント型でJSXをreturnしないとコンパイルエラーになる
+- 複雑なif分岐などでJSXコードをreturnし忘れるなどをコンパイル時に警告してくれる
+- こういったReact特有の型などは`node_modules > @types`にすべて記述されている
+
+
+## Working with Props and Types for Props
+- TODOリストを作成してPropsを利用してみる
+```a filename="dir├"
+/src 
+└ /components
+  └ TodoList.tsx
+```
+
+```tsx filename="TodoList.tsx"
+import React from "react";
+
+// function TodoList(): JSX.Element {
+//   const todos = [{id: 't1', text: 'finish homework'}];
+//   return <ul>
+//     {todos.map(todo => <li key={todo.id}>{todo.text}</li>)}
+//   </ul>;
+// }
+
+const TodoList: React.FC = () => {
+  const todos = [{id: 't1', text: 'finish homework'}];
+  return <ul>
+    {todos.map(todo => <li key={todo.id}>{todo.text}</li>)}
+  </ul>;
+}
+
+export default TodoList;
+```
+
+- `todos`配列は親コンポーネントで作成しPropsで受け取りたい
+```ts
+import React from "react";
+
+// interface TodoListProps {
+//   items: {id: string, text: string}[]
+// }
+
+// function TodoList(props: TodoListProps): JSX.Element {
+//   const { items } = props;
+//   return <ul>
+//     {items.map(todo => <li key={todo.id}>{todo.text}</li>)}
+//   </ul>;
+// }
+
+
+const TodoList: React.FC<{items: {id: string, text: string}[]}> = ({items}) => {
+  return <ul>
+    {items.map(todo => <li key={todo.id}>{todo.text}</li>)}
+  </ul>;
+}
+
+
+export default TodoList;
+```
+
+- こうすることでPropsを引き渡すときに型チェックを行ってくれる
+```ts filename="App.tsx"
+import React from 'react';
+import TodoList from './components/TodoList';
+
+function App() {
+  const todos = [{id: 't1', text: 'finish homework'}];
+
+  return (
+    <div className="App">
+      <TodoList items={todos}/>
+    </div>
+  );
+}
+
+export default App;
+```
