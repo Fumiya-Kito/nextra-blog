@@ -1,0 +1,110 @@
+## Getting User Input with "refs"
+- TODOの新規追加機能を作成する
+- `submitHandler`の引数は`React.FormEvent`型をとる
+- form作成のため`useRef`フックを使用する
+- `useRef`はジェネリック関数で、汎用型をつかって値を管理する(デフォルトは`undefined`)
+- 宣言時は`const someVar = useRef<type>(null);` (宣言時はレンダリングされていないため、`null`で初期化する)
+- `textRef.current`はnullになる可能性があることをTSが警告するが、submitHandler自体レンダリング後に実行されるため、Refは確実HTML要素を取得できる
+
+```ts filename="components/NewTodo.tsx"
+import React from 'react';
+import TodoList from './components/TodoList';
+import NewTodo from './components/NewTodo';
+
+function App() {
+  const todos = [{id: 't1', text: 'Homework'}];
+  return (
+    <div className="App">
+      <NewTodo />
+      <TodoList items={todos}/>
+    </div>
+  );
+}
+
+export default App;
+
+```
+
+## Cross-Component Communication
+- 関数のポインタをprops渡して、内部で呼び出すことで、新規追加機能を実装する
+```ts filename="App.tsx"
+import React from 'react';
+import TodoList from './components/TodoList';
+import NewTodo from './components/NewTodo';
+
+function App() {
+  const todos = [{id: 't1', text: 'Homework'}];
+  const addTodoHandler = (text: string) => {
+    console.log(text);
+  }
+  return (
+    <div className="App">
+      <NewTodo onAddTodo={addTodoHandler}/>
+      <TodoList items={todos}/>
+    </div>
+  );
+}
+
+export default App;
+```
+
+```ts filename="NewTodo.tsx"
+import React, { useRef } from "react";
+
+interface NewTodoProps {
+  onAddTodo: (text: string) => void;
+}
+
+function NewTodo(props: NewTodoProps) {
+  const textInputRef = useRef<HTMLInputElement>(null);
+  const todoSubmitHandler = (event: React.FormEvent) => {
+    event.preventDefault();
+    const enteredText = textInputRef.current!.value;
+
+    props.onAddTodo(enteredText);
+  }
+
+  return <form onSubmit={todoSubmitHandler}>
+    <div>
+      <label htmlFor="todo-text">Todo Text</label>
+      <input type="text" id="todo-text" ref={textInputRef} />
+    </div>
+    <button type="submit">Submit</button>
+  </form>
+}
+export default NewTodo;
+```
+
+## Working with State & Types
+- `onAddTodo`でコンソールしていただけのもの、状態管理をしてTodoをレンダリングする機能に変更する
+- `Todo`interfaceを追加する(アプリで使い回す)
+```ts filename="todo.model.ts"
+export interface Todo {
+  id: string;
+  text: string;
+}
+```
+
+- `setTodo()`にコールバック関数を渡すと、スケジューリングされた(React実行順を保証する)前の状態`prevState`スナップショットから更新をかけてくれる
+```ts filename="App.tsx"
+import React, { useState } from 'react';
+import TodoList from './components/TodoList';
+import NewTodo from './components/NewTodo';
+import { Todo } from './todo.model';
+
+function App() {
+  const [todos, setTodos] = useState<Todo[]>([]);
+  const addTodoHandler = (text: string) => {
+    setTodos(prevState => [...prevState, { id: Math.random().toString(), text: text }]);
+  }
+  return (
+    <div className="App">
+      <NewTodo onAddTodo={addTodoHandler} />
+      <TodoList items={todos} />
+    </div>
+  );
+}
+
+export default App;
+
+```
