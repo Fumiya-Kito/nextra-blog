@@ -1,0 +1,96 @@
+# 1in1out
+
+## 画面遷移図
+[figmaで作成](https://www.figma.com/file/WwcLGbQ9vCpnOFiUtmJzhg/1in1out?type=design&mode=design&t=l831QbHx5zKggZbA-1)
+
+## 機能設計
+### Header
+ユーザー操作
+1. モノ検索
+2. リスト切り替え
+3. 戻るボタン押下
+4. (プロフィール押下)
+
+処理
+1. 「検索画面」遷移
+2. リスト表示モード変更
+3. 遷移元画面に戻る
+4. (Profileを表示)
+
+### CategoryList
+ユーザー操作
+1. カテゴリー選択
+2. カテゴリー追加ボタン押下
+
+処理
+1. 「カテゴリーリスト」ページに遷移
+2. 「カテゴリー登録」ページに遷移
+
+### NewCategory
+ユーザー操作
+1. フォーム入力
+2. 保存ボタン押下
+
+処理
+1. 値保持・入力検証
+2. DBアクセス(INSERT)→「カテゴリーリスト」ページ遷移→リスト更新
+
+### MonoList(Inventory/WishList)
+ユーザー操作
+1. モノの選択
+2. モノの追加ボタン押下
+
+処理
+1. 「モノ詳細」ページに遷移
+2. 「モノ登録」ページに遷移
+
+### MonoDetail
+ユーザー操作
+1. 編集ボタン押下
+2. 削除ボタン押下
+
+処理
+1. 「モノ編集」ページに遷移
+2. DBアクセス(DELETE)→「モノリスト」ページ遷移→リスト更新
+
+### NewMono
+ユーザー操作
+1. フォーム入力
+2. 保存ボタン押下
+
+処理
+1. 値保持・入力検証
+2. DBアクセス(INSERT)→「モノリスト」遷移→リスト更新
+
+
+### EditMono
+ユーザー操作
+1. フォーム入力
+2. 保存ボタン押下
+
+処理
+1. 値保持・入力検証
+2. DBアクセス(INSERT)→「モノリスト」遷移→リスト更新
+
+### SearchMono
+ユーザー操作
+1. 検索欄入力
+2. モノの選択
+
+処理
+1. `Mono.name`でリストのフィルタリング(部分一致検索)
+2. 「モノ詳細」ページに遷移
+
+### ExchangeInventory
+ユーザー操作
+1. モノのドラッグ&ドロップ
+
+処理
+1. `Mono.category_id`を変化させる
+
+
+## 技術選定
+Next * dndkit * Prisma * Vercel PostgresQL * Cloudinary
+
+## ER図
+[dbdiagram.ioで作成](https://dbdiagram.io/d/1in1out-648aebd4722eb7749403870c)
