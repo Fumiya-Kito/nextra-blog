@@ -108,3 +108,51 @@ function App() {
 export default App;
 
 ```
+
+
+## More Props & State Work
+- TODOの削除機能を作成する
+
+```ts filename="TodoList.tsx"
+import React from "react";
+import { Todo } from "../todo.model";
+
+
+function TodoList(props: { items: Todo[], onDeleteTodo: (id: string) => void }) {
+  return <ul>
+    {props.items.map(todo => (
+      <li key={todo.id}>
+        <span>{todo.text}</span>
+        <button onClick={props.onDeleteTodo.bind(null, todo.id)}>DELETE</button>
+      </li>
+    ))}
+  </ul>
+}
+
+export default TodoList;
+```
+
+```ts filename="App.tsx"
+import React, { useState } from 'react';
+import TodoList from './components/TodoList';
+import NewTodo from './components/NewTodo';
+import { Todo } from './todo.model';
+
+function App() {
+  const [todos, setTodos] = useState<Todo[]>([]);
+  const addTodoHandler = (text: string) => {
+    setTodos(prevState => [...prevState, { id: Math.random().toString(), text: text }]);
+  }
+  const deleteTodoHandler = (todoId: string) => {
+    setTodos(prevState => prevState.filter(todo => todo.id !== todoId));
+  }
+  return (
+    <div className="App">
+      <NewTodo onAddTodo={addTodoHandler} />
+      <TodoList items={todos} onDeleteTodo={deleteTodoHandler}/>
+    </div>
+  );
+}
+
+export default App;
+```
