@@ -1,0 +1,11 @@
+# Cloudinary
+- 1in1outの画像配信にclodinaryを使用する
+- チュートリアルの意味で、前に作成していた[NextAuthアプリ(開始)](../2023-09/13_PostgreSQL_Docker.mdx)のプロフィールに画像アップロード実装する
+- [NextAuthアプリ(終了)](../2023-09/24_Vercel_postgres.mdx)時点からスタートする
+
+##
+1. [ログインする](https://cloudinary.com/) > ダッシュボード > クラウドネームの取得
+2. `.env`ファイルにクラウドネームを設定
+```env filename=".env"
+NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME="*****"
+```
