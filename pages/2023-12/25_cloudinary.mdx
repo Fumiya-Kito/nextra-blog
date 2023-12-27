@@ -1,11 +1,118 @@
 # Cloudinary
 - 1in1outの画像配信にclodinaryを使用する
-- チュートリアルの意味で、前に作成していた[NextAuthアプリ(開始)](../2023-09/13_PostgreSQL_Docker.mdx)のプロフィールに画像アップロード実装する
-- [NextAuthアプリ(終了)](../2023-09/24_Vercel_postgres.mdx)時点からスタートする
-
+- チュートリアルの意味で、前に作成していた[NextAuthアプリ](../2023-09/13_PostgreSQL_Docker.mdx)のプロフィールに画像アップロード実装する
+> [GitHub](https://github.com/Fumiya-Kito/next_auth)
 ##
 1. [ログインする](https://cloudinary.com/) > ダッシュボード > クラウドネームの取得
 2. `.env`ファイルにクラウドネームを設定
 ```env filename=".env"
 NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME="*****"
 ```
+3. Media Livraryに遷移して、画像をアップロードするフォルダ作成する
+4. Settings > upload > add upload preset > signing mode = Unsignedに変更, folder=3.の作成フォルダに設定, upload Preset Nameを保持 > save
+5. `.env`ファイルに上記で取得したアップロードプリセットを設定
+```env filename=".env"
+NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET="*****"
+```
+
+
+
+## 画像をアップロードするコンポーネントを作成
+```a filename="dir"
+/ 
+├ ...
+├ .env
+└ /app
+  ├ ...
+  └ /components
+    ├ ...
+    └ /input
+      ├ ...
+      └ ImageUpload.tsx
+```
+- `next-cloudinary`を使用する
+- 画像にUpload枚数やどこからアップロードするか設定できる
+
+```
+"use-client";
+
+import { useCallback } from "react";
+import { CldUploadWidget } from "next-cloudinary";
+import { TbPhotoPlus } from "react-icons/tb";
+
+import Image from "next/image";
+
+declare global {
+  var cloudinary: any
+}
+
+type ImageUploadProps = {
+  onChange: (value: string) => void;
+  value: string;
+}
+
+type UploadResult = {
+  info: {
+    secure_url: string;
+  }
+}
+
+
+const ImageUpload: React.FC<ImageUploadProps> = ({onChange, value }) => {
+  // 画像のURLをonChange関数に渡し、実行する
+  const handleUpload = useCallback(
+    (results: UploadResult) => {
+      console.log(results.info.secure_url);
+      onChange(results.info.secure_url);
+    }, 
+    [onChange]
+  );
+  
+  return (
+    <CldUploadWidget
+      onUpload={handleUpload}
+      uploadPreset={process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET}
+      options={{
+        maxFiles: 1,
+        sources: ['local'],
+      }}
+    >
+      {({ open }) => {
+        return (
+          <div
+            onClick={() => open?.()}
+            className="relative flex h-80 cursor-pointer flex-col items-center justify-center"
+          >
+            <TbPhotoPlus size={50} />
+            <div className="text-sm font-semibold">画像をアップロード</div>
+
+            {value && (
+              <div className="absolute inset-0 h-full w-full">
+                <Image src={value} className="object-cover" alt="image" fill />
+              </div>
+            )}
+
+          </div>
+        )
+      }}
+    </CldUploadWidget>
+  )
+};
+
+
+export default ImageUpload;
+```
+
+## テキスト通りにやったらエラー発生
+
+```
+Type '(results: UploadResult) => void' is not assignable to type 'CldUploadEventCallbackNoOptions'.
+  Types of parameters 'results' and 'results' are incompatible.
+    Type 'CldUploadWidgetResults' is not assignable to type 'UploadResult'.
+      Types of property 'info' are incompatible.
+        Type 'string | object | undefined' is not assignable to type '{ secure_url: string; }'.
+          Type 'undefined' is not assignable to type '{ secure_url: string; }'.ts(2322)
+index.d.ts(36, 5): The expected type comes from property 'onUpload' which is declared here on type 'IntrinsicAttributes & CldUploadWidgetProps'
+```
+
+### 解決
