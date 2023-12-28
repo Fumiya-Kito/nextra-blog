@@ -18,6 +18,7 @@ NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET="*****"
 
 
 ## 画像をアップロードするコンポーネントを作成
+> (Next Cloudinary)[https://next.cloudinary.dev/clduploadwidget/basic-usage]
 ```a filename="dir"
 / 
 ├ ...
@@ -33,7 +34,7 @@ NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET="*****"
 - `next-cloudinary`を使用する
 - 画像にUpload枚数やどこからアップロードするか設定できる
 
-```
+```ts
 "use-client";
 
 import { useCallback } from "react";
@@ -61,7 +62,7 @@ type UploadResult = {
 const ImageUpload: React.FC<ImageUploadProps> = ({onChange, value }) => {
   // 画像のURLをonChange関数に渡し、実行する
   const handleUpload = useCallback(
-    (results: UploadResult) => {
+    (results: any) => {
       console.log(results.info.secure_url);
       onChange(results.info.secure_url);
     }, 
@@ -102,17 +103,3 @@ const ImageUpload: React.FC<ImageUploadProps> = ({onChange, value }) => {
 
 export default ImageUpload;
 ```
-
-## テキスト通りにやったらエラー発生
-
-```
-Type '(results: UploadResult) => void' is not assignable to type 'CldUploadEventCallbackNoOptions'.
-  Types of parameters 'results' and 'results' are incompatible.
-    Type 'CldUploadWidgetResults' is not assignable to type 'UploadResult'.
-      Types of property 'info' are incompatible.
-        Type 'string | object | undefined' is not assignable to type '{ secure_url: string; }'.
-          Type 'undefined' is not assignable to type '{ secure_url: string; }'.ts(2322)
-index.d.ts(36, 5): The expected type comes from property 'onUpload' which is declared here on type 'IntrinsicAttributes & CldUploadWidgetProps'
-```
-
-### 解決
