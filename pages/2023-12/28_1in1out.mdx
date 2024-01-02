@@ -24,23 +24,23 @@
 
 
 ## レンダリング方法
-```shell filename="レンダリング"
+```shell filename="レンダリング(予定)"
 / 
 ├ ...
 └ /app
   ├ /api            
   ├ /_components     
-  ├ /detailmono      # RSC
-  ├ /inventory       # RSC
-  ├ /newcategory     # RSC
-  ├ /newmono         # RSC
+  ├ /detailmono      # RSC(動的)
+  ├ /inventory       # RSC(動的)
+  ├ /newcategory     # RSC(動的)
+  ├ /newmono         # RSC(動的)
   ├ /search          # CSR
-  ├ /wishlist        # RSC
+  ├ /wishlist        # RSC(動的)
   ├ layout.tsx       
   ├ page.tsx
-  ├ error.tsx        # SSG
-  ├ not-found.tsx    # SSG
-  ├ loading.tsx      # SSG
+  ├ error.tsx        # RSC(静的)
+  ├ not-found.tsx    # RSC(静的)
+  ├ loading.tsx      # RSC(静的)
   └ type.ts          
 ```
 
