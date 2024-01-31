@@ -1,13 +1,13 @@
-# 1in 1out App【設計】
+２９# 1in 1out App【設計】
 
 ## ディレクトリ構成
 - App routerを使用
 ```shell filename="ディレクトリ構造"
 / 
 ├ ...
-└ /app
+├ /app
   ├ /api             # API
-  ├ /_components     # コンポーネント
+  ├ /_lib            # lib関数
   ├ /detailmono      # モノ詳細ページ
   ├ /inventory       # インベントリ モノリスト
   ├ /newcategory     # カテゴリー登録ページ
@@ -20,58 +20,27 @@
   ├ not-found.tsx    # 404エラーページ
   ├ loading.tsx      # ローディングスピナー
   └ type.ts          # 型定義ファイル
+├ /_components     # コンポーネント
 ```
 
-
-## レンダリング方法
-```shell filename="レンダリング(予定)"
+```shell filename="説明"
 / 
 ├ ...
-└ /app
-  ├ /api            
-  ├ /_components     
-  ├ /detailmono      # RSC(動的)
-  ├ /inventory       # RSC(動的)
-  ├ /newcategory     # RSC(動的)
-  ├ /newmono         # RSC(動的)
-  ├ /search          # CSR
-  ├ /wishlist        # RSC(動的)
+├ /app
+  ├ /_lib           # actions関数を格納APIを叩いて、バックエンドからデータを取得する           
+  ├ /api            # バックエンド関数を格納、DBアクセス、APIのエンドポイントがページ同様にルーティングされる
+  ├ /detailmono      
+  ├ /inventory       
+  ├ /newcategory     
+  ├ /newmono         
+  ├ /search          # CSRで検索結果レンダリングする
+  ├ /wishlist        
   ├ layout.tsx       
   ├ page.tsx
-  ├ error.tsx        # CSR
-  ├ not-found.tsx    # CSR
-  ├ loading.tsx      # RSC
+  ├ error.tsx         
+  ├ not-found.tsx    
+  ├ loading.tsx      
   └ type.ts          
+├ /components     
+└ 
 ```
-
-## React Server Components(RSC)とは
-> [Next.jsから学ぶWebレンダリング](https://zenn.dev/suzu_4/articles/2e6dbb25c12ee5)
-
-RSCの最も基本的なメンタルモデルは、「Reactアプリケーションの中に、サーバーで実行される部分とクライアント側で実行される部分がある」ということです。
-「プログラムの評価を多段階に分けて処理」2段階の計算の場合は「stage 0のプログラム」と「stage 1のプログラム」があります。
-→ これまでのSSRはStage1でReactをNode.jsで動かした状態。今回のRSCはStage0を追加した。サーバーサイドでしか動作できないため、例えば useState といった状態管理の機能は使えない。
-
-## Next.js App Router with RSCのトレードオフ
-メリット
-SSRの中では最もクライアント的な体験の良いアプリを作れるポテンシャルがある
-SSGを行う場合においても、RSC使うことでバンドルサイズが減らせる可能性がある
-名前の印象からか誤解してる人もいるが、RSCした上(Stage0を走らせた上)でSSG出来るので単純に配信するバンドルサイズの削減に効果がある
-もちろんCSRの場合でも同様なのでRSCを使うことに開発的な難しさを除き、機能的なマイナスはない。
-
-デメリット
-SSRを利用する場合はSSGやCSRと比べてサーバーは必要になる
-Vercelがサーバーを売るためにこういうムーブメントにしてるんじゃないかという批判もあったりする。
-私は上記は同意していない。純粋にUXを良くするための設計を追求してるように感じるし、またApp RouterもRSCいずれもSSR固有のものではない。SSGやCSRと併用して使うことも可能。
-フィットするかどうか組織による印象が強まった。
-実際にReactを開発するMeta社はNode.jsの会社ではないので、React自身がRSCの開発を自社で完結できずVercelのような外部のパートナーと組んでいる。
-設計が変わる。良いアプリを作るための設計や書き方はより難しくなった（求められるコンセプトへの理解が増えた）印象。Next.jsが難しくなったという意見もよく見る
-個人的には、FetchとCache周りの状態管理などのベストプラクティスや設計が固まってこないと普及しないのではという印象
-
-
-## どれを使うべきか？
-| | RSC(in App Router) |	getServerSideProps(in Pages Router) | SWR | TanStack Query | useEffect |
-| ---- | ---- | ---- | ---- | ---- | ---- |
-| CSR | ✕ | ✕ | ◯ | ◯ | △ |
-| SSR：各コンポーネントでデータフェッチを行う | ✕ | ✕(各コンポーネントでのデータフェッチは想定されない) | ◯(Hydrationの考慮が必要) | ◯(Hydrationの考慮が必要) | △(サーバサイドでデータフェッチができないとき) |
-| SSR:SSR時にデータ取得 | ✕ | ◯(getServerSidePropsに限らず、該当SSRライブラリのAPIを使用) | (◯)サーバサイドでデータフェッチができないとき | (◯)サーバサイドでデータフェッチができないとき | △(サーバサイドでデータフェッチができないとき) |
-| **Next.js App Router** | ⭕️ | ❌ | ⭕️(Client Components で利用可能) | ⭕️(Client Components で利用可能) | Client Components で利用可能(△) |
