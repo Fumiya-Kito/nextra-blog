@@ -1,0 +1,30 @@
+# React Server Components vs Client Components - When To Use What
+- App RouterではRSCがデフォルトで`useState`などクライアント側で処理したいコンポーネントがある場合に`'use client'`と記述しClient Componentsを利用する
+- Page Routerと異なり、ページごとではなくコンポーネント毎にビルド・サーバー・クライアントの処理を分けるためCSR、SSR、SSG、ISRといった用語はドキュメントに出てこない
+- ApprouterでISRなどを実現したい場合はデータフェッチ時に指定する
+- RSCは完成形のHTMLファイルを返すため、SEOに強い
+
+## Client Components
+- クライントコンポーネントといえど基本的には、サーバーでプリレンダリングされることに注意
+- `useState`フックなどクライントでしか処理出来ないものに限り、ブラウザ側で実行する
+- `onClick`プロパティなどユーザーインプットもクライントコンポーネントでしか処理できない
+
+## Using Client Components Efficiently
+- RSCの考え方はコンポーネント毎にサーバーとクライントの分担を行う→クライントコンポーネントを使うときはできるだけ小さい単位で利用する
+- ゆえに、`Page.tsx`や`Header.tsx`などページのトップレベルのコンポーネントは基本的に`RSC`が望ましい
+- データやメニューのレンダリングのみクライントで行う
+- 例えば、ヘッダーナビゲーションにおいて今いるページをCSSでハイライトすることがある
+<br/>→このとき`usePathname`を使うのは`Header.tsx`ではなく、`Nav.tsx`で判定する
+
+```tsx filename="Nav.tsx"
+...
+  return (
+    <Link
+      href={href}
+      className={path.startWith(href) ? "nav.active" : undefined}
+    >
+      Currnet Link
+    </Link>
+  )
+...
+```

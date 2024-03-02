@@ -1,0 +1,23 @@
+# APIコールのURLについて
+
+- apiを叩くときにテスト用に一旦`localhost:3000`とハードコーディングをしていた
+- client componentではapiを相対パスで叩くことができるが、RSCではサーバーから叩くことになるので絶対パスが必要
+- `.env`を利用して、開発環境と本番環境でURLを分ける
+- ちなみにNextJS単体では`.env.local`といった設定ファイルには対応していない
+- Vercelにホスティングしているのであれば、Vercelで環境変数を追加するだけでよい
+- そうでない場合、サードパーティライブラリなどを利用して分ける必要がある
+
+```env filename=".env"
+// .env ファイル
+HOST="XXXXXXXXXXXXXXXXXXX"
+```
+
+```ts filename="lib/something.ts"
+// APIコール
+
+export async function getSomething(id: string) {
+  const res = await fetch(`${process.env.HOST}/api/...`);
+  const resData = await res.json();
+  return data;
+};
+```

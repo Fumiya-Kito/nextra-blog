@@ -1,11 +1,104 @@
 # Cloudinary
 - 1in1outの画像配信にclodinaryを使用する
-- チュートリアルの意味で、前に作成していた[NextAuthアプリ(開始)](../2023-09/13_PostgreSQL_Docker.mdx)のプロフィールに画像アップロード実装する
-- [NextAuthアプリ(終了)](../2023-09/24_Vercel_postgres.mdx)時点からスタートする
-
+- チュートリアルの意味で、前に作成していた[NextAuthアプリ](../2023-09/13_PostgreSQL_Docker.mdx)のプロフィールに画像アップロード実装する
+> [GitHub](https://github.com/Fumiya-Kito/next_auth)
 ##
 1. [ログインする](https://cloudinary.com/) > ダッシュボード > クラウドネームの取得
 2. `.env`ファイルにクラウドネームを設定
 ```env filename=".env"
 NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME="*****"
+```
+3. Media Livraryに遷移して、画像をアップロードするフォルダ作成する
+4. Settings > upload > add upload preset > signing mode = Unsignedに変更, folder=3.の作成フォルダに設定, upload Preset Nameを保持 > save
+5. `.env`ファイルに上記で取得したアップロードプリセットを設定
+```env filename=".env"
+NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET="*****"
+```
+
+
+
+## 画像をアップロードするコンポーネントを作成
+> [Next Cloudinary](https://next.cloudinary.dev/clduploadwidget/basic-usage)
+```a filename="dir"
+/ 
+├ ...
+└ /app
+  ├ ...
+  └ /components
+    ├ ...
+    └ /input
+      ├ ...
+      └ ImageUpload.tsx
+```
+- `next-cloudinary`を使用する
+- 画像にUpload枚数やどこからアップロードするか設定できる
+
+```ts
+"use-client";
+
+import { useCallback } from "react";
+import { CldUploadWidget } from "next-cloudinary";
+import { TbPhotoPlus } from "react-icons/tb";
+
+import Image from "next/image";
+
+declare global {
+  var cloudinary: any
+}
+
+type ImageUploadProps = {
+  onChange: (value: string) => void;
+  value: string;
+}
+
+type UploadResult = {
+  info: {
+    secure_url: string;
+  }
+}
+
+
+const ImageUpload: React.FC<ImageUploadProps> = ({onChange, value }) => {
+  // 画像のURLをonChange関数に渡し、実行する
+  const handleUpload = useCallback(
+    (results: any) => {
+      console.log(results.info.secure_url);
+      onChange(results.info.secure_url);
+    }, 
+    [onChange]
+  );
+  
+  return (
+    <CldUploadWidget
+      onUpload={handleUpload}
+      uploadPreset={process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET}
+      options={{
+        maxFiles: 1,
+        sources: ['local'],
+      }}
+    >
+      {({ open }) => {
+        return (
+          <div
+            onClick={() => open?.()}
+            className="relative flex h-80 cursor-pointer flex-col items-center justify-center"
+          >
+            <TbPhotoPlus size={50} />
+            <div className="text-sm font-semibold">画像をアップロード</div>
+
+            {value && (
+              <div className="absolute inset-0 h-full w-full">
+                <Image src={value} className="object-cover" alt="image" fill />
+              </div>
+            )}
+
+          </div>
+        )
+      }}
+    </CldUploadWidget>
+  )
+};
+
+
+export default ImageUpload;
 ```

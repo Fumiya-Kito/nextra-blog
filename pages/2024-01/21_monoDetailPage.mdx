@@ -1,0 +1,96 @@
+## モノ詳細ページの作成
+
+- リストページで`Mono`の情報は取ってきているから、それをPropsで渡すことを考えたが、編集画面からも遷移するためやはり毎回DB問い合わせる
+- Pageで`_id`を持っているため、APIも`slug`でIDを受け取る
+```ts filename="app/api/monos/[slug]/route.ts"
+import { NextResponse, NextRequest } from "next/server";
+import { MongoClient, ObjectId } from "mongodb";
+
+export async function GET(
+  request: NextRequest,
+  { params }: { params: { slug: string } }
+) {
+  try {
+    // monoIDを取得
+    const monoId = params.slug;
+
+    /** 接続はlibに移行, 毎回MonogoDbClientをインスタンス化させないため */
+    const client = await MongoClient.connect(`${process.env.MONGO_URI}`);
+    const db = client.db();
+    const response = await db
+      .collection("monos")
+      .findOne({ _id: new ObjectId(monoId) })
+    
+    client.close();
+    return NextResponse.json(response, { status: 200 });
+  } catch (err) {
+    console.error(err);
+    return new NextResponse("Error", { status: 500 });
+  }
+}
+```
+
+- Pageでデータ取得
+```ts filename="/app/monodetail/[slug]/page.tsx"
+import { MonoDetail } from "@/components/detail/MonoDetail";
+import { getIconByString } from "@/components/icons/icons";
+
+const getMono = async (monoId: string) => {
+  const res = await fetch(`http://localhost:3000/api/monos/${monoId}`, {
+    cache: "no-store",
+  });
+  const resData = await res.json();
+  const data = { ...resData, iconJsx: getIconByString(resData.icon) };
+  return data;
+};
+
+export default async function MonoDetailPage({
+  params,
+}: {
+  params: { slug: string };
+}) {
+  const mono = await getMono(params.slug);
+
+  return (
+    <main>
+      <div>
+        <h1 className="text-center text-5xl font-bold mb-3">
+          This is Mono Detail Page
+        </h1>
+        <MonoDetail item={mono} />
+      </div>
+    </main>
+  );
+}
+
+```
+
+```ts filename="components/detail/MonoDetail.tsx"
+"use client";
+
+import Link from "next/link";
+import { Mono } from "@/app/type";
+import { useState } from "react";
+import { FiEdit } from "react-icons/fi";
+
+
+
+export function MonoDetail({ item }: { item: Mono }) {
+  return (
+    <div>
+      <div>{item.iconJsx}</div>
+      <div>
+        <h2>
+          {item.name}
+        </h2>
+        <p>{item.category_id}: TODO:カテゴリー名をLookUPで結合</p>
+        <p>{item.reason}</p>
+        <Link href={`/monoedit/${item._id}`}>
+          <FiEdit />
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+```

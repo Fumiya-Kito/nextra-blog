@@ -1,0 +1,46 @@
+２９# 1in 1out App【設計】
+
+## ディレクトリ構成
+- App routerを使用
+```shell filename="ディレクトリ構造"
+/ 
+├ ...
+├ /app
+  ├ /api             # API
+  ├ /_lib            # lib関数
+  ├ /detailmono      # モノ詳細ページ
+  ├ /inventory       # インベントリ モノリスト
+  ├ /newcategory     # カテゴリー登録ページ
+  ├ /newmono         # モノ登録ページ
+  ├ /search          # 検索ページ
+  ├ /wishlist        # 欲しい物リスト モノリスト
+  ├ layout.tsx       # App全体レイアウト
+  ├ page.tsx         # インベントリ カテゴリーリスト(Homepage)
+  ├ error.tsx        # エラーページ
+  ├ not-found.tsx    # 404エラーページ
+  ├ loading.tsx      # ローディングスピナー
+  └ type.ts          # 型定義ファイル
+├ /_components     # コンポーネント
+```
+
+```shell filename="説明"
+/ 
+├ ...
+├ /app
+  ├ /_lib           # actions関数を格納APIを叩いて、バックエンドからデータを取得する           
+  ├ /api            # バックエンド関数を格納、DBアクセス、APIのエンドポイントがページ同様にルーティングされる
+  ├ /detailmono      
+  ├ /inventory       
+  ├ /newcategory     
+  ├ /newmono         
+  ├ /search          # CSRで検索結果レンダリングする
+  ├ /wishlist        
+  ├ layout.tsx       
+  ├ page.tsx
+  ├ error.tsx         
+  ├ not-found.tsx    
+  ├ loading.tsx      
+  └ type.ts          
+├ /components     
+└ 
+```
