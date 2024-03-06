@@ -1,0 +1,56 @@
+# type.tsに存在する型チェック
+## やりたいこと
+- ジェネリック型の引数`model`に、`type.ts`に定義されるモデルをを入れることを考える
+- モデルによって処理を分岐・制御したい
+```tsx filename="DeleteForm.tsx"
+export default function DeleteForm<T>({
+  model,
+  pk,
+}: {
+  model: T;
+  pk: string;
+}) {
+  // if (Tがどのモデルなのか?) {...}
+}
+```
+```ts filename="type.ts"
+type modelA = {
+  id: string;
+  propA: string;
+}
+
+type modelB = {
+  id: string;
+  propB: string;
+  propAnyNumber?: number;
+}
+```
+
+## 問題点
+1. `typeof model === 'modelA'`では判断できない
+<br/>← JSは`modelA`を知らないため
+
+2. `typeof model === 'object'`だけでは判断できない
+<br/>→ 中身(プロパティ)を見る
+
+## 解決策
+- `in`演算をつかってプロパティがあるか判定
+- 必須でないプロパティは`typeof`で判定
+```ts filename="type-check.ts"
+export function isModelA(obj: any) {
+  return (
+    typeof obj === 'object' && 
+    'id' in obj && 
+    'propA' in obj
+  );
+}
+
+export function isModelA(obj: any) {
+  return (
+    typeof obj === 'object' && 
+    'id' in obj && 
+    'propB' in obj
+    (obj.propAnyNumber === undefined || typeof obj.propAnyNumber === 'number')
+  );
+}
+```

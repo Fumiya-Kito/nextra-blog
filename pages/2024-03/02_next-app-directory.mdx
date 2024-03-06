@@ -1,0 +1,58 @@
+# NextJS(App Router)のディレクトリ構成のベストプラクティスを考える
+
+※一例にすぎない
+- `/components`は`/app`から出したい派(入れる必要がなく選択肢があることが重要)
+- `_features`は`import *`を使うことで、import文を節約できる(featuresコンポーネントなので該当ページで全部使うはず)
+- `_lib`などアンスコをつけるのは技術的には必要なく、開発者用にルーティングがないことを示す
+<br/>→nextJSは`page.js`, `route.js`がない限りルーティングしない
+```shell filename="ディレクトリ構造"
+/ 
+├ ...
+├ /app
+  ├ /api             # API Routesフォルダ
+    └ someAPI        
+      ├ /[slug]       
+        └ route.ts   # /someAPI/slug にルーティング
+      └ route.ts     # /someAPI にルーティング(↑ではなく、ここでクエリを受け取るパターンもあり)
+  ├ /_lib            # lib関数
+    ├ fetchData.ts   # データフェッチングはpageからAPIを叩いても問題なし、使い回すならここか
+  ├ /_features       # pageごとのコンポーネント
+    ├ /sompage       
+      ├ featureA.tsx       
+      └ featureB.tsx  
+  ├ /somepage        
+    ├ /[id]       
+      └ page.tsx     # /somepage/id にルーティング
+    ├ /[...slug]       
+      └ page.tsx     # /somepage/slug[0]/slug[1]... にルーティング
+    ├ page.tsx       # /somepageにルーティングされる
+    └ layout.tsx     # layoutはネスト可能
+  ├ layout.tsx       # App全体レイアウト
+  ├ page.tsx         # ホームページ
+  ├ error.tsx        # エラーページ
+  ├ not-found.tsx    # 404エラーページ
+  └ loading.tsx      # ローディングスピナー
+├ /components        # 共用コンポーネント
+  ├ /header       
+  ├ ...       
+  └ /modal        
+```
+
+- `_feature`ディレクトリのメリット
+```tsx filename="somepage/page.tsx"
+import * as Something from '@/_features/somepage'; // ここがすっきり
+
+export default function SomePage () {
+  return (
+    <>
+      <Something.featureA />
+      <Something.featureB />
+      ...
+      <Something.featureZ />
+    </>
+  );
+}
+```
+
+### 参考
+[Next.jsのディレクトリ構成のベストプラクティスを知っていますか? :プログラミングチュートリアル(YouTube)](https://www.youtube.com/watch?v=ekUQ043k2TQ&t=1023s)
