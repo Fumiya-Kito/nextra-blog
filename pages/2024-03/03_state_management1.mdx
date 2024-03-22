@@ -1,0 +1,117 @@
+# React State Management
+
+- Reactの状態管理のこれまで歴史と今どうすべきか。
+- 以下「状態管理ライブラリは本当に必要?」
+<br/> → メタフレームワーク(NextJS等)の登場により、ClientとServerで分業するように
+<br/> → ローカル(Pageごと)の状態管理で必要十分
+<br/> → `useState`を使わずにURLクエリを使って状態管理をする
+
+## 参照
+[State Managers Are Making Your Code Worse In React](https://www.youtube.com/watch?v=VenLRGHx3D4)
+
+
+## 歴史
+### React初期
+- ローカルでの状態管理は`useState`でOK
+```jsx
+function someComponent () {
+  const [countState, setCountState] = useState(0);
+  const countUp = () => setCountState((prev) => prev + 1);
+
+  return (
+    <button coClick={countUp}>{countState}</button>
+  )
+}
+```
+### 問題点: **Prop Drilling**
+- アプリが大きくなり、あるStateを子コンポーネント、孫コンポーネントで使いたくなった場合
+- ローカルでの状態管理では、`props`で渡すしかない
+- 4層、5層とネストされていくとすべてのコンポーネントで`props`のバケツリレーすることになる
+```jsx
+function Parent () {
+  const [countState, setCountState] = useState(0);
+
+  return (
+    // 子コンポーネントで使いたい場合はここで渡す
+    <Child count={countState}, setterfn={setCountState} >
+  )
+}
+```
+
+### Reduxの登場
+- 上記のProp Drillingを解決するために`Global State`をアプリで保持(`store`)して、任意のコンポーネントから直接アクセスすることを提供
+- Reduxでは1つの`store`ファイルにすべての状態を保持し、コンポーネント側から必要な状態にアクセスしにいく
+
+
+### Redux(Global State Management)の問題点
+- 「非常に面倒だ」ということ
+- 設定・記述量・操作が多いし難しい
+- 学習コストも馬鹿にならない
+- 小規模アプリケーションには不向き
+
+### useContextの登場
+- カスタムコンポーネントで状態管理してやろうというアイデア
+- `Context`コンポーネントがある`state`を持つ
+- `Context`コンポーネントより下層のコンポーネントは`useContext`フックで`state`を直接参照・変更ができる
+```jsx
+import { createContext, useContext } from 'react';
+
+const ThemeContext = createContext(null);
+
+export default function MyApp() {
+  return (
+    <ThemeContext.Provider value="dark">
+      <Form />
+    </ThemeContext.Provider>
+  )
+}
+
+function Form() {
+  return (
+    <Panel title="Welcome">
+      <Button>Sign up</Button>
+      <Button>Log in</Button>
+    </Panel>
+  );
+}
+
+function Panel({ title, children }) {
+  const theme = useContext(ThemeContext);
+  const className = 'panel-' + theme;
+  return (
+    <section className={className}>
+      <h1>{title}</h1>
+      {children}
+    </section>
+  )
+}
+
+function Button({ children }) {
+  const theme = useContext(ThemeContext);
+  const className = 'button-' + theme;
+  return (
+    <button className={className}>
+      {children}
+    </button>
+  );
+}
+
+```
+
+### useReducer 
+- Reduxが解決していたもう一つ利点として「状態の依存関係」がある
+- アプリケーションが大きくなれば、「状態Aが状態Bに依存している」といった状況が出てくる
+- 依存関係がある状態を個々に管理するのではなく、1つのreducer関数を使用
+- reduxのreducerに由来して`useReducer`Hooksが登場
+```jsx
+import { useReducer } from 'react';
+
+function reducer(state, action) {
+  // ...
+}
+
+function MyComponent() {
+  const [state, dispatch] = useReducer(reducer, { age: 42 });
+  // ...
+```
+
