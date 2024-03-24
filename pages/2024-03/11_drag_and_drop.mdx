@@ -1,0 +1,78 @@
+# Drag and Drop
+
+### ドラッグ移動中にカーソルの値を変えたい
+- ドロップできない場所でプラスマークを出したくなかった 
+- `e.dataTransfer.dropEffect = 'none';`とすればよい
+
+
+[MDN docs](https://developer.mozilla.org/ja/docs/Web/API/DataTransfer/dropEffect)
+> 文字列で、ドラッグ操作の効果を表します。取りうる値は以下の通りです。
+`copy`
+新しい場所にソースアイテムのコピーが作成されます。
+`move`
+アイテムを新しい場所に移動します。
+`link`
+新しい場所のソースにリンクが確立されます。
+`none`
+アイテムはドロップしない場合があります。
+dropEffect に他の値を代入しても効果はなく、古い値が保持されます。
+
+### ドラッグできないようにしたい
+- `e.dataTransfer.effectAllowed = 'none';`とすればよい
+
+[MDN docs](https://developer.mozilla.org/ja/docs/Web/API/HTML_Drag_and_Drop_API/Drag_operations)
+> 複数の種類の操作を組み合わせることもできます。
+`none`
+どの操作も許可されていない（ドロップを禁止）。
+`copy`
+コピーのみが許可されている。
+`move`
+移動のみが許可されている。
+`link`
+リンクのみが許可されている。
+`copyMove`
+コピーまたは移動のみが許可されている。
+`copyLink`
+コピーまたはリンクのみが許可されている。
+`linkMove`
+リンクまたは移動のみが許可されている。
+`all`
+コピー、移行、リンクの全ての操作が許可されている
+
+
+
+```tsx
+const handleDragOver = (e: React.DragEvent) => {
+  e.preventDefault();
+  if (isFull) {
+    e.dataTransfer.dropEffect = 'none';
+    e.dataTransfer.effectAllowed = 'none';
+    return;
+  }
+
+  highlightIndicator(e);
+  setActive(true);
+};
+
+... 
+// JSX
+<div
+  onDragOver={handleDragOver}
+  onDragLeave={handleDragLeave}
+  onDrop={handleDrop}
+  className={`m-0 flex-1 w-full transition-colors ${
+    active ? "bg-neutral-800/50" : "bg-neutral-800/0"
+  } `}
+>
+  <AddCard category={categoryId} setCards={setCards} isFull={isFull} />
+  {filteredCards.map((card) => (
+    <DragableCard
+      key={card._id}
+      {...card}
+      handleDragStart={handleDragStart}
+    />
+  ))}
+  <DropIndicator beforeId={"-1"} category={categoryId} />
+</div>
+
+```

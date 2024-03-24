@@ -1,0 +1,114 @@
+# React State Management
+
+- URLで状態管理する
+
+## メリット
+> ユーザがURLをシェアしたときに同じUI(状態)で開ける
+> ブックマークに登録したときに同じUIで開ける
+> 戻るボタンで前のUIを再現できる(進むで次のUI)
+> リロードした際に同じUIになる
+> SEOに有利→クローラーが1つのURLに対して複数のビューがあることをプラスに評価する
+> サーバーコンポーネントを維持できる(hooksやonClickなどを使わない)
+
+- useStateを使う
+```tsx
+'use client'
+
+export default function ProductPage() {
+  const [selectedColor, setSelectedColor] = useState('black');
+  return (
+    <main>
+      <div>
+        {selectedColor}
+      </div>
+      <button onClick={() => setSelectedColor('white')}>
+        White
+      </button>
+    </main>
+  );
+}
+```
+
+- useEffectとwindow.historyを使ってURL
+<br/>→状態の2重持ちがよくないとwindo.historyは`useRouter`に置き換えられる
+```tsx
+
+export default function ProductPage() {
+  const [selectedColor, setSelectedColor] = useState('black');
+  const [selectedSize, setSelectedSize] = useState('black');
+  
+  useEffect(() => {
+    window.history.pushState(
+      null,
+      "",
+      `?color=${selectedColor}&size=${selectedSize}`
+    )
+  }, [selectedColor, selectedSize]);
+
+  return (
+    ...
+  );
+}
+```
+
+- `useSearchParams`を使う
+```tsx
+'useClient'
+
+export default function ProductPage() {
+  const searchParams = useSearchParams(); // URLが変わると検知し再レンダリングされる
+  const selectedColor = searchParams.get('color');
+  const selectedSize = searchParams.get('size');
+
+  return (
+    {colors.map((color, idx) =>
+      <Link
+        key={idx}
+        href={
+          `?color=${color}&size=${selectedSize}`
+        }
+        className={`${selectedColor === color ? "border-blue-500" : "border-gray-500"}`}
+      >
+      {color}
+      </Link>
+    )}
+    // ... sizeを選択するLink
+  );
+}
+```
+
+- Server Componentにする
+```tsx
+export default function ProductPage({ 
+  searchParams 
+} : {
+  searchParams: { [key: string]: string | string[] | undefined }
+}) {
+  const selectedColor = (searchParams.color || 'black') as string; // オブジェクトでKVをもつ
+  const selectedSize = (searchParams.size || 'md') as string;
+
+  router.
+
+  return (
+    {colors.map((color, idx) =>
+      <Link
+        key={idx}
+        href={
+          `?${new URLSearchParams({
+            color,
+            size: slectedSize
+          })}`
+        }
+        className={`${selectedColor === color ? "border-blue-500" : "border-gray-500"}`}
+      >
+      {color}
+      </Link>
+    )}
+    // ... sizeを選択するLink
+  );
+}
+
+```
+
+## 参照
+[](https://www.youtube.com/watch?v=ukpgxEemXsk)
