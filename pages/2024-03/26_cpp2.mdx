@@ -1,0 +1,189 @@
+# C++2
+
+## 四則演算
+```cpp copy showLineNumbers filename="四則演算"
+#include <bits/stdc++.h>
+using namespace std;
+
+int main() {
+  cout << 1 + 1 << endl; // 2
+  cout << 3 - 4 << endl; // -1
+  cout << 2 * 3 << endl; // 6
+  cout << 7 / 3 << endl; // 2
+}
+```
+- `7/3 = 2`なのは小数点切り捨て
+- `7.0/3.0`とすれば小数点以下も計算
+
+## 除算の順序
+できるだけ割り算はうしろにもってくる
+- `3 / 2 * 4 → 1 * 4 → 4`
+- `3 * 4 / 2 → 12 / 2 → 6`
+
+
+## 異なる型同士の計算
+```cpp copy showLineNumbers filename="異なる型同士の計算"
+#include <bits/stdc++.h>
+using namespace std;
+
+int main() {
+  int i = 30;
+  double d = 1.5;
+  string s = "Hello";
+
+  cout << i + d << endl; // 31.5
+  cout << i * d << endl; // 45
+  cout << 45 / 2 << endl; // 22 小数点以下切り捨て
+  cout << i * d / 2 << endl; // 22.5 小数点以下も残る
+  /*
+  以下の処理はコンパイルエラー
+  cout << s + i << endl; // string型とint型
+  cout << s * i << endl; // string型とint型
+  cout << s + d << endl; // string型とdouble型
+  */
+}
+```
+
+## 標準入力 `cin`
+- 入力を受け取るには `cin`と`>>` を使います。
+```cpp copy showLineNumbers filename="cin"
+#include <bits/stdc++.h>
+using namespace std;
+
+int main() {
+  int a;
+
+  // 変数aで入力を受け取る
+  cin >> a;
+
+  cout << a * 10 << endl;
+}
+
+```
+
+## 問題
+問題文
+Atcoder国では、郵便番号は 
+A+B+1 文字からなり、
+A+1 文字目はハイフン -、それ以外の全ての文字は 
+0 以上 
+9 以下の数字です。
+
+文字列 
+S が与えられるので、Atcoder国の郵便番号の形式を満たすかどうか判定してください。
+
+制約
+- 1≦A,B≦5
+- ∣S∣=A+B+1
+- S は 0 以上 9 以下の数字、およびハイフン - からなる
+### 入力
+入力は以下の形式で標準入力から与えられる。
+```
+A B
+S
+```
+### 出力
+S がAtcoder国の郵便番号の形式を満たすならば Yes 、そうでなければ No を出力せよ。
+
+### 回答
+- 文法など結構苦戦した上に、ifでゴリ押しした(GPTに聞きながら)
+```cpp copy showLineNumbers filename="自分の解答"
+#include <bits/stdc++.h>
+using namespace std;
+
+int main() {
+  int a_len, b_len;
+  string postCode;
+  
+  // 入力受付
+  cin >> a_len >> b_len;
+  cin >> postCode;
+  
+  bool isValid = true;
+  if (a_len < 1) {
+    isValid = false;
+  }
+  if (b_len > 5) {
+    isValid = false;
+  }
+  if (static_cast<int>(postCode.length()) != a_len + b_len + 1) {
+    isValid = false;
+  }
+  
+  for (size_t i = 0; i < postCode.size(); i++) {
+    char c = postCode[i];
+    if (static_cast<int>(i) < a_len && !isdigit(c)) {
+      isValid = false;
+    }
+    if (static_cast<int>(i) == a_len && c != '-') {
+      isValid = false;
+    }
+    if (static_cast<int>(i) > a_len && !isdigit(c)) {
+      isValid = false;
+    }
+  }  
+  // 結果出力
+  if (isValid) {
+    cout << "Yes" << endl;
+  } else {
+    cout << "No" << endl;
+  } 
+
+}
+```
+
+
+```cpp copy showLineNumbers filename="模範解答"
+int A, B; string S;
+//---------------------------------------------------------------------------------------------------
+#define yes "Yes"
+#define no "No"
+int check(char c) { return '0' <= c and c <= '9'; }
+string solve() {
+    rep(i, 0, A) if (!check(S[i])) return no;
+    if (S[A] != '-') return no;
+    rep(i, A + 1, A + B + 1) if (!check(S[i])) return no;
+    return yes;
+}
+//---------------------------------------------------------------------------------------------------
+void _main() {
+    cin >> A >> B >> S;
+    cout << solve() << endl;
+}
+```
+
+> このプログラムは、整数A、Bと文字列Sを入力として受け取り、特定の条件を満たすかどうかをチェックしています。具体的には、文字列Sが次の条件を満たすかどうかを判定しています：
+最初のA文字がすべて数字であること。
+A番目の次の文字がハイフンであること。
+ハイフンの後に続くB文字がすべて数字であること。
+これらの条件が満たされていれば、"Yes"を返し、そうでなければ"No"を返します。
+check()関数は、与えられた文字が数字であるかどうかをチェックします。`'0' <= c and c <= '9'`という条件式で、与えられた文字が '0' から '9' の範囲内の文字であるかどうかを確認しています。
+solve()関数は、与えられた条件に基づいて文字列Sが条件を満たしているかどうかをチェックします。まず、rep(i, 0, A)で、最初のA文字がすべて数字であるかをチェックします。次に、S[A] != '-'で、A番目の次の文字がハイフンであるかをチェックします。最後に、rep(i, A + 1, A + B + 1)で、ハイフンの後に続くB文字がすべて数字であるかをチェックします。条件を満たしていれば"Yes"を返し、そうでなければ"No"を返します。
+_main()関数では、整数A、Bと文字列Sを入力として受け取り、solve()関数を呼び出して結果を出力します。
+このプログラムは、与えられた文字列が指定された条件を満たすかどうかを効率的に判定するためのものです。
+
+```
+int check(char c) {
+    return '0' <= c and c <= '9';
+}
+```
+この関数は、与えられた文字cが数字であるかどうかをチェックします。C++では、文字はASCIIコードとして表現されます。数字文字 '0' から '9' は連続したコードを持っているため、与えられた文字cが '0' 以上 '9' 以下の範囲にあれば、それは数字であるとみなされます。この条件を表現するには、次のように書くことができます。
+```
+'0' <= c and c <= '9'
+```
+この式は、cが '0' 以上 '9' 以下の範囲にある場合には真を返し、そうでない場合には偽を返します。この条件式は、論理演算子and（または&&）によって2つの条件を結合しています。
+
+次に、rep()関数について解説します。この関数は、多くの競技プログラミングライブラリで使用される、繰り返し処理を簡潔に書くためのマクロです。一般的な形式は次のようになります。
+
+```
+#define rep(i, a, b) for (int i = (a); i < (b); ++i)
+```
+このマクロは、forループを簡略化して書くためのものです。iはループ変数で、aから始まり、bより小さい値までループします。以下は、rep()関数を使った例です。
+
+```
+rep(i, 0, 5) {
+    // 0から4までの値を出力する
+    std::cout << i << std::endl;
+}
+```
+このループは、iが0から4まで変化し、各値を出力します。rep()関数は、コードを短く保ちながらも繰り返し処理を行うのに役立ちます。
