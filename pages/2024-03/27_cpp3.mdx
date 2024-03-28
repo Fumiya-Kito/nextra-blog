@@ -1,0 +1,50 @@
+# C++3
+
+## 条件式の結果
+||int型の表現|bool型の表現|
+|---|---|--|
+|真|1|true|
+|偽|0|false|
+
+```cpp copy filename="条件式の結果"
+#include <bits/stdc++.h>
+using namespace std;
+
+int main() {
+  cout << (5 < 10) << endl; // 真
+  cout << (5 > 10) << endl; // 偽
+}
+```
+```
+1
+0
+```
+
+## シンタックスシュガー
+- プログラムを短く書くための記法のことを**シンタックスシュガー**と言います。
+- x = x + yはx += yのように短く書ける
+- x = x + 1はx++または++xと書くことができます。このような「1増やす操作」をインクリメントと言います。
+- x = x - 1はx--または--xと書くことができます。このような「1減らす操作」をデクリメントと言います。
+```cpp copy showLineNumbers filename="+=など"
+#include <bits/stdc++.h>
+using namespace std;
+
+int main() {
+  int a = 5;
+  a -= 2;
+  cout << a << endl; // 3
+
+  int b = 3;
+  b *= 1 + 2;
+  cout << b << endl; // 9
+
+  int c = 4;
+  c /= 2;
+  cout << c << endl; // 2
+
+  int d = 5;
+  d %= 2;
+  cout << d << endl; // 1
+}
+```
+
