@@ -1,0 +1,94 @@
+# 電卓をつくろう2
+- 電卓の操作が与えられるので、計算途中の値と計算結果の値を出力
+
+## 制約
+- `0≦N≦7`
+- `0≦A,Bi≦10`
+- A, B, i, Nは整数
+- opiは`+, −, ∗, /`のいずれか一つ
+
+## 入力
+```cpp copy showLineNumbers filename="解答"
+N
+A
+op1 B1
+⋮
+opN BN
+```
+
+## 出力
+```cpp copy showLineNumbers filename="解答"
+1:1個目の計算結果
+2:2個目の計算結果
+⋮
+N:N個目の計算結果
+```
+```cpp copy showLineNumbers filename="解答"
+#include <bits/stdc++.h>
+using namespace std;
+#define rep(i, n) for (int i = 0; i < (int)(n); i++)
+
+
+int main() {
+  int N, A;
+  cin >> N >> A;
+
+  string op;
+  int num;
+  rep(i, N) {
+    cin >> op >> num;
+    if (op == "+") {
+      A += num;
+    } else if (op == "-") {
+      A -= num;
+    } else if (op == "*") {
+      A *= num;
+    } else if (op == "/") {
+      if (num == 0) {
+        cout << "error" << endl;
+        break;
+      }
+      A /= num;
+    }
+
+    cout << i + 1 << ":" << A << endl;
+  }
+}
+```
+
+``` cpp copy showLineNumbers filename="模範解答"
+#include <bits/stdc++.h>
+using namespace std;
+
+int main() {
+  int N, A;
+  cin >> N >> A;
+
+  for (int i = 0; i < N; i++) {
+    int x;
+    string op;
+    cin >> op >> x;
+
+    if (op == "+") {
+      A += x;
+    }
+    else if (op == "-") {
+      A -= x;
+    }
+    else if (op == "*") {
+      A *= x;
+    }
+    else if (op == "/" && x != 0) {
+      A /= x;
+    }
+    else {
+      cout << "error" << endl;
+      break;
+    }
+
+    cout << i + 1 << ":" << A << endl;
+  }
+
+}
+
+```

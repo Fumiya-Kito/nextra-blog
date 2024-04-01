@@ -1,0 +1,85 @@
+# string
+
+## キーポイント
+- 文字列を扱うにはstring型を使う
+- 文字を扱うにはchar型を使う
+- `文字列変数.size()`で文字列の長さを取得できる
+- `文字列変数.at(i)`でi文字目にアクセスできる
+- `文字列変数.at(i)のi`を添え字という
+- 添字は0から始まる
+- 添字の値が正しい範囲内に無いと実行時エラーになる
+- string型を表すために`" "`で囲う、char型を表すためには`' '`で囲う
+
+### 文字列の比較
+
+|演算子|意味|
+|---|---|
+|`==`|2つの文字列が完全に一致している|
+|`!=`|2つの文字列に違いがある|
+|`<, <=, >, >=`|辞書順による比較|
+
+### 文字列の連結
+`+`演算子を使うと文字列同士を連結できます。`+=`を使うこともできます。
+
+### char型の変数への入力
+char型の変数にcinで入力すると一文字ずつ取り出すことができます。
+``` cpp copy showLineNumbers filename="1文字ずつ入力を受け付ける"
+#include <bits/stdc++.h>
+using namespace std;
+
+int main() {
+  char a, b;
+  cin >> a >> b;
+
+  cout << a << endl;
+  cout << b << endl;
+}
+```
+```cpp showLineNumbers filename="入力"
+OK
+```
+```cpp showLineNumbers filename="出力"
+O
+K
+```
+
+### エスケープシーケンス
+|エスケープシーケンス|説明|
+|---|---|
+|`\n`| 改行|
+|`\"`|	二重引用符 `"`|
+|`\'`|	引用符 `'`|
+|`\\`|	バックスラッシュ（または半角円記号） `\`|
+|`\t`|	タブ（水平タブ）|
+|`\r`|	復帰（一部の実行環境では改行に用いる）|
+
+
+### 行単位での入力
+cinを使うと空白や改行区切りの入力を簡単に扱えますが、空白で区切らずに行単位で入力を受け取りたいこともあります。
+その場合はgetlineを使います。
+
+次のプログラムは2行の入力を行単位で受け取っています。
+
+``` cpp copy showLineNumbers filename="行単位で受けとる"
+#include <bits/stdc++.h>
+using namespace std;
+ 
+int main() {
+  string s, t;
+  getline(cin, s); // 変数sで入力を一行受け取る
+  getline(cin, t); // 変数tで入力を一行受け取る
+ 
+  cout << "一行目 " << s << endl;
+  cout << "二行目 " << t << endl;
+}
+```
+
+``` cpp copy showLineNumbers filename="入力"
+I have a pen.
+I have an apple.
+```
+
+``` cpp copy showLineNumbers filename="実行結果"
+一行目 I have a pen.
+二行目 I have an apple.
+```
