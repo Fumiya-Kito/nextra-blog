@@ -1,0 +1,40 @@
+# C++5
+
+## 棒グラフの問題
+- 反復処理の練習問題
+- `rep`マクロを使ってみる
+
+### 入力
+```
+A B
+```
+
+### 出力
+```
+A:Aさんの点数個の「]」
+B:Bさんの点数個の「]」
+```
+
+```cpp copy showLineNumbers filename="解答"
+#include <bits/stdc++.h>
+using namespace std;
+#define rep(i, n) for (int i = 0; i < (int)(n); i++)
+
+int main() {
+  int A, B;
+  cin >> A >> B;
+
+  cout << "A:";
+  rep(i, A) {
+    cout << "]";
+  }
+
+  cout << endl << "B:";
+  rep(i, B) {
+    cout << "]";
+  }
+  cout << endl;
+}
+
+```
+
