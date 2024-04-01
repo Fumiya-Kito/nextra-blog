@@ -1,0 +1,58 @@
+# 文字列の足し算引き算
+- 1の足し算引き算を文字列と受け取り計算結果を出力する問題
+入力例1
+```
+1+1+1-1
+```
+出力例1
+```
+2
+```
+
+
+``` cpp copy showLineNumbers filename="解答"
+#include <bits/stdc++.h>
+using namespace std;
+#define rep(i, n) for(int i = 0; i < (int)(n); i++)
+ 
+int main() {
+  string userInput;
+  getline(cin, userInput); // 変数sで入力を一行受け取る
+ 
+  int count = 1;
+  rep(i, userInput.size()) {
+    if (i % 2 != 0 && userInput.at(i) == '+') {
+      count++; 
+    } else if (i % 2 != 0 && userInput.at(i) == '-') {
+      count--;
+    }
+  }
+  cout << count << endl;
+}
+```
+
+``` cpp copy showLineNumbers filename="模範解答"
+#include <bits/stdc++.h>
+using namespace std;
+
+int main() {
+  string S;
+  cin >> S;
+
+  // 計算結果を保持する変数
+  int answer = 1;
+
+  for (int i = 0; i < S.size(); i++) {
+
+    if (S.at(i) == '+') {
+      answer++;
+    }
+    if (S.at(i) == '-') {
+      answer--;
+    }
+
+  }
+
+  cout << answer << endl;
+}
+```
