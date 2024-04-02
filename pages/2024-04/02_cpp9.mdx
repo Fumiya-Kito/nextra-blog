@@ -1,0 +1,83 @@
+
+# 配列
+
+## キーポイント
+- 配列は様々なデータの列を扱うことができる機能
+- `vector<型> 配列変数名;`で配列変数を宣言できる
+- `配列変数名 = { 要素1, 要素2, ... };`で配列変数に値を代入できる
+- `配列変数.at(i)`でi番目の要素にアクセスできる
+- `配列変数.size()`で配列の要素数を取得できる
+- `vector<型> 配列変数名(要素数)`と書くと指定した要素数で配列を初期化できる
+
+``` cpp copy showLineNumbers filename="配列初期化"
+vec1 = { 25, 200, 64, ... };
+vector<int> vec1(N);
+vector<int> vec(3, 5); // == {5, 5, 5}
+```
+
+
+
+## 要素の追加`v.pushback()`
+``` cpp copy showLineNumbers filename="要素の追加"
+#include <bits/stdc++.h>
+using namespace std;
+
+int main() {
+  vector<int> vec = { 1, 2, 3 };
+
+  vec.push_back(10); // 末尾に10を追加
+
+  // vecの全要素を出力
+  for (int i = 0; i < vec.size(); i++) {
+    cout << vec.at(i) << endl;
+  }
+}
+```
+```
+1
+2
+3
+10
+```
+
+### vector以外の配列
+```cpp 
+vector<int> data(3); // vectorによる配列
+int data[3]; // Cの配列
+array<int, 3> data; // arrayによる配列
+```
+
+### atを使わないi番目の要素へのアクセス
+
+- `配列変数.at(添字)`と同じように`配列変数[添字]`も使用可能
+- ただし、この書き方は範囲外の添字を指定してしまったときにエラーメッセージを表示してくれず、何が原因でプログラムが正しく動いていないのかがわかりにくい
+- 以下のように、`#define _GLIBCXX_DEBUG`を使えば、エラーを吐いてくれる
+```cpp
+#define _GLIBCXX_DEBUG
+#include <bits/stdc++.h>
+using namespace std;
+
+int main() {
+  vector<int> vec = { 1, 2, 3 }; 
+  cout << vec[10] << endl; // 実行時エラーが起きる
+}
+
+```
+
+## 要素の削除`v.pop_back()`
+
+```cpp
+#define _GLIBCXX_DEBUG
+#include <bits/stdc++.h>
+using namespace std;
+
+int main() {
+  vector<int> vec = { 1, 2, 3 }; 
+  cout << vec[10] << endl; // 実行時エラーが起きる
+}
+```
+
+## 配列同士の比較
+- `==`で比較可能
+- 全要素が一致した場合`true`を返す
+- ※ただし`vec1 == vec2`のように両者「配列変数」である必要がある(`vec == {1, 2, 3}`はダメ)
