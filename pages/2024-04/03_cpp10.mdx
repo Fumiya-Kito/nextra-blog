@@ -1,0 +1,44 @@
+# 平均との差
+
+- 平均点が整数にならない場合、小数点以下を切り捨てた数値を平均点とします。
+
+## 制約
+- 1≦N≦1000
+- 0≦Ai≦100
+- N,Aiは整数
+
+## 入力
+```
+N
+A1, A2, ..., AN
+```
+
+## 出力
+- それぞれの人の点数が平均点から何点離れているかを1行ずつ出力してください。
+```
+1人目の計算結果
+2人目の計算結果
+...
+N人目の計算結果
+```
+
+``` cpp copy showLineNumbers filename="解答"
+#include <bits/stdc++.h>
+using namespace std;
+
+int main() {
+  int N;
+  cin >> N;
+
+  vector<int> scores(N);
+  for (int i = 0; i < N; i++) {
+    cin >> scores[i];
+  }
+
+  int average = accumulate(scores.begin(), scores.end(), 0) / N;
+  for (int i = 0; i < N; i++) {
+    cout << abs(scores[i] - average) << endl;
+  }
+}
+```
+

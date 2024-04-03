@@ -29,7 +29,7 @@
 - 最終的にブラウザで`http://127.0.0.1:7860`にアクセス
 ```shell copy showLineNumbers
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-echo 'eval $(/opt/homebrew/bin/brew shellenv)' >> /Users/hoge/.zprofile
+echo 'eval $(/opt/homebrew/bin/brew shellenv)' >> /Users/ここだけUser名に変更!/.zprofile
 brew install cmake protobuf rust python@3.10 git wget
 git clone https://github.com/AUTOMATIC1111/stable-diffusion-webui
 cd stable-diffusion-webui
@@ -56,5 +56,8 @@ git pull
 
 ### 余談
 - 2024/04時点では、Appleシリコンには最適化されていないのかベンチマーク上のスペックより低い性能でしか画像生成できない
+  - GPUに関して、映像系は強い
+  - 機械学習系は弱い
+  - アップルのソフトウェアには最適化されるが、OSSがそうとは限らない
 - 生成AIをローカルで動かすならNvidiaのGPUを搭載したPC一択らしい
 - ただ、Appleも相当投資しているらしく、数年後Nvidia一強の構図が変わっている可能性はあり
