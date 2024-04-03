@@ -1,0 +1,60 @@
+# stable diffusion install (Apple Silicon)
+
+## githubを参照して
+- automatic 1111をインストールする
+  - stable diffusion = 画像生成するソフトウェア
+  - それをブラウザ(`web-ui`)で操作できるようにしたのが`automatic 1111`=Webアプリケーション
+- m1, m2, m3チップを想定
+- [参考: Installation on Apple Silicon](https://github.com/AUTOMATIC1111/stable-diffusion-webui/wiki/Installation-on-Apple-Silicon)
+> 1. If Homebrew is not installed, follow the instructions at https://brew.sh to install it. Keep the terminal window open and follow the instructions under "Next steps" to add Homebrew to your PATH.
+> 2. Open a new terminal window and run brew install cmake protobuf rust python@3.10 git wget
+> 3. Clone the web UI repository by running git clone https://github.com/AUTOMATIC1111/stable-diffusion-webui
+> 4. Place Stable Diffusion models/checkpoints you want to use into stable-diffusion-webui/models/Stable-diffusion. If you don't have any, see Downloading Stable Diffusion Models below.
+> 5. cd stable-diffusion-webui and then ./webui.sh to run the web UI. A Python virtual environment will be created and activated using venv and any remaining missing dependencies will be automatically downloaded and installed.
+> 6. To relaunch the web UI process later, run ./webui.sh again. Note that it doesn't auto update the web UI; to update, run git pull before running ./webui.sh.
+
+---
+### 日本語
+>
+1. Homebrewがインストールされていない場合は、https://brew.sh の指示に従ってインストールしてください。ターミナルウィンドウを開いたまま、「次のステップ」の指示に従ってHomebrewをPATHに追加してください。
+2. 新しいターミナルウィンドウを開き、 brew install cmake protobuf rust python@3.10 git wget を実行する。
+3. git clone https://github.com/AUTOMATIC1111/stable-diffusion-webui を実行してウェブUIリポジトリをクローンします。
+4. 使いたいStable Diffusionモデル/チェックポイントをstable-diffusion-webui/models/Stable-diffusionに置きます。持っていない場合は、以下の安定した拡散モデルのダウンロードを参照してください。
+5. stable-diffusion-webui を cd し、./webui.sh でウェブUIを実行します。Python仮想環境が作成され、venvを使用してアクティブ化され、不足している依存関係が自動的にダウンロードされインストールされます。
+6. 後でWeb UIプロセスを再起動するには、./webui.shをもう一度実行してください。Web UIを自動更新しないことに注意してください。更新するには、./webui.shを実行する前にgit pullを実行してください。
+
+---
+### とりあえず始めたい人向け
+- 1行ずつ順番にコピペすれば起動するはず
+- 最終的にブラウザで`http://127.0.0.1:7860`にアクセス
+```shell copy showLineNumbers
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+echo 'eval $(/opt/homebrew/bin/brew shellenv)' >> /Users/hoge/.zprofile
+brew install cmake protobuf rust python@3.10 git wget
+git clone https://github.com/AUTOMATIC1111/stable-diffusion-webui
+cd stable-diffusion-webui
+./webui.sh
+```
+
+
+- 以下、`stable-diffusion-webui`ディレクトリにいることが前提
+```shell copy showLineNumbers filename="止めたい"
+Ctrl + C を押す
+```
+
+```shell copy showLineNumbers filename="起動"
+./webui.sh
+```
+
+```shell copy showLineNumbers filename="StableDiffustionのUpdateがあったら"
+git pull
+```
+
+
+### Modelを探す
+- [huggingface](https://huggingface.co/)が有名らしい
+
+### 余談
+- 2024/04時点では、Appleシリコンには最適化されていないのかベンチマーク上のスペックより低い性能でしか画像生成できない
+- 生成AIをローカルで動かすならNvidiaのGPUを搭載したPC一択らしい
+- ただ、Appleも相当投資しているらしく、数年後Nvidia一強の構図が変わっている可能性はあり
