@@ -1,0 +1,61 @@
+# 範囲for文
+- javaでいう拡張for文
+```cpp showLineNumbers copy filename="範囲for"
+#include <bits/stdc++.h>
+using namespace std;
+
+int main() {
+  vector<int> a = {1, 3, 2, 5};
+  for (int x : a) {
+    cout << x << endl;
+  }
+}
+```
+
+# ループ構文の使い分け
+- 配列の全ての要素に対する処理を行なう場合 → 範囲for文
+- それ以外で一定回数繰り返し処理する場合 → for文
+- それ以外の場合 → while文
+
+# 多次元配列
+## キーポイント
+- 2次元配列は2次元の表を扱うときに便利
+- vector`<vector<要素の型>> 変数名(要素数1, vector<要素の型>(要素数2, 初期値))`で宣言できる
+- 初期値は省略可能
+- `変数名.at(i).at(j)`でi行目j列目へアクセスできる
+- `変数名.size()`で縦の大きさを取得できる
+- `変数名.at(0).size()`で横の大きさを取得できる
+- 要素を指定して初期化する例
+```cpp showLineNumbers copy filename="多次元配列"
+vector<vector<int>> data = {
+  {7, 4, 0, 8},
+  {2, 0, 3, 5},
+  {6, 1, 7, 0},
+};
+```
+- 多重for文で回してみる
+```cpp showLineNumbers copy
+for (int i = 0; i < data.size(); i++) {
+  for (int j = 0; j < data.at(0).size(); j++) {
+    cout << data.at(i).at(j) << " ";
+  }
+  cout << endl;
+}
+```
+
+## 宣言
+- 要素が整数
+- 縦に3行
+- 横に4列
+の表であるため、次のように宣言しています。
+
+```cpp showLineNumbers copy filename="2次元配列の宣言"
+// vector<vector<要素の型>> 変数名(要素数1, vector<要素の型>(要素数2, 初期値));
+// ※初期値は省略可能
+vector<vector<int>> data(3, vector<int>(4));
+```
+
+## 長方形にならない二次元配列(ジャグ配列)
+`N×0`の二次元配列に後から要素を追加していく場合などに「行毎に要素数の違う二次元配列」ができることがあります。
+このような配列は**ジャグ配列**と呼ばれることがあります。
+
