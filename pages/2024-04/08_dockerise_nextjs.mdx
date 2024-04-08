@@ -1,0 +1,65 @@
+# NextJS AppをDockeriseする
+
+[Self-Hosting (NextJS Docs)](https://nextjs.org/docs/pages/building-your-application/deploying)
+
+1. npmでnextappを作成
+```shell
+% npm create next-app
+✔ What is your project named? … next-docerise
+✔ Would you like to use TypeScript? … No / Yes
+✔ Would you like to use ESLint? … No / Yes
+✔ Would you like to use Tailwind CSS? … No / Yes
+✔ Would you like to use `src/` directory? … No / Yes
+✔ Would you like to use App Router? (recommended) … No / Yes
+✔ Would you like to customize the default import alias (@/*)? … No / Yes
+✔ What import alias would you like configured? … @/*
+```
+
+
+2. `next.config.mjs`において、出力をスタンドアロンにする
+<br/> →`server.js`が作成され、アプリケーション全体がここから提供されるようになる
+```mjs
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  output: 'standalone'
+};
+
+export default nextConfig;
+
+```
+
+3. `sharp`ライブラリをインストール
+<br/>→これがないと`Image`コンポーネントが正しく動作しない可能性がある
+```shell
+bun i sharp
+```
+
+4. `Dockerfile`の作成
+```Dockerfile
+FROM node:18-alpine
+
+WORKDIR /app
+
+COPY package*.json ./
+
+RUN npm install
+
+COPY . .
+
+EXPOSE 3000
+
+CMD npm run dev
+```
+
+
+5. ビルドする
+```shell
+docker build . -t next-dockerise
+```
+
+6. コンテナを起動する
+```
+docker run -p 3000:3000 next-dockerise
+```
+
+これでローカルホストでドッカーからNextJSアプリを起動できた
