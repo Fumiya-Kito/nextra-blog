@@ -1,0 +1,134 @@
+# 数値型
+
+## キーポイント
+- 整数型には扱える値の範囲が決まっている
+- 計算の途中で扱える範囲を超えることをオーバーフローといい、正しく計算が行えなくなる
+- int型より大きい値を扱いたいときはint64_t型を使う
+- double型の値を出力する際に出力する小数点以下の桁数を指定するには以下のようにする
+```cpp 
+cout << fixed << setprecision(桁数);
+```
+- (型)値で型変換（キャスト）を行うことができる
+- 暗黙的にキャストが起こる場合もある
+
+
+## int64_t型
+- int型の最小値: `2147483648`
+- int型の最大値: `2147483647`
+この範囲を超えるととオーバーフローして、正しく計算できなくなる
+
+- int64_t型の最小値: -9223372036854775808
+- int64_t型の最大値: 9223372036854775807
+
+プログラム中に直接`10`のように値を書くと、それはint型の数値として扱われます。
+int64_t型として扱ってほしい場合は`10LL`のように末尾に`LL`をつけましょう。
+
+また、int型とint64_t型の計算結果は**int64_t型**になります。
+```cpp showLineNumbers filename="型"
+#include <bits/stdc++.h>
+using namespace std;
+int main() {
+  cout << 2000000000 * 2 << endl;     // int * int         -> int
+  cout << 2000000000LL * 2LL << endl; // int64_t * int64_t -> int64_t
+  cout << 2000000000LL * 2 << endl;   // int64_t * int     -> int64_t
+}
+```
+
+```
+-294967296
+4000000000
+4000000000
+```
+
+## double型の出力
+- coutは適当な桁で四捨五入してしまう
+```cpp showLineNumbers filename="double型の出力"
+#include <bits/stdc++.h>
+using namespace std;
+
+int main() {
+  cout << 3.14159265358979 << endl;
+
+  // 小数点以下10桁まで
+  cout << fixed << setprecision(10);
+
+  cout << 3.14159265358979 << endl;
+}
+```
+
+```cpp showLineNumbers filename="キャスト"
+#include <bits/stdc++.h>
+using namespace std;
+
+int main() {
+  // 小数点以下5桁まで
+  cout << fixed << setprecision(5);
+
+  int a = 5;
+  cout << (double)a << endl; // int型の値をdouble型に変換
+
+  double b = 3.141592;
+  cout << (int)b << endl; // double型の値をint型に変換
+}
+
+```
+
+## 数値→文字列
+数値型から文字列に変換するには、`to_string`関数を用いる
+```cpp showLineNumbers
+#include <bits/stdc++.h>
+using namespace std;
+
+int main() {
+  int number = 100;
+  string s = to_string(number);
+  cout << s + "yen" << endl;
+}
+```
+
+# 文字列→数値
+```cpp showLineNumbers
+#include <bits/stdc++.h>
+using namespace std;
+
+int main() {
+  string s = "100";
+  int n = stoi(s);
+  cout << n << endl;
+}
+```
+
+
+|符号*付* 整数型|範囲|メモリ量|
+|---|---|---|
+|`signed char`|$-2^7$ ~ $2^7 - 1$|1byte|
+|`short`|$-2^{15}$ ~ $2^{15} - 1$|2byte|
+|`int`|$-2^{31}$ ~ $2^{31} - 1$|4byte|
+|`long long`|$-2^{63}$ ~ $2^{63} - 1$|8byte|
+|`int8_t`|$-2^7$ ~ $2^7 - 1$|2byte|
+|`int16_t`|$-2^{15}$ ~ $2^{15} - 1$|4byte|
+|`int32_t`|$-2^{31}$ ~ $2^{31} - 1$|4byte|
+|`int64_t`|$-2^{63}$ ~ $2^{63} - 1$|8byte|
+
+
+|符号*無* 整数型|範囲|メモリ量|
+|---|---|---|
+|`unsigned char`|$0$ ~ $2^8 - 1$|1byte|
+|`unsigned short`|$0$ ~ $2^{16} - 1$|2byte|
+|`unsigned int`|$0$ ~ $2^{32} - 1$|4byte|
+|`unsigned long long`|$0$ ~ $2^{64} - 1$|8byte|
+|`uint8_t`|$0$ ~ $2^8 - 1$|2byte|
+|`uint16_t`|$0$ ~ $2^{16} - 1$|4byte|
+|`uint32_t`|$0$ ~ $2^{32} - 1$|4byte|
+|`uint64_t`|$0$ ~ $2^{64} - 1$|8byte|
+
+## size()-1回ループしたい時の注意点
+- size_t型は符号なしの整数型であるため注意
+```cpp showLineNumbers
+vector<int> data(0);  // サイズ0
+cout << data.size() - 1 << endl;  // -1ではなく18446744073709551615
+// 配列のサイズ-1回のループ(ただし、空の場合はループ内は実行されない)
+for (int i = 0; i < (int)配列.size() - 1; i++) {
+  // 適当な処理
+}
+```
