@@ -1,0 +1,193 @@
+# STLのコンテナ
+- STLにはコンテナ型と呼ばれるデータ型群がある
+
+## キーポイント
+### map
+- 連想配列や辞書と呼ばれるデータ構造
+- mapを用いると「特定の値に、ある値が紐付いている」ようなデータを扱うことができる
+- mapの宣言
+```cpp 
+map<Keyの型, Valueの型> 変数名;
+```
+- mapの操作
+
+|操作|記法|計算量|
+|---|---|---|
+|値の追加|`someMap[key] = value`| $O(log{N})$|
+|値の削除|`someMap.erase(key)`| $O(log{N})$|
+|値の削除|`someMap.at(key)`| $O(log{N})$|
+|所属判定|`someMap.count(key)`| $O(log{N})$|
+|要素数取得|`someMap.size()`| $O(1)$|
+
+
+### queue
+- キューや待ち行列と呼ばれるデータ構造
+- queueを用いると「値を1つずつ追加していき、追加した順で値を取り出す」ような処理を行うことができる
+- queueの宣言
+```cpp
+queue<型> 変数名;
+```
+- queueの操作
+
+|操作|記法|計算量|
+|---|---|---|
+|要素の追加|someQueue.push(value)|$O(1)$|
+|先頭へのアクセス|someQueue.front()|$O(1)$|
+|先頭要素削除|someQueue.pop()|$O(1)$|
+|要素数取得|someQueue.size()|$O(1)$|
+
+
+### priority_queue
+- 優先度付きキューと呼ばれるデータ構造
+- priority_queueを用いると「それまでに追加した要素のうち、最も大きいものを取り出す」という処理を行うことができる
+- priority_queueの宣言
+```cpp 
+priority_queue<型> 変数名;
+```
+
+|操作|記法|計算量|
+|---|---|---|
+|要素の追加|変数.push(value)|$O(log{N})$|
+|最大要素の取得|変数.top()|$O(1)$|
+|最大の要素を削除|変数.pop()|$O(log{N})$|
+|要素数取得|変数.size()|$O(1)$|
+
+
+- priority_queueの操作
+
+```cpp
+priority_queue<型, vector<型>, greater<型>> 変数名;
+```
+
+
+## map例
+```cpp showLineNumbers
+#include <bits/stdc++.h>
+using namespace std;
+
+int main() {
+  map<string, int> score;  // 名前→成績
+  score["Alice"] = 100;
+  score["Bob"] = 89;
+  score["Charlie"] = 95;
+
+  cout << score.at("Alice") << endl;   // Aliceの成績
+  cout << score.at("Bob") << endl;     // Bobの成績
+  cout << score.at("Charlie") << endl; // Daveの成績
+}
+
+```
+- アクセス時の注意点
+```cpp
+変数.at(key)  // keyに対応するvalueが存在しない場合はエラーになる
+k変数[key]     // keyに対応するvalueが存在しない場合はValueの型の初期値が追加される
+```
+- 所属判定
+```cpp showLineNumbers
+if (score.count("Alice")) {
+  cout << "Alice: " << score.at("Alice") << endl;
+}
+if (score.count("Jiro")) {
+  cout << "Jiro: " << score.at("Jiro") << endl;
+}
+```
+- ループ
+```cpp showLineNumbers
+// Keyの値が小さい順にループ
+for (pair<Keyの型, Valueの型> p : 変数名) {
+  Keyの型 key = p.first;
+  Valueの型 value = p.second;
+  // key, valueを使う
+}
+
+//　autoを用いる
+// Keyの値が小さい順にループ
+for (auto p : 変数名) {
+  auto key = p.first;
+  auto value = p.second;
+  // key, valueを使う
+}
+
+```
+
+
+## queue例
+```cpp showLineNumbers
+#include <bits/stdc++.h>
+using namespace std;
+
+int main() {
+  queue<int> q;
+  q.push(10);
+  q.push(3);
+  q.push(6);
+  q.push(1);
+
+  // 空でない間繰り返す
+  while (!q.empty()) {
+    cout << q.front() << endl;  // 先頭の値を出力
+    q.pop();  // 先頭の値を削除
+  }
+}
+// 10
+// 3
+// 6
+// 1
+
+```
+## priority_queue例
+```cpp showLineNumbers
+#include <bits/stdc++.h>
+using namespace std;
+
+int main() {
+  priority_queue<int> pq;
+  pq.push(10);
+  pq.push(3);
+  pq.push(6);
+  pq.push(1);
+
+  // 空でない間繰り返す
+  while (!pq.empty()) {
+    cout << pq.top() << endl;  // 最大の値を出力
+    pq.pop();  // 最大の値を削除
+  }
+}
+
+// 10
+// 6
+// 3
+// 1
+```
+```cpp showLineNumbers filename="小さい順で取り出す"
+#include <bits/stdc++.h>
+using namespace std;
+
+int main() {
+  // 小さい順に取り出される優先度付きキュー
+  priority_queue<int, vector<int>, greater<int>> pq;
+  pq.push(10);
+  pq.push(3);
+  pq.push(6);
+  pq.push(1);
+
+  // 空でない間繰り返す
+  while (!pq.empty()) {
+    cout << pq.top() << endl;  // 最小の値を出力
+    pq.pop();  // 最小の値を削除
+  }
+}
+```
+
+## コピーや比較の計算量
+> vector, string, map, queue, priority_queueといったコンテナをコピーするときや、vectorやstringを比較するときにかかる計算量は
+$O(N)$です。
+要素のたくさんあるコンテナを頻繁にコピーするようなコードは計算量が大きくなってしまうことがあるため、注意が必要です。
+
+## その他のコンテナ
+- `set`: 集合, keyだけの`map`
+- `set`: スタック, 先入後出
+- `dequeue`: デック, 先頭と最後の要素どちらも操作可能
+- `unordered_map`: より高速な`map`, 制約あり
+- `unordered_set`: より高速な`set`, 制約あり
+- 
