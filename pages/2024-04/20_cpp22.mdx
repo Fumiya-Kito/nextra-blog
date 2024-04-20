@@ -1,0 +1,58 @@
+# 【問題】最頻値
+
+## 問題文
+N要素の配列
+$A_1 ,A_1 , \ldots ,A_N$
+が与えられます。 この配列の中の値のうち、出現回数が最も多い値とその出現回数を求めてください。
+<br/>ただし、出現回数が最大になる値は複数存在しないものとします。
+<br/>※制約が大きいため計算量に注意してプログラムを作成してください。
+
+## 制約
+- $0 \le N \le 10^5$
+- $0 \le A_i \le 10^9 (1 \le i \le N)$
+- 出現回数が最大になるような値は複数存在しない
+
+
+## 入力
+```cpp
+5 // N
+1 4 4 2 3 // リストA
+```
+
+## 出力
+```cpp
+4 //値 
+2 //出現回数
+```
+
+```cpp showLineNumbers filename="解答"
+#include <bits/stdc++.h>
+using namespace std;
+
+int main() {
+  int N;
+  cin >> N;
+
+  vector<int> A(N);
+  for (int i = 0; i < N; i++) {
+    cin >> A.at(i);
+  }
+
+  map<int, int> freq;
+  for (int i = 0; i < N; i++) {
+    freq[A.at(i)]++; // 0で初期化 
+  }
+  
+
+  int maxKey, maxVal = 0;
+  for (pair<int, int> rec: freq) {
+    if (rec.second > maxVal) {
+      maxKey = rec.first;
+      maxVal = rec.second;
+    }
+  }
+
+  cout << maxKey << " " << maxVal << endl;
+  return 0;
+}
+```
