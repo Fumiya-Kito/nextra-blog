@@ -1,0 +1,64 @@
+# 構造体
+- 複数の型をまとめた新しい型
+- 構造体型の値のことをオブジェクト
+
+```cpp showLineNumbers
+#include <bits/stdc++.h>
+using namespace std;
+
+struct MyPair {
+  // ここに定義された変数をメンバ変数という
+  int x;     // 1つ目のデータはint型であり、xという名前でアクセスできる
+  string y;  // 2つ目のデータはstring型であり、yという名前でアクセスできる
+
+  // コンストラクタ
+  MyPair() {
+    cout << "constructor called" << endl;
+  }
+
+    // コピーコンストラクタ
+  MyPair(const MyPair &old) {
+    cout << "copy constructor called" << endl;
+    x = old.x + 1;
+    y = old.y + " new";
+  }
+
+    // 初期化子リストを用いた初期化
+  // MyPair() : x(123), y("hello") {
+  // }
+
+  // メンバ関数
+  void print() {
+    // 直接x, yにアクセスできる
+    cout << "x = " << x << endl;
+    cout << "y = " << y << endl;
+  }
+};
+
+int main() {
+  MyPair p = {12345, "hello"};  // MyPair型の値を宣言
+  cout << "p.x = " << p.x << endl;
+  cout << "p.y = " << p.y << endl;
+
+// --------　
+  MyPair p;  // ここでコンストラクタが呼ばれる
+ 
+  MyPair q(p);  // コピーコンストラクタが呼ばれる
+ 
+  MyPair r = q;  // コピーコンストラクタが呼ばれる
+}
+
+```
+## コピーコンストラクタ
+
+> コンストラクタはオブジェクトが作られる際に呼ばれますが、 関数の引数としてオブジェクトを渡す場合などの条件を満たした場合には、コピーコンストラクタという特殊なコンストラクタが呼ばれます。
+次のような場合にコピーコンストラクタが呼ばれます。
+関数の引数としてオブジェクトを渡した場合
+オブジェクトを宣言する際にMyStruct new_obj = old_obj;で初期化する場合
+オブジェクトを宣言する際にMyStruct new_obj(old_obj);の形で初期化する場合
+など
+
+## クラスについて
+- 構造体とほぼ同じ
+- メンバアクセスがデフォルトで`public:`なのが構造体、
+- `private:`がデフォルトで選択可能なのがクラス
