@@ -1,0 +1,177 @@
+# その他機能
+## キーポイント
+- コンピュータの内部では「文字」を数値として扱っており、文字に対応する数値を**文字コード**という
+- char型の値は実質的に数値なので、int型と同じように四則演算や比較ができる
+- 関数の外で宣言した変数を**グローバル変数**と呼び、プログラム全体がスコープになる
+- `const`修飾子を付けて宣言した変数は定数として扱える
+- 条件演算子を使うと「if文で分岐して値を選ぶ処理」を短く書ける
+```
+条件式 ? 真の時の式 : 偽の時の式
+```
+- `&&`と`||`は左の式から実行し、結果が確定した時点で条件判定処理を中断する(**短絡評価（またはショートサーキット）**)
+- マクロを使うと変数や関数を使う感覚でプログラムを置換することができる
+- ラムダ式を使うと関数の内部で関数を定義できる
+- do-while文とnext_permutation関数を使うと「順列の全列挙」が簡単に書ける
+- goto文は多重ループからの脱出に便利
+
+## 文字コード
+```cpp showLineNumbers
+#include <bits/stdc++.h>
+using namespace std;
+
+int main() {
+  cout << (int)'A' << endl;
+  cout << (int)'B' << endl;
+  cout << (int)'Z' << endl;
+
+  cout << (char)65 << endl;
+  cout << (char)66 << endl;
+  cout << (char)90 << endl;
+}
+```
+
+```
+65
+66
+90
+A
+B
+Z
+```
+- 「『'0'～'9'』、『'A'～'Z'』、『'a'～'z'』がそれぞれ連続していること」
+- 「大文字は小文字より小さい数値に対応していること」は覚えておく
+
+```cpp showLineNumbers filename="char型の加算"
+#include <bits/stdc++.h>
+using namespace std;
+
+int main() {
+  for (int i = 0; i <= ('Z' - 'A'); i++) {
+    cout << (char)('A' + i);
+  }
+}
+
+---
+
+#include <bits/stdc++.h>
+using namespace std;
+
+int main() {
+  char c = 'X';
+  if ('A' <= c && c <= 'Z') {
+    cout << "YES" << endl;
+  }
+  else {
+    cout << "NO" << endl;
+  }
+}
+
+```
+- 大文字・小文字の変換
+```cpp showLineNumbers
+(char)('x' + ('A' - 'a')) // 'X' 小文字→大文字
+(char)('X' - ('A' - 'a')) // 'x' 大文字→小文字
+
+(char)toupper('x');
+(char)tolower('X');
+```
+
+
+## const修飾子の使い所
+- `bitset`のビット数を指定する場合→値が変わらないことを保証したい
+```cpp showLineNumbers
+const int B = 100;
+
+bitset<B> func1(bitset<B> a) {
+  ...
+}
+bitset<B> func2(bitset<B> a) {
+  ...
+}
+```
+
+## 条件演算子
+```cpp showLineNumbers
+#include <bits/stdc++.h>
+using namespace std;
+
+int main() {
+  int a, b;
+  cin >> a >> b;
+
+  // 小さい方の値をanswerに代入する
+  int answer = a < b ? a : b;
+
+  cout << answer << endl;
+}
+```
+
+
+## 競プロあるあるマクロ
+```cpp
+#define rep(i, n) for (int i = 0; i < (int)(n); i++)
+```
+```cpp
+#include <bits/stdc++.h>
+using namespace std;
+
+// allマクロの定義
+#define all(v) v.begin(), v.end()
+
+int main() {
+  vector<int> v = { 2, 3, 1 };
+  sort(all(v)); // 2回配列変数名を書く必要がない
+  cout << v.at(0) << endl;
+}
+
+```
+
+## ラムダ式
+
+```cpp
+#include <bits/stdc++.h>
+using namespace std;
+
+int main() {
+  // my_min関数をラムダ式で定義
+  auto my_min = [](int a, int b) {
+    if (a < b) {
+      return a;
+    }
+    else {
+      return b;
+    }
+  };
+
+  cout << my_min(5, 10) << endl;
+}
+
+---
+#include <bits/stdc++.h>
+using namespace std;
+
+int main() {
+  vector<int> v = { 2, 3, 1 };
+  // 大きい順にソートさせる比較関数
+  auto comp = [](int a, int b) { return a > b; };
+  sort(v.begin(), v.end(), comp);
+
+  cout << v[0] << endl; // v は {3, 2, 1}となっている
+}
+
+```
+
+## goto文
+```cpp showLineNumbers
+#include <bits/stdc++.h>
+using namespace std;
+
+int main() {
+  cout << "Hello, ";
+  goto SKIP;
+  cout << "world!" << endl; //この行は飛ばされる
+SKIP:
+  cout << "AtCoder!" << endl;
+}
+
+```
