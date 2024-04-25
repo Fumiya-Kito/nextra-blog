@@ -1,0 +1,81 @@
+# includeディレクティブ
+
+## キーポイント
+- ソースコードを書いたファイルのことをソースファイルという
+- 便利な関数や構造体を書いたソースファイルなどをまとめたものをライブラリという
+- `#include <bits/stdc++.h>`はSTL（C++の標準ライブラリ）を用いるためのもの
+- `#include <ファイル>`を**include（インクルード）ディレクティブ**という
+  - 「指定したファイルの内容をこの命令を書いた部分に展開する」という機能
+- 複数のソースファイルでプログラムを書く際には、ソースファイルとそれに対応するヘッダファイルを用いることが多い
+  - ヘッダファイルには関数のプロトタイプ宣言などを書き、ソースファイルにその関数の定義を書く
+
+## includeディレクティブ
+```cpp showLineNumbers filename="a.cpp"
+// STLを使うためのincludeディレクティブ
+#include <bits/stdc++.h>
+using namespace std;
+
+// b.cppの内容が展開される
+#include "b.cpp"
+
+int main() {
+  // fの定義はb.cppに書かれている
+  cout << f(10) << endl;
+}
+
+```
+
+```cpp showLineNumbers filename="b.cpp"
+// xを2乗して返す
+int f(int x) {
+  return x * x;
+}
+```
+
+## ヘッダファイル
+- プログラムを複数のソースファイルに分けて書く場合に、ソースファイルとは別にヘッダファイルと呼ばれるファイルが用いられます。
+- ヘッダファイルは、主に関数のプロトタイプ宣言や構造体の宣言などをまとめたファイルです。 慣習的にファイル名.hやファイル名.hppという名前のファイル名にすることが多いです。
+
+
+## プリプロセッサ
+厳密にはincludeディレクティブはプリプロセッサによって処理されます。
+
+プリプロセッサはコンパイルの前段階の処理を行うもので、ソースコードを書き換えるような処理を行います。
+
+プリプロセッサの処理はコンパイルの直前に行われるため、プログラムの実行速度に影響が出るものではありません。 
+よって、たくさんのファイルをインクルードしたからといって、プログラムの実行性能が悪くなるようなことはありません。
+
+他にも、defineディレクティブ（定数やマクロ）の展開もプリプロセッサが行います。
+
+## includeするファイルの検索
+1. `#include <ファイル>`
+2. `#include "ファイル"`
+
+1.は標準ライブラリなど、システムにインストールされているライブラリのファイルをインクルードする場合に用います。 この場合、標準で登録されているディレクトリを順番に見ていき、マッチするファイルを探して展開します。
+コンパイラのオプションで指定したディレクトリを検索対象に追加することもできます。
+
+2.は自分で用意したファイルをインクルードする場合に用いることが多いです。 この場合では、初めに「このファイルと同じディレクトリ」の中を探します。 マッチするファイルが見つからなかった場合には、1つ目の書き方と同じ動作になります。
+includeディレクティブをどう扱うかは、厳密には処理系によって異なりますが、多くの環境で上のような動作になっています。
+
+## bits/stdc++.h
+- 「標準ライブラリに関連する全てのヘッダファイルをインクルードするファイル」
+- 入出力関連の`cin`や`cout`などの機能は`iostream`というヘッダファイルに書かれている
+```cpp filename="個別にヘッダファイルをincludeする"
+#include <iostream> // cout, endl, cin
+#include <string> // string, to_string, stoi
+#include <vector> // vector
+#include <algorithm> // min, max, swap, sort, reverse, lower_bound, upper_bound
+#include <utility> // pair, make_pair
+#include <tuple> // tuple, make_tuple
+#include <cstdint> // int64_t, int*_t
+#include <cstdio> // printf
+#include <map> // map
+#include <queue> // queue, priority_queue
+#include <set> // set
+#include <stack> // stack
+#include <deque> // deque
+#include <unordered_map> // unordered_map
+#include <unordered_set> // unordered_set
+#include <bitset> // bitset
+#include <cctype> // isupper, islower, isdigit, toupper, tolower
+```
