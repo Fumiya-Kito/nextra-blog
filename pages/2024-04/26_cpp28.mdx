@@ -1,0 +1,90 @@
+# 名前空間
+- 名前空間によって、名前の衝突を避けることができる
+- 名前空間の定義は以下のように行う
+```cpp
+namespace 名前空間名 {
+  // 内容
+}
+```
+
+- 名前空間内の変数や関数にアクセスするには`名前空間名::`によって名前空間を指定する
+- 名前空間はネストすることができる
+- `using namespace 名前空間名;`によって`名前空間名::`の指定を省略することができる
+  - STLの関数や構造体は`std`名前空間内に定義されている
+  - `using namespace std;`は`std::`を省略するためもの
+
+```cpp showLineNumbers filename="名前空間 使用例"
+#include <bits/stdc++.h>
+using namespace std;
+
+// 名前空間A
+namespace A {
+  void f() {
+    cout << "namespace A" << endl;
+  }
+}
+// 名前空間B
+namespace B {
+  void f() {
+    cout << "namespace B" << endl;
+  }
+}
+
+int main() {
+  A::f();  // 名前空間A内の関数fの呼び出し(名前解決)
+  B::f();  // 名前空間B内の関数fの呼び出し
+}
+```
+
+## 名前空間のネスト
+```cpp showLineNumbers
+#include <bits/stdc++.h>
+using namespace std;
+
+namespace A {
+  namespace B{
+    void f() {
+      cout << "A::B::f" << endl;
+    }
+  }
+  void f() {
+    cout << "A::f" << endl;
+  }
+}
+
+int main() {
+  A::f();
+  A::B::f();
+}
+```
+
+## エイリアス
+```cpp
+#include <bits/stdc++.h>
+using namespace std;
+
+namespace A {
+  namespace B {
+    namespace C {
+      void f() {
+        cout << "A::B::C::f" << endl;
+      }
+    }
+  }
+}
+
+namespace too_long_name {
+  void f() {
+    cout << "too_long_name::f" << endl;
+  }
+}
+
+
+int main() {
+  namespace abc = A::B::C;
+  abc::f();
+
+  namespace s = too_long_name;
+  s::f();
+}
+```
