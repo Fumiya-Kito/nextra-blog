@@ -1,0 +1,175 @@
+# テンプレート
+## キーポイント
+- テンプレートは構造体や関数の「型」を一般化するための機能
+- 「同様の処理を行うが、利用する型が異なる関数」は関数テンプレートを用いてまとめることができる
+```cpp filename="関数テンプレートの宣言"
+template <typename テンプレート引数>
+返り値の型 関数名(引数の型 引数...(必要な分だけ書く)) {
+  // 処理内容
+}
+```
+```cpp filename="呼び出し"
+関数名<テンプレート引数>(引数1, 引数2, ...);
+```
+
+- 構造体の内容を型について一般化したいときにはクラステンプレートを用いてまとめることができる
+```cpp filename="クラステンプレートの宣言"
+template <typename テンプレート引数>
+struct 構造体名 {
+  (構造体の内容)
+};
+```
+```cpp filename="呼び出し"
+構造体名<テンプレート引数>
+```
+
+## 関数テンプレート
+
+- STLの`min`関数や`max`関数は関数テンプレートを用いて定義されている
+<br/>→ `int`型に対しても`double`型に対しても同じように使えるように
+
+```cpp showLineNumbers filename="2乗する関数"
+#include <bits/stdc++.h>
+using namespace std;
+
+// xの二乗を返す
+int square_int(int x) {
+  return x * x;
+}
+
+// xの二乗を返す
+double square_double(double x) {
+  return x * x;
+}
+
+int main() {
+  int a = 3;
+  double b = 1.2;
+
+  cout << square_int(a) << endl;
+  cout << square_double(b) << endl;
+}
+```
+↓ (TypeScriptでいうジェネリックス)
+```cpp showLineNumbers
+#include <bits/stdc++.h>
+using namespace std;
+
+// xの二乗を返す (関数テンプレート版)
+template <typename T>
+T square(T x) {
+  return x * x;
+}
+
+int main() {
+  int a = 3;
+  double b = 1.2;
+
+  cout << square<int>(a) << endl;  // int版のsquare関数の呼び出し
+  cout << square<double>(b) << endl;  // double版のsquare関数の呼び出し
+}
+
+```
+
+
+## 構造体におけるテンプレート
+- 構造体を定義する際にもテンプレートを用いることができます。 これによって、例えばメンバ変数の型を一般化した構造体を作ることができます。
+- このようなテンプレートを**クラステンプレート**といいます。
+- `vector`や`map`などのSTLのコンテナはクラステンプレートを用いて定義されています
+- 例えば`vector`は`vector<int>`として`int`型の配列を、`vector<double>`として`double`型の配列を使うことができました。
+
+```cpp showLineNumbers filename="座標の構造体"
+#include <bits/stdc++.h>
+using namespace std;
+
+// クラステンプレートの宣言
+template <typename T>
+struct Point {
+  T x;
+  T y;
+  void print() {
+    cout << "(" << x << ", " << y << ")" << endl;
+  }
+};
+
+int main() {
+  // int型用のPoint構造体
+  Point<int> p1 = { 0, 1 };
+  p1.print(); // (0, 1)
+
+  // double型用のPoint構造体
+  Point<double> p2 = { 2.3, 4.5 };
+  p2.print(); // (2.3, 4.5)
+}
+```
+
+## 定数のテンプレート
+- 関数テンプレートもクラステンプレートも、整数型の定数をテンプレート引数として用いることができる
+- 使う場所に応じて定数を切り替えたい場合などに便利
+- tupleの要素取得に用いるget関数や、bitsetは定数のテンプレートを用いて定義されています
+```cpp showLineNumbers
+#include <bits/stdc++.h>
+using namespace std;
+
+// タプルのINDEX1番目とINDEX2番目を交換する関数
+template <int INDEX1, int INDEX2>
+void tuple_swap(tuple<int, int, int> &x) {
+  swap(get<INDEX1>(x), get<INDEX2>(x));
+}
+
+int main() {
+  tuple<int, int, int> x = make_tuple(1, 2, 3);
+
+  tuple_swap<0, 2>(x);  // 1番目と3番目を交換
+  cout << get<0>(x) << ", " << get<1>(x) << ", " << get<2>(x) << endl;
+
+  tuple_swap<0, 1>(x);  // 1番目と2番目を交換
+  cout << get<0>(x) << ", " << get<1>(x) << ", " << get<2>(x) << endl;
+}
+```
+
+
+## 競技プログラミングでよく用いられるテンプレートの例
+```cpp showLineNumbers
+#include <bits/stdc++.h>
+using namespace std;
+
+// aよりもbが大きいならばaをbで更新する
+// (更新されたならばtrueを返す)
+template <typename T>
+bool chmax(T &a, const T& b) {
+  if (a < b) {
+    a = b;  // aをbで更新
+    return true;
+  }
+  return false;
+}
+// aよりもbが小さいならばaをbで更新する
+// (更新されたならばtrueを返す)
+template <typename T>
+bool chmin(T &a, const T& b) {
+  if (a > b) {
+    a = b;  // aをbで更新
+    return true;
+  }
+  return false;
+}
+
+//-------------------------------
+
+int f(int n) {
+  // (適当な関数)
+  return n * n - 8 * n + 3;
+}
+
+int main() {
+  // f(1), f(2), ..., f(10)の最小値と最大値を求める
+  int ans_min = 1000000000;
+  int ans_max = 0;
+  for (int i = 1; i <= 10; i++) {
+    chmin(ans_min, f(i));  // 最小値を更新
+    chmax(ans_max, f(i));  // 最大値を更新
+  }
+  cout << ans_min << " " << ans_max << endl;
+}
+```
