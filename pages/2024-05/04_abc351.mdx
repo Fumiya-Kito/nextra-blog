@@ -1,0 +1,277 @@
+# ABC351
+コンテスト初参加。B問題まではできたがC問題で手こずる。サンプルACなのに、テストするとWAで結局最後までできず。
+まず安定してC問題までを完答できるしたい。
+
+# A The bottom of the ninth
+
+## 問題文
+チーム高橋とチーム青木が、チーム高橋を先攻として野球を行なっています。
+現在、9 回表までが終了し、9 回裏が始まろうとしています。
+試合において、チーム高橋は i 回表 (1≤i≤9) に A_i点を取り、チーム青木は j 回裏 (1≤j≤8) にB_j点を取りました。ここで、9 回表の終了時点でチーム高橋の得点はチーム青木の得点以上です。チーム青木は 9 回裏に最低何点取れば勝利することができるか求めてください。
+ただし、9 回裏の終了時点で同点であった場合は引き分けとなり、すなわちチーム青木が勝利するためには 9 回裏の終了時点でチーム高橋より真に多くの点をとっている必要があるものとします。なお、（ある時点における）チーム高橋の得点はそれまでの回の表に取った点数の合計であり、チーム青木の得点はそれまでの回の裏に取った点数の合計です。
+
+
+```cpp showLineNumbers filename="自分の提出"
+#include <iostream>
+#include <algorithm>
+#include <vector>
+#include <numeric>
+using namespace std;
+
+int main() {
+  vector<int> A(9), B(9);
+  for (int i = 0; i < 9; i++) cin >> A[i];
+  for (int i = 0; i < 8; i++) cin >> B[i];
+
+  int a_sum = accumulate(A.begin(), A.end(), 0);
+  int b_sum = accumulate(B.begin(), B.end(), 0);
+
+  cout << a_sum - b_sum + 1 << endl;
+
+  return 0;
+}
+```
+
+```cpp showLineNumbers filename="模範解答"
+#include <bits/stdc++.h>
+using namespace std;
+
+int main() {
+	int a=0,b=0,x;
+	for(int i=0;i<9;i++){
+		cin>>x;
+		a+=x;
+	}
+	for(int j=0;j<8;j++){
+		cin>>x;
+		b+=x;
+	}
+	cout<<(a-b+1)<<endl;
+	return 0;
+}
+```
+
+> 9 回表の時点で チーム高橋が X 点、 チーム青木が Y 点をとっていたとします。（問題文の制約より X≥Y です。）
+ここで、X,Y はそれぞれ、X=A1 +A 2 +⋯+A9 , Y=B1 +B2 +⋯+B 8として求められます。
+このとき、9 回裏にチーム青木が取った点数が (X−Y−1) 以下であればチーム高橋の勝ち、(X−Y) であれば引き分け、(X−Y+1) 以上であればチーム青木の勝ちとなります。よって、チーム青木が勝つために必要な点数の最小値は (X−Y+1) であるので、これを出力すれば良いです。
+
+## 振り返り
+- 正直、A問題ならGPTになげてテストケース通れば、提出しても良さそうと思った。
+- １回for文で入力完全に受け取らなくても、受け取った瞬間sumしていけばいい、`vector`も使う必要ない
+
+
+
+# B - Spot the Difference
+
+## 問題文
+縦 N マス、横 N マスのグリッドが 2 個与えられます。
+それぞれグリッド A, グリッド B と呼びます。グリッドの各マスには英小文字が書かれています。
+グリッド A の上から i 行目、左から j 列目に書かれている文字は A i,jです。グリッド B の上から i 行目、左から j 列目に書かれている文字は B i,jです。
+2 つのグリッドは 1 ヵ所だけ書かれている文字が異なります。すなわち、Ai,j=B i,j である N 以下の正整数の組 (i,j) はちょうど 1 個存在します。この (i,j) を求めてください。
+
+
+```cpp showLineNumbers filename="自分の提出"
+#include <iostream>
+#include <vector>
+using namespace std;
+
+int main() {
+    int N;
+    cin >> N;
+    vector<vector<char>> A(N, vector<char>(N)), B(N, vector<char>(N));
+
+    pair<int, int> diff_pos;
+
+    for (int i = 0; i < N; i++) {
+        for (int j = 0; j < N; j++) {
+            cin >> A[i][j];
+        }
+    }
+
+    for (int i = 0; i < N; i++) {
+        for (int j = 0; j < N; j++) {
+            cin >> B[i][j];
+            if (A[i][j] != B[i][j]) {
+                diff_pos = make_pair(i + 1, j + 1);
+            }
+        }
+    }
+
+    cout << diff_pos.first << ' ' << diff_pos.second << endl;
+
+    return 0;
+}
+```
+```cpp showLineNumbers filename="模範解答"
+#include <iostream>
+#include <string>
+#include <vector>
+using namespace std;
+
+int main() {
+  int N;
+  cin >> N;
+  vector<string> A(N), B(N);
+  for (auto& s : A) cin >> s;
+  for (auto& s : B) cin >> s;
+  for (int i = 0; i < N; i++) {
+    for (int j = 0; j < N; j++) {
+      if (A[i][j] != B[i][j]) {
+        cout << i + 1 << " " << j + 1 << endl;
+        return 0;
+      }
+    }
+  }
+}
+```
+> この問題は文字列処理と for 文の使い方を問うている問題です。この問題が解けなかった人は文字列の使い方を復習してみましょう。
+この問題はグリッド全体を走査して A と B で異なる文字を発見することで解くことが出来ます。
+具体的には、次のアルゴリズムを実装するとよいです。
+i=1,2,…,N の順に次の操作を行う。
+j=1,2,…,N の順に次の操作を行う。
+Ai,j とB i,j​が同じ文字かどうか調べる。
+同じ文字だった場合は何もしない。異なる文字だった場合は (i,j) を出力して全ての操作を終了する。計算量は O(N^2) で十分高速です。
+
+### ちょっとした疑問
+```cpp filename="You"
+A, Bは１次元配列なのに、A[i][j]のように参照できるのはなぜか？
+```
+```cpp filename="ChatGPT"
+A[i][j] のように二次元配列のように見える記法は、実際には vector<string> の中の各要素が文字列であり、各文字列は1次元配列です。
+文字列（string）は文字の1次元の配列ですが、C++の文字列操作により2次元配列のようにアクセスできるようになっています。
+A[i] は vector<string> A の i 番目の要素であり、この要素は文字列です。
+そのため、A[i][j] は文字列の i 番目の要素の j 番目の文字を表します。この記法は、C++の文字列型のオーバーロードされた演算子により、文字列内の文字にアクセスするためのものです。
+```
+```cpp filename="You"
+つまり、`vector<string>` = `vector<vector<char> >`という認識でいいか？
+```
+```cpp filename="ChatGPT"
+はい、その認識で正しいです。vector<string>は、文字の1次元の配列であり、各文字列はそれぞれ1次元の文字の配列（vector<char>）です。
+つまり、vector<string>は2次元の配列として考えることができます。
+そのため、A[i][j]はvector<string>のi番目の要素である文字列のj番目の文字を表します。
+```
+
+### 振り返り
+- `vector<string>` = `vector<vector<char> >`: 実際に最初`vector<vector<string> >`として間違っていた
+- 普段（言語的に）`char`型をあまり使わないから抑えとかないと、
+- 入力が`abc`とかなら`vector<string> A`と`cin`でそのまま２次元配列的に`A[i][j] = 'a'`のように受け取れる
+
+
+# C - Merge the balls
+解けなかったC問題
+## 問題文
+空の列と、N 個のボールがあります。i 個目 (1≤i≤N) のボールの大きさは 2 Aiです。これから N 回の操作を行います。i 回目の操作では、i 個目のボールを列の一番右に付け加えた後、次の手順を繰り返します。
+列にあるボールが 1 つ以下ならば操作を終了する。列にあるボールのうち右から 1 番目のものと 2 番目のものの大きさが 異なる ならば操作を終了する。列にあるボールのうち右から 1 番目のものと 2 番目のものの大きさが 等しい ならば、2 つのボールを取り除き、「取り除かれた 2 つのボールの大きさの和」の大きさのボール 1 つを列の一番右に付け加える。
+その後、1. に戻り、手順を繰り返す。N 回の操作の後で、列にあるボールの数を求めてください。
+
+
+```cpp showLineNumbers filename="自分の提出 WA"
+// ちなみにほぼAIを使ったの解答
+#include <iostream>
+#include <vector>
+#include <cmath>
+using namespace std;
+
+int main() {
+    int N;
+    cin >> N;
+    vector<int> A(N);
+    for (int i = 0; i < N; i++) {
+        int power;
+        cin >> power;
+        A[i] = pow(2, power);
+    }
+
+    vector<int> balls;
+    for (int i = 0; i < N; i++) {
+        balls.push_back(A[i]);
+        // 操作
+        while (balls.size() > 1 && (balls[balls.size() - 1] == balls[balls.size() - 2])) {
+            int sum = balls[balls.size() - 1] + balls[balls.size() - 2];
+            balls.pop_back();
+            balls.pop_back();
+            balls.push_back(sum);
+        }
+    }
+
+    cout << balls.size() << endl;
+
+    return 0;
+}
+```
+```cpp showLineNumbers filename="模範解答"
+#include <bits/stdc++.h>
+using namespace std;
+
+int main() {
+	int n,l=0;
+	int a[200000];
+	cin>>n;
+	for(int i=0;i<n;i++){
+		cin>>a[l];
+		l++;
+		while(l>1){
+			if(a[l-2]==a[l-1]){
+				a[l-2]++;
+				l--;
+			}
+			else break;
+		}
+	}
+	cout<<l<<endl;
+	return 0;
+}
+
+```
+
+> それぞれの操作を順にシミュレーションすることを考えます。
+ここで、N 個のボールの大きさはすべて 2 のべき乗であり、手順において取り除かれたボールの大きさが 2 のべき乗であるとき、新たに付け加えられるボールの大きさも 2 のべき乗となることから、登場するボールの大きさはすべて 2 のべき乗です。
+また、X=Y と 2 X =2 Yが同値であることから、ボールの大きさの代わりにボールの大きさの（2 を底とした）対数を管理すれば十分です。
+具体的には列にあるボールの数 L と 列にあるボールの大きさの対数を左から順に並べたもの S=(S1 ,S2 ,…,SL ) を管理しておき、これを更新していくことを考えます。最初はL=0, S=()（空の列）です。i 個目のボールを列の一番右に付け加える操作は L←(L+1) とし、S の末尾に A i  をつけ加えれば良いです。その後の手順は、列の大きさが 2 以上である限り、「S の末尾から 2 つの要素 S L−1​ ,S L を取り出して大きさを比較し、異なれば元に戻して操作を終了し、等しければ（すなわちS L−1​ =S L​ =X であれば ）、 L←(L−1) として S の末尾に (X+1) を加えて再度この手順を行う」ことを繰り返せば良いです。ここで、2 X +2 X =2 X+1  であることに注意してください。N 回の操作が終了した後の L の値が答えとなります。
+
+> 次に、計算量について考えます。前者のi 個目（1≤i≤N）のボールを列の一番右に付け加える操作はちょうど N 回行われます。後者の手順について、「 2 つのボールを取り出して 1 つを加える」という操作は列のボールの数を 1 減少させるため、 N 回の操作の中で高々 (N−1) 回しか行うことができません。よって、列にボールを取り出す・加えるという操作はそれぞれ高々 O(N) 回しか行われません。
+それぞれの操作は配列で行うこともできますし、スタック等で管理することもできます。いずれの場合も末尾に付け加えたり取り除く操作は O(1) でおこなうことができます。よって、シミュレーションに必要な時間計算量は全体で O(N) であり十分高速です。よって、この問題を解くことができました。
+
+## 振り返り
+- まず、日本語(自然言語)をそのままプログラミング言語にするだけでは競技プログラミングでは通用しないということにはじめて気がついた(特に計算量の観点で)
+- その工夫が力の差であり楽しみなんだと思う
+
+- なにを管理すればいいかという観点
+- 大きさは2の冪乗だが、冪乗部分だけみれば判定はできる
+- （おそらく）アルゴリズムは合っているが`pow` O(n)?を使ったせいで、計算時間がかかり、WAに。以下で提出してAC
+```cpp showLineNumbers
+#include <iostream>
+#include <vector>
+#include <cmath>
+using namespace std;
+
+int main() {
+    int N;
+    cin >> N;
+    vector<int> A(N);
+    for (int i = 0; i < N; i++) {
+        // int power;
+        cin >> A[i];
+        // A[i] = pow(2, power);
+    }
+
+    vector<int> balls;
+    for (int i = 0; i < N; i++) {
+        balls.push_back(A[i]);
+        while (balls.size() > 1) {
+            if (balls[balls.size() - 1] != balls[balls.size() - 2]) {
+                break;
+            } else {
+                int sum = balls[balls.size() - 1] + 1;
+                balls.pop_back();
+                balls.pop_back();
+                balls.push_back(sum);
+            }
+        }
+    }
+
+    cout << balls.size() << endl;
+
+    return 0;
+}
+```
