@@ -1,0 +1,139 @@
+# ABC086C - Traveling
+
+
+## 問題文
+シカのAtCoDeerくんは二次元平面上で旅行をしようとしています。 
+AtCoDeerくんの旅行プランでは、時刻0 に 点 (0,0) を出発し、 1 以上 N 以下の各 i に対し、時刻 $t_i$ に点 $(x_i, y_i)$ を訪れる予定です。
+AtCoDeerくんが時刻 t に 点 (x,y) にいる時、 時刻 t+1 には 点 (x+1,y), (x−1,y), (x,y+1), (x,y−1) のうちいずれかに存在することができます。 
+その場にとどまることは出来ないことに注意してください。 AtCoDeerくんの旅行プランが実行可能かどうか判定してください。
+
+## 制約
+- $1 \le N \le 10^{5}$
+- $1 \le x_i \le 10^{5}$
+- $1 \le y_i \le 10^{5}$
+- $1 \le t_i \le 10^{5}$
+- $t_i \le t_{i+1} (1 \le i \le N-1)$
+- 入力はすべて整数
+
+
+## 入力
+```
+N
+$t_1 x_1 y_1$
+...
+$t_N x_N y_N$
+```
+
+## 出力
+旅行プランが実行可能ならYesを、不可能ならNoを出力してください。
+
+## 考察
+- $t_{i+1} - t_i$の移動範囲外はNG
+- 移動可能=$t_{i+1} - t_i > (x_{i+1} - x_i) + (y_{i+1} - y_i)$
+- 残り時間が`mod 2`でゴールにいるなら、同じ場所にちょうど止まることが可能
+
+```cpp showLineNumbers filename="自分の提出WA"
+#include <iostream>
+#include <vector>
+using namespace std;
+
+int main() {
+    int N;
+    cin >> N;
+
+    bool isExecutable = true;
+    vector<int> coord = {0, 0, 0};
+
+    for (int i = 0; i < N; i++) {
+        int t, x, y;
+        cin >> t >> x >> y;
+
+        if (
+            ((t - coord[0]) - (x - coord[1]) - (y - coord[2])) < 0 ||
+            ((t - coord[0]) - (x - coord[1]) - (y - coord[2])) % 2 != 0
+        ) {
+            isExecutable = false;
+            break;
+        } else {
+            coord[0] = t;
+            coord[1] = x;
+            coord[2] = y;
+        }
+        
+    }
+
+    if (isExecutable) cout << "YES" << endl;
+    else cout << "NO" << endl;
+
+    return 0;
+}
+```
+
+```cpp showLineNumbers filename="模範解答"
+#include <iostream>
+using namespace std;
+
+int main() {
+    int N;
+    int t[110000], x[110000], y[110000];
+    cin >> N;
+    t[0] = x[0] = y[0] = 0;  // 初期状態
+    for (int i = 0; i < N; ++i) cin >> t[i+1] >> x[i+1] >> y[i+1];  // 1-index にしておく
+
+    bool can = true;
+    for (int i = 0; i < N; ++i) {
+        int dt = t[i+1] - t[i];
+        int dist = abs(x[i+1] - x[i]) + abs(y[i+1] - y[i]);
+        if (dt < dist) can = false;
+        if (dist % 2 != dt % 2) can = false;  // dist と dt の偶奇は一致する必要あり！
+    }
+
+    if (can) cout << "Yes" << endl;
+    else cout << "No" << endl;
+}
+```
+
+```cpp showLineNumbers filename="直し"
+#include <iostream>
+#include <vector>
+using namespace std;
+
+int main() {
+    int N;
+    cin >> N;
+
+    bool isExecutable = true;
+    vector<int> coord = {0, 0, 0};
+
+    for (int i = 0; i < N; i++) {
+        int t, x, y;
+        cin >> t >> x >> y;
+
+        int dt = t - coord[0];
+        int dist = abs(x - coord[1]) + abs(y - coord[2]);
+
+        if (dt < dist || dt % 2 != dist % 2) {
+            isExecutable = false;
+            break;
+        } else {
+            coord[0] = t;
+            coord[1] = x;
+            coord[2] = y;
+        }
+        
+    }
+
+    if (isExecutable) cout << "Yes" << endl;
+    else cout << "No" << endl;
+
+    return 0;
+}
+```
+
+## 振り返り
+- 偶奇の一致という条件と`Yes`と`YES`の凡ミス。本番でやったら気づけなさそうなのでちゃんと出力は確認しようと思う
+- 「偶数」と「奇数」に関する性質を**パリティ**と言います。
+- 余りの着眼点はよかったが、必ず偶奇が一致するという条件まで見つけられなかった
+
+>  $x_i + y_i$という値の偶奇に着目します。実は$(x_i, y_i)$という値は様々な値を動きますが、
+$x_i + y_i$は毎秒ごとに必ず偶奇が入れ替わることがわかります。すなわち、$dt$が偶数ならば、$dist$は偶数でなければなりません。
