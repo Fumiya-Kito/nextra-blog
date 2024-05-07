@@ -1,0 +1,55 @@
+# Docker Tools
+代表的なDockerツール
+1. Docker Engine
+2. Docker Desktop
+3. Docker Hub
+4. Docker compose
+5. Kubernetes
+
+## Docker Desktop
+[ダウンロード](https://www.docker.com/ja-jp/products/docker-desktop/)
+- Linux OS以外はDockerがネイティブに対応していないため、Win/Mac はDocker Desktop(エミュレーション)を使う必要がある
+- 注意として、コンテナを実際に動かすのはDocker Engine(DockerDesktopと同時にインストールされ、Demonで走る)であり、Desktopは動作等を確認するGUIアプリ
+- これ以降のDockerコマンド等はすべてDockerDesktopが起動されていることを前提とする
+
+
+## 全体のイメージ
+- Project直下に`Dockerfile`を作成する
+```dockerfile filename="/Dockerfile"
+# nodeを動かす例
+FROM node:14
+
+WORKDIR /app
+
+COPY package.json .
+
+RUN npm install
+
+COPY . .
+
+EXPOSE 3000
+
+CMD [ "node", "app.mjs" ]
+```
+- ビルドする→`Docker image`が作られる
+```
+docker build .
+```
+- コンテナを実行する
+```
+docker run -p 3000:3000 <CONTAINER_ID>
+```
+- (起動中のコンテナを確認)
+```
+docker ps
+
+CONTAINER ID   IMAGE          COMMAND                  CREATED              STATUS              PORTS                    NAMES
+1761c841063a   518843f9d2c7   "docker-entrypoint.s…"   About a minute ago   Up About a minute   0.0.0.0:3000->3000/tcp   keen_darwin
+```
+- namesを指定してコンテナを止める
+```
+docker stop keen_darwin
+```
+---
+
+`Dockerfile作成→ビルド→起動→停止`が基本の動きで押さえておく
