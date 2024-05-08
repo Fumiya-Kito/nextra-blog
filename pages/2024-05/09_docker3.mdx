@@ -1,0 +1,68 @@
+# Images
+
+- imageはコンテナの設計図であり、imagekからコンテナを作成する
+- imageを1度作っておけば、異なるサーバーでコンテナが簡単に複製できる
+
+### Images
+1. ソースコードと実行に必要なツールやランタイムを保持
+2. 読み込み専用でアプリケーションデータなどは保持しない
+3. レイヤー構造(特定の状態や構成を持つためにファイルがスナップショットになっている、変更された部分のみ新しいレイヤーとして追加される)
+
+### Containers
+1. 1つのimageから複数のコンテナを作ることができる
+2. 読み書き可能で、データ保持も可能だが、コンテナ停止時に喪失する
+3. imageレイヤーの上に読み書き可能なトップレイヤーを追加して全体としてコンテナとなる
+
+
+## Imagesを使う
+- Imageは既存のimageを使う方法(公式が作成したもの)と自分で作る方法がある(同僚やチームが作成したもの)
+```dockerfile filename="Docker Hubにある公式node image"
+# まずローカルのnode という名前のimageを探して、なければDockerHub上のnodeを探す
+docker run -it node
+```
+
+### カスタムイメージを使う
+- カスタムイメージを作成するには、まずDockerfileを作成する
+
+```dockerfile
+# DockerHub上にあるnode imageを指定するだけで、そのイメージ上で実行することを示す
+FROM node
+
+# RUNをするディレクトリを指定する
+WORKDIR /app
+
+# 最初の点はDockerfileを除くこのディレクトリ
+# 2つ目の点はHostにあるファイルを格納する「images内、コンテナ内のパス」
+# COPY . .
+
+# あるいはappフォルダなどを指定することができる
+COPY . /app
+
+RUN npm install
+
+# コンテナは独立している、nodeを実行するhostはこのローカルマシンであるから
+# コンテナからポートを開くコマンド
+EXPOSE 80
+
+# RUNはimages作成時に実行される
+# CMDはimagesをもとにしたコンテナ起動時に実行される
+# 配列に文字列をいれて実行する構文になる、イメージに基づいてコンテナが作成されるたびに
+CMD ["node", "server.js"]
+```
+- imageを作成
+```
+docker build .
+```
+
+- publishフラグをつけて起動する
+> EXPOSE 80 コマンドはimagesを作成するために書いているだけで実はにもしていない（記述は任意）
+コンテナを走らせる（docker runコマンド）のときに`-p`でコンテナ専用ポートにアクセスするかhost側から指示する
+```shell
+# 文法
+docker run -p <hostOS port>:<ContainerExposePort> <ContainerName>
+
+# 実際 (コンテナ名は識別できる文字数だけでよい cbf6など)
+docker run -p 3000:80 cbf693ddb5ec5c9a8cdaee33108fba0a89aea0c1938f10ee7b35a7fb84e7049e
+```
+
+
