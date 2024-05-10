@@ -1,0 +1,148 @@
+# イメージとコンテナを管理する
+- コマンドは`docker --help`で見れる
+||Images|Container|
+|---|---|---|
+|named(taged)|`-t ...`|`--name`|
+|listed|`docker images`|`docker ps`|
+|removed|`docker rmi`or `docker prune`|`docker rm`|
+
+
+## stop & restart
+- `docker ps`
+- `docker ps -a`: stopしているコンテナも表示
+- `docker run <NAME>`: 新規にコンテナを起動
+- `docker start <NAME>`: 既存コンテナを起動
+
+## Attached & Detached Container
+- Attached: コンテナが接続されていてフォアグラウンドで動く(log等が見れる)
+- Attached: コンテナが接続されていてバックグラウンドで動く
+- `run`ではattached modeがデフォルト
+- `start`ではdetached modeがデフォルト
+- それぞれ逆も可能
+```
+docker run -d <Name>
+docker start -a <Name>
+```
+- 起動済みのコンテナに接続する
+```
+docker attach <ContainerName>
+```
+- detachedなコンテナのログを見る(followする)
+```
+docker logs -f <Name>
+```
+
+## interactive mode
+- pythonコンテナをインタラクティブに起動する
+```py filename="rng.py"
+from random import randint
+
+min_number = int(input('Please enter the min number: '))
+max_number = int(input('Please enter the max number: '))
+
+if (max_number < min_number): 
+  print('Invalid input - shutting down...')
+else:
+  rnd_number = randint(min_number, max_number)
+  print(rnd_number)
+```
+
+```dockerfile filename="dockerfile"
+FROM python
+
+WORKDIR /app
+
+COPY . /app
+
+CMD ["python", "rng.py"]
+```
+- イメージ作成・コンテナを起動
+- `-i`: interactive(標準入出力をコンテナに取り付ける)
+- `-t`: tty(仮想端末)
+```sh
+docker build .
+docker run <Name> # error
+docker run -it <name>
+```
+- 再起動
+```sh
+# attachが必要
+# ttyはコンテナが記憶してくれている
+docker start -a -i <Name>
+```
+
+→ コンテナと正確にやりとりできるということが重要
+> nodeだけでもダメ, Webサーバーだけでもだめ, pythonだけでもだめ
+環境をコンテナに詰めるからには、環境にあった対話が必要
+
+## Delete Images & Containers
+- imageを消す
+```
+# まずリスティング
+docker images
+
+# imagesを消す
+docker rmi <IMAGE_ID>
+```
+- containerを消す
+```
+docker rm <Name> <空白を入力することで> <複数同時に消せる>
+
+# 起動中は無理
+docker stop <>
+```
+※ 対応するイメージのコンテナ（停止中を含む）が一つでも存在していればimagesは消せない
+
+
+- コンテナ停止時に自動で削除する(`--rm` をつける)
+```
+docker run -p 3000:80 -d --rm <Name>
+```
+
+## image詳細を調べる
+- コンテナの中身を知りたい時、調べるべきはイメージ
+- containerはimageの上に乗っかった１枚レイヤーにすぎない
+```
+docker image inspect
+```
+
+## ファイルのコピー
+- ローカルとコンテナ内のファイルをやりとりする
+- エラーの温床になるため基本は非推奨だが、「Webサーバーの設定ファイルを変更したい」「ログだけローカルで見たい」など局所的に使う
+```
+# Local to Container
+docker cp <LocalFilePath> <ContainerName>:<ContainerPath>
+docker cp dummy/. boring_vaughan:/test
+
+
+# Container to Local
+docker cp <ContainerName>:<ContainerPath> <LocalFolderPath>
+docker cp boring_vaughan:/test dummy  #(copy dir)
+docker cp boring_vaughan:/test/test.txt dummy # (copy file)
+```
+
+### 名前をつける
+- デフォルトでは、Dockerが自動的に名前をつけるが、毎回`ps`するのは面倒
+- コンテナには`--name`でつけられる
+```
+docker run -p 3000:80 -d --rm --name <EnterName> <ContainerID>
+
+# つけた名前で停止させる
+docker stop <EnterName>
+```
+
+- imageの名前とタグについて
+- dockerは`<IMAGE_NAME>:<IMAGE_TAG>`でimageを認識する
+```dockerfile filename="dockerfile"
+FROM node:14
+```
+- カスタムでは
+```sh 
+docker build -t <Name:Tag> .
+docker build -t goals:latest .
+
+# その後タグで起動できる （IDの代わり）
+docker run -p 3000:80 -d --rm --name goalsapp goals:latest
+# 止めるときはContainerName
+docker stop goalsapp
+```
