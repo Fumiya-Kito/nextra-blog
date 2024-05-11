@@ -1,0 +1,38 @@
+# Imageをシェアする
+ImageをシェアするにはDockerfileを共有するう方法と、構築済みのImageを共有する方法がある
+
+### Dockerfileを共有
+`docker build .`をすれば良いが、イメージ作成に必要なソースなどは準備しておかなければならない
+
+### 構築済みのImageで共有
+Imageをダウンロードして、コンテナを走らせる。ビルドプロセスは不要
+
+## Docker HubにImageをPushする
+GitHubのようにリモートにdocker imageをpushしたりpullしたりできる。また、自前でよういしたプライベートレポジトリにImageをおいておくことも可能(この場合URLを指定する必要があり、デフォではDockerHubを参照する)
+
+- dockerhubには「ユーザー名/Image名」となるようにpushする必要がある
+- ゆえに事前にビルド・タグ付けが必要
+```sh
+docker build -t <DockerHubUserName>/<RepoName> <LocalPath>
+docker build -t username/node-hello-world  ./node-app
+
+# or既存のimagesなら tagコマンドでクローンできる
+docker tag <OldName:OldTag> <DockerHubUserName>/<RepoName>:<NewTag>
+```
+- pushする、このときログイン済みである必要がある(ログインしていないとImageは共有できない)
+```sh
+docker login
+
+docker push username/node-hello-world
+```
+
+- logoutしてpullする
+※`pull`はlatest tagで引っ張ってくる
+※バージョン管理は手動のため新たなiamgeがリモートにpushされた場合、手動でpullする必要がある
+```sh
+docker logout
+docker pull username/node-hello-world
+```
+
+
+
