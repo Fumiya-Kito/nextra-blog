@@ -1,0 +1,52 @@
+# Bind Mounts
+- Bind Mounts = 開発者が管理するファイルシステム
+- BindMountsなら、コンテナはホストマシンのコードのファイルを理解することができる
+- ↑コンテナ内部のパスをホストマシンにマッピングすべきパスに設定するから(pathを対応させるということ)
+
+### メリット
+- volumesはドッカーが管理し、imagesからソースコードを実行するため、変更を反映させるにはimagesの再起動が必要
+- 対して、Bind Mountsであれば、ホストマシン上のソースのスナップショットをコンテナが把握し反映してくれる
+
+### 使用方法
+- volumesの時に比べ、もう一個ボリュームを指定する
+- コロンの左側＝ホストマシンのファイルパスは、絶対パスで指定
+- Dockerfileのプロジェクトパスで終わること
+- 特殊文字で壊れないように`””`で囲む
+
+```sh 
+docker stop feedback-app
+
+# ※コンテナパス＝`/app`
+docker run -d -p 3000:80 --rm --name feedback-app -v feedback:/app/feedback -v "/Users/fumiya/Downloads/data-volumes-03-adj-node-code:/app" feedback-node:volumes
+
+# または以下でパスを取得しても良い
+-v $(pwd):/app
+# for windows
+-v "%cd%":/app
+```
+**※DockerDesktop環境設定でFileSharingがオンになっている必要がある**
+
+## Combining & Merging Different Volumes
+- 実は上記ではBind Mountsは使えない
+```sh filename="実際には匿名ボリュームをもう一つ（app/node_modules）追加する必要がある"
+docker run -d -p 3000:80 --rm --name feedback-app -v feedback:/app/feedback -v $(pwd):/app -v /app/node_modules feedback-node:volumes
+```
+### (問題点)
+- コンテナを作成時にバインドマウントがあると、npm install からファイルコピーまでが無意味になる
+- ↑バインドマウントにはnode_modulesが存在しないから
+- コンテナ作成時にimagesでコピーしたものを全て上書きしてしまう
+- node_modulesだけを除外すれば(バインドの管轄外に)アプリは起動する
+- 現状名前付きボリュームとバインドマウンツが混在
+    - コンテナ側からホストマシンのソースを変更できないようにDockerが制御
+- 匿名ボリュームをもう一つ（app/node_modules）追加する
+    - 名前が長く具体的な方が優先される
+    - こうすることで、Dockerはappフォルダーにマップされたボリュームと
+    - app/node_modules にマップされたボリュームを認識
+    - node_moduels だけいじられないようになる（除外）
+        - （Volumesを別々で認識してくれる）
+
+### 特典
+- HTMLの変更が即時反映され開発効率UP
+- JSはWebサーバーnodeJSの再起動が必要だがコンテナの一部だけ再起動するのは難しい
+- `nodemon`をパッケージインストールすることで解決する
+
