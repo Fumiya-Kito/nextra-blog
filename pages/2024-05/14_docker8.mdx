@@ -1,0 +1,100 @@
+# Volumes & Bind Mounts まとめ
+
+## コマンド
+### Anonymous Volume
+```sh
+docker run -v /app/data ...
+```
+### Named Volume
+```sh
+docker run -v data:/app/data ...
+```
+### Bind Mount
+```sh
+docker run -v /path/to/code:/app/code ...
+```
+
+
+## 比較表
+|Anonymous Volume|Named Volume|Bind Mount|
+|---|---|---|
+|あるコンテナに特化|複数のコンテナで利用可能|ホストストレージを利用・複数のコンテナで利用可能|
+|コンテナ間で共有できない|コンテナ間で共有できる|コンテナ間で共有できる|
+|同じイメージであっても再利用不可能(匿名性)|同じコンテナで再利用可能(restartすることで)|同じコンテナで再利用可能(restartすることで)|
+
+# 使用例
+```sh
+docker run -d -p 3000:80 --rm 
+--name feedback-app 
+-v feedback:/app/feedback 
+-v "/Users/username/Downloads/dockerfile:/app:ro" 
+-v /app/temp 
+-v /app/node_modules feedback:volumes
+```
+- バインド：全体（表示されない）
+- 名前付き：feedback（共有される・バインドから除外）
+- 匿名：temp（一時的・バインドから除外）
+- 匿名：node_modules（一時的・バインドから除外）
+
+
+## `dockerignore`を使う
+- .gitignore同様、.dockerignoreで
+- `COPY . .` でコピーするファイルを除外することができる
+
+```docker
+node_modules
+.git
+```
+
+## 環境変数を使う
+認証情報などはimagesに焼き付けないこと!
+
+- 引数 ARG
+    - Dockerfile上で使用できる変数
+    - build時に指定 `build -arg`
+- 環境変数 ENV
+    - Dockerfile上で利用できる変数
+    - 実行中のアプリケーション全体でも使用できる
+    - run時に指定 `run --env`
+
+2つを利用することでハードコードを防ぐ
+
+- 例えば、ポート番号
+    - 80がデフォルトでハードコードしてるが変えたくなるときもある
+    - nodeはグローバル変数
+        - `process.env.PROT` で環境変数に対応している
+        - **Doceker には環境変数であることを`$` を用いて伝える**
+
+
+```dockerfile filename="dockerfile"
+FROM node:14
+
+WORKDIR /app
+
+COPY package.json .
+
+RUN npm install
+
+COPY . .
+
+ENV PORT 80
+
+EXPOSE $PORT
+
+CMD [ "npm", "start" ]
+```
+
+- コマンドで環境変数を使う
+```sh
+docker build -t feedback-node:env .
+docker run -d --rm -p 3000:8000 --env PORT=8000 ...
+```
+
+- `.env`ファイルを使う
+```env filename=".env"
+PORT=8000
+```
+```sh
+docker run -d --rm -p 3000:8000 --env-file ./.env --name feedback-app -v feedback:/app/feedback -v "/Users/fumiya/Downloads/data-volumes-06-adjusted-dockerfile:/app:ro" -v /app/node_modules -v /app/temp feedback-node:env
+```
+
