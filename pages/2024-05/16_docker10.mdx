@@ -1,0 +1,153 @@
+# Network
+dockerはコンテナ同士を相互作用させることができる
+- コンテナ同士の通信
+- コンテナとローカルマシンの通信
+- コンテナとWWWとの通信
+
+コンテナで通信するときに重要なのは**「1つのアプリケーションを1つのコンテナに入れること」**がベストプラクティスとされていること
+
+- コンテナでは以下のようなWEBAPIを何の設定もなく使うことができる
+```js
+mongoose.connect(
+  'mongodb://host.docker.internal:27017/swfavorites',
+  { useNewUrlParser: true },
+  (err) => {
+    if (err) {
+      console.log(err);
+    } else {
+      app.listen(3000);
+    }
+  }
+);
+```
+
+### mongodb official imagesを使う
+```sh
+docker run -d --name mongoDB mongo
+
+Unable to find image 'mongo:latest' locally
+latest: Pulling from library/mongo
+b2ddfd337773: Pull complete 
+2217df6bf2b5: Pull complete 
+29c228992bd2: Pull complete 
+fc95cad02df0: Pull complete 
+2c411bcb7900: Pull complete 
+2086fcd3f2dc: Pull complete 
+0ff48fd69cff: Pull complete 
+434eda66f547: Extracting  20.61MB/195MB
+18000c72efc8: Download complete
+```
+- `inspect`することでMongoDBのIPアドレスを調べることが可能
+
+```sh
+docker container inspect mongoDB
+
+"NetworkSettings": {
+  "Bridge": "",
+	...
+  "IPAddress": "172.17.0.2",
+	...
+```
+- URIを置き換える
+
+```js
+mongoose.connect(
+  'mongodb://host.docker.internal:27017/swfavorites',
+  { useNewUrlParser: true },
+  (err) => {
+    if (err) {
+      console.log(err);
+    } else {
+      app.listen(3000);
+    }
+  }
+);
+```
+- ここでの問題点としてIPアドレスのハードコードが挙げられる
+- IPアドレスに変更があった場合にイメージをrebuildしないといけない
+
+---
+
+- mongodb コンテナの起動時に—networkで名前を決めることができる
+```bash
+docker run -d --name mongodb --network favorites-net mongo
+```
+- しかし、favoretes-netが見つからないとエラーになる
+- ネットワークはボリュームと違い、事前に自分で用意(create)しないといけない
+
+```sh filename="コマンドを調べる"
+% docker network --help                                     
+
+Usage:  docker network COMMAND
+
+Manage networks
+
+Commands:
+  connect     Connect a container to a network
+  create      Create a network
+  disconnect  Disconnect a container from a network
+  inspect     Display detailed information on one or more networks
+  ls          List networks
+  prune       Remove all unused networks
+  rm          Remove one or more networks
+
+Run 'docker network COMMAND --help' for more information on a command.
+```
+
+```bash filename="create 名前を決定する"
+% docker network create favorites-net 
+c8867a7b86ad1304f9a8c9815fbac3d97c77b3332e612918517a7899b311a7c3
+```
+
+- これでDocker内部のネットワークが作成された
+- コンテナをNodeとして通信する
+
+```bash filename="ネットワークを調べる"
+% docker network ls
+# 初期からあるものと作成したfavorites-netが見れる
+NETWORK ID     NAME            DRIVER    SCOPE
+3ef384ee85b5   bridge          bridge    local
+c8867a7b86ad   favorites-net   bridge    local
+f31c27460cb9   host            host      local
+1090f33ad6e7   none            null      local
+```
+
+```bash
+% docker run -d --name mongodb --network favorites-net mongo
+752283d0b281eb4620691d98394b66397a72e16c4a8876f39c076f951beb65dd
+```
+- 2つのコンテナが同じネットワークに属していればハードコーディングは必要なく、MongoDBが自動的にIPアドレスを解決してくれる
+
+```js
+mongoose.connect(
+  //コンテナ名をURLにいれるだけ
+  'mongodb://mongodb:27017/swfavorites',
+  { useNewUrlParser: true },
+  (err) => {
+    if (err) {
+      console.log(err);
+    } else {
+      app.listen(3000);
+    }
+  }
+);
+```
+
+```bash
+docker run -d --rm --network favorites-net --name favorites -p 3000:3000 favorites-node
+```
+
+- ポイントとして、MongoDBコンテナ作成時にポートを指定していないこと。
+- ポートは外部から（今回はローカルからアプリコンテナ）の接続にはポートが必要だが、
+- Docker内Network間でポートの指定は必要ない
+- （今回mongodbコンテナに接続するのは同じfavorite-netでつながっているfavoriteコンテナだけ）
+
+
+## DocekerはどうやってIPを解決をしているのか
+- Dockerはソースコードを動的に触ることはしない
+- 今回の例の場合、JSはブラウザなどのランタイムで実行されるため、DockerはJSソースに関して何も関与しない
+- Dockerは予めコンテナ同士のネットワークを認識(IP:コンテナ)していて、コンテナから他コンテナへのの外部リクエストがあると、繋ぐことができる
+
+## Docker Networksには複数のドライバがある
+- デフォルトが`bridge`ドライバである(今回つかったもの)
+- `docker network create`時に`--driver`オプションで選択可能
