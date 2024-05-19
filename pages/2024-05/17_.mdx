@@ -1,1 +1,46 @@
-# 17
+# 複数のコンテナを同時に走らせアプリケーションを構築する
+1機能1コンテナの原則からWebアプリケーションを作る場合、DB, バックエンド, フロントエンドの３つのコンテナを用意する.
+今回のアプリケーションで考慮する内容
+- DB
+MongoDB: データの永続化・アクセス権限の付与
+- バックエンド
+Node RESTAPI: ログの永続化 (開発のためにLive Source Code Update)
+- フロントエンド
+React SPA (開発のためにLive Source Code Update)
+
+### MongoDB Container
+DBコンテナでポイントとなるオプション
+1. ディタッチで起動 `-d`
+2. 停止したら消す `--rm`
+3. portを開放する`-p 27017:27017` (デフォルトは`27017`)
+
+### Node Backend
+dockerfileを`/backend`などサブディレクトリに作成すること
+```dockerfile filename="/backend/dockerfile"
+FROM node
+
+WORKDIR /app
+
+COPY package.json .
+
+RUN npm install
+
+COPY . .
+
+EXPOSE 80
+
+CMD ["node", "app.js"]
+```
+
+app.js上でmongodbコンテナに接続する
+```js filename="app.js"
+mongoose.connect(
+  'mongodb://host.docker.internal:27017/course-goals',
+	...
+);
+```
+フロントエンドに繋ぐためポートを指定してコンテナ起動
+
+```shell 
+docker run --name goals-backend --rm -d -p 80:80 goals-node
+```
