@@ -1,0 +1,75 @@
+# bun
+bun(runtime)とhono(web framework)を使ったサーバーを作る
+
+```sh filename="install"
+curl -fsSL https://bun.sh/install | bash
+```
+
+
+```sh filename="init"
+bun init
+
+
+---
+bun init helps you get started with a minimal project and tries to guess sensible defaults. Press ^C anytime to quit
+
+package name (hono): hono_tutrial
+entry point (index.ts): 
+
+Done! A package.json file was saved in the current directory.
+ + index.ts
+ + .gitignore
+ + tsconfig.json (for editor auto-complete)
+ + README.md
+
+To get started, run:
+  bun run index.ts
+```
+
+```sh
+code .
+```
+
+```ts filename="index.ts"
+console.log("Hello via Bun!");
+```
+
+```sh filename="実行"
+bun index.ts
+```
+
+- 開発サーバー用にscriptsを追加する
+
+```json {5-8} filename="package.json" 
+{
+  "name": "hono_tutrial",
+  "module": "index.ts",
+  "type": "module",
+  "scripts": {
+    "start": "bun index.ts",
+    "dev": "bun --watch index.ts"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  }
+}
+```
+
+```sh filename="実行"
+bun dev
+```
+
+## HTTPサーバーを作る
+[bun docs > http](https://bun.sh/docs/api/http)
+```ts filename="index.ts"
+Bun.serve({
+  fetch(req) {
+    return new Response("Bun!");
+  },
+});
+
+console.log("Server running");
+```
