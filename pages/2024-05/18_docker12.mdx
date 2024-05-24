@@ -1,0 +1,71 @@
+# 複数のコンテナを同時に走らせアプリケーションを構築する2
+
+## React SPAをコンテナに詰める
+- `/frontend`などサブディレクトリに`Dockerfile`を作成
+```dockerfile filename="dockerfile"
+FROM node
+
+WORKDIR /app
+
+COPY package.json .
+
+RUN npm install
+
+COPY . .
+
+EXPOSE 3000
+
+RUN ["npm", "start"]
+```
+- reactは対話モード`-it`で実行しないと、すぐサーバーを停止するように設定されている
+```sh
+docker build -t goals-react .
+docker run --name goals-frontend --rm -p 3000:3000 -it goals-react
+```
+
+## ネットワークを構築し３つのコンテナを接続する
+- コンテナをすべて停止
+```
+docker stop goals-backend
+docker stop mongodb
+```
+- docker networkを作成
+```sh
+docker network create goals-net
+```
+### DB Container
+- ポートの指定は不要になる
+```sh
+docker run --name mongodb -d --rm --network goals-net mongo
+```
+
+### Backend Container
+```js filename="app.js"
+mongoose.connect(
+  'mongodb://mongodb:27017/course-goals',
+  {
+    useNewUrlParser: true,
+  }
+  ...  
+)
+```
+- networkに繋ぎ、さらにブラウザで動作するフロントエンドのためにポートをローカルで開く
+```sh
+docker build -t goals-node .
+docker run --name goals-backend --rm -d -p 80:80 --network goals-net goals-node
+```
+
+### Frontend Container
+- fetch APIのエンドポイントは`localhost`などhostのURIを指定
+- Reactの場合パッケージ管理ではnodeをDockerfileで使用したが、**ランタイムはブラウザであることを留意**
+<br/> →(docker上で実行されないからネットワークを知らない)
+```js
+try {
+  const response = await fetch('http://localhost/goals');
+	...
+}
+```
+```shell
+docker build -t goals-react .
+docker run --name goals-frontend --rm -p 3000:3000 -it goals-react
+```

@@ -1,0 +1,30 @@
+# Docker Compose
+これまで3つのコンテナを別々に管理して、別々に設定・コマンドを打ってきた
+<br/>→管理が難しいし、コマンドが長すぎる
+
+複数のコンテナを簡単に管理することを可能にするのが`Docker Compose`
+
+## DockerComposeとは何か
+- `docker run`コマンドと`docker build`コマンドを代替する存在
+- 複数の`build`と`run`を1つの設定ファイルで管理する
+- 複数のオプションコマンドを1つのコマンドで実行する
+- 誰とでも共有できる（コマンドでは開発者に知識が必要
+
+- DockerComposeはImage構築のためのDockrfileを置き換えるもの**ではない**
+- ContainerやImageを置き換えるもの**ではない**
+- 異なるホスト上で動く複数のコンテナを管理するのには向いていない
+
+## docker-compose.yaml
+- docker composeは`yaml`,`yml`ファイルに記述する
+- `yaml`ファイルはインデントを使って関係性を表す
+- `key: value`で記述する方法と`key=value`で記述する方法がある
+
+```yml filename="docker-compose.yaml"
+version: '3.8' # Dockerのversion
+services: # まず3つのコンテナを書く
+  mongodb:
+
+  backend:
+
+  frontend:
+```

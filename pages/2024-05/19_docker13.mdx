@@ -1,0 +1,141 @@
+# DBコンテナにVolumesを使うことでデータを永続化させる
+データ永続化させる方法は2つ(復習)
+1. named volumes
+2. bind mounts (hostと同期させたい場合)
+```sh filename="option"
+# named voulumes
+-v <VolumeName>:<ContainerPath>
+```
+- ContainerPathは何か?
+MongoDBの公式imagesでは`/data/db`
+```sh
+docker run --name mongodb -v data:/data/db --rm -d --network goals-net mongo
+```
+
+## 環境変数を使う
+mongoDB imagesでは `MONGO_INITDB_ROOT_USERNAME`, `MONGO_INITDB_ROOT_PASSWORD` という環境変数をサポート
+- `-e で起動時に指定`
+```sh
+docker run --name mongodb -v data:/data/db --rm -d --network goals-net -e MONGO_INITDB_ROOT_USERNAME=max -e MONGO_INITDB_ROOT_PASSWORD=secret mongo
+```
+
+```js filename="backendのエンドポイントを変更"
+// 公式docsから→ "mongodb://[username:password@]host[:port][/defaultauthdb][?options]"
+
+mongoose.connect(
+  'mongodb://fumi:secret@mongodb:27017/course-goals?authSource=admin',
+  {
+    useNewUrlParser: true,
+  ...
+  }
+...
+)
+```
+- backendコンテナを再起動
+```
+docker stop goals-backend
+docker build -t goals-node .
+docker run --name goals-backend --rm -d -p 80:80 --network goals-net goals-node
+```
+
+
+# node containerにログ機能とLiveUpdateを追加
+- bind mountと logsのnamed volumesを追加する
+    - dirが長いほうが優先されるため、ローカルからコンテナのログ・ファイルを上書きしてしまうことはない
+
+```bash
+docker run --name goals-backend -v /Users/fumiya/dev/docker/multi-01-starting-setup/backend:/app -v logs:/app/logs --rm -d -p 80:80 --network goals-net goals-node
+```
+
+- node_modulesも上書きしたくない
+    - これは匿名（コンテナにアタッチされる）で問題ない
+
+```bash
+docker run --name goals-backend -v /Users/fumiya/dev/docker/multi-01-starting-setup/backend:/app -v logs:/app/logs -v /app/node_modules --rm -d -p 80:80 --network goals-net goals-node
+```
+
+- ただしこれでは、コンテナを停止して再起動しなければいけない
+    - node app.jsが実行されるのはコンテナ起動時
+    - すでに起動しているコンテナをライブで動悸させることはできない
+- nodemonの導入
+    - JSファイルを監視して、変更があった場合nodeサーバを再起動するツール
+```json filename="package.json"
+
+
+{
+  "name": "backend",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "nodemon app.js"
+  },
+
+  ...
+
+  "devDependencies": {
+    "nodemon": "^2.0.4"
+  }
+}
+```
+
+- 環境変数をDockerfileから呼び出す
+
+```dockerfile filename="dockerfile"
+FROM node
+
+WORKDIR /app
+
+COPY package.json .
+
+RUN npm install
+
+COPY . .
+
+EXPOSE 80
+
+ENV MONOGO_USERNAME=root
+ENV MONGO_PASSWORD=secret
+
+CMD ["npm", "start"]
+```
+
+```js filename="app.js"
+mongoose.connect(
+  {
+    `mongodb://${process.env.MONGO_USERNAME}:${process.env.MONGO_PASSWORD}@mongodb:27017/course-goals?authSource=admin`,
+  }
+)
+```
+
+```sh filename="terminal"
+docker run --name goals-backend -v /Users/fumiya/dev/docker/multi-01-starting-setup/backend:/app -v logs:/app/logs -v /app/node_modules -e MONGO_USERNAME=max --rm -d -p 80:80 --network goals-net goals-node
+```
+
+```.dockerignore filename=".dockerignore"
+node_modules
+Dockerfile
+.git
+```
+
+## React Container にLiveUpdateを追加
+
+- bind mount したいのはsrcフォルダ
+```bash
+docker run -v /Users/fumiya/dev/docker/multi-01-starting-setup/frontend/src:/app/src --name goals-frontend --rm -p 3000:3000 -it goals-react
+```
+
+- react projectの開発サーバーはファイルの変更に反応してアプリケーションを再構築するように設定されている、nodemonは必要ない
+
+- これだけライブアップデートは完了
+- ReactProjectはimagesの構築に多くの時間がかかった
+    - 単純に、依存関係が多い(npm install)
+    - node_modulesもコピーしてしまっていた
+- → .dockerignore
+
+```a filename=".dockerignore"
+node_modules
+.git
+Dockerfile
+```
