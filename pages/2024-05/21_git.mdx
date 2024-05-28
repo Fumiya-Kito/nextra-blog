@@ -1,0 +1,41 @@
+# gitのメッセージについて
+
+### 参照
+[Are You Writing Your Git Commit Messages Properly?](https://dev.to/otienorabin/are-you-writing-your-git-commit-messages-properly-54cl?ref=dailydev)
+
+## 1. Type (必須)
+`feat`, `fix`など
+
+## 2. Scope (任意)
+codebaseのどこまで影響があるか、大規模プロジェクトで有効
+
+## 3. Description (必須)
+説明パート、過去形ではなく、命令形で書くこと
+- ❌ “Added authentication mechanism” (認証機能を追加しました) 
+- 🙆 “Add authentication mechanism”   (認証機能の追加)
+→ 後に生成される履歴やリリースノートの可読性が上がる
+
+## 4. Body(任意)
+- 詳細な説明
+- `Description`とは空白で区切る
+
+## 5. Footer(任意)
+メタデータ(参照番号など)がある場合に記述。
+- 参照番号: `fix #002`
+- レビュワー名: `Taro Yamada`
+
+# 例
+- `chore(Art_func): change variable “Empty” to “empty”`
+- `fix(database)!: modify schema`
+- `feat: add support for dark mode.`
+
+### 長いメッセージを書く時
+- no optionでエディタで記述
+```
+git commit
+```
+- `-m` オプションを複数使うことで`subject`, `body`, `footer`を分けられる
+```
+git commit -m "subject" -m "body"
+```
+
