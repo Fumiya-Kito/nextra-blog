@@ -9,7 +9,12 @@ const config: DocsThemeConfig = {
   docsRepositoryBase: 'https://github.com/Fumiya-Kito/nextra-blog/tree/main',
   sidebar: {
     defaultMenuCollapseLevel: 1
-  }  
+  },
+  head: (
+    <>
+      <link rel="icon" href="/favicon.png" />
+    </>
+  )
   // footer: {
   //   text: 'Nextra Docs Template',
   // },
