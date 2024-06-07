@@ -1,0 +1,79 @@
+- button コンポーネントを追加
+
+```sh
+bunx --bun shadcn-ui@latest add button
+```
+
+```ts filename="App.tsx"
+import { useState } from 'react'
+import { Button } from '@/components/ui/button';
+
+function App() {
+  const [count, setCount] = useState(0)
+
+  return (
+    <>
+      <div className="flex flex-col bg-background max-w-md m-auto gap-y-5">
+        <Button onClick={() => setCount((count) => count + 1)}>
+          UP
+        </Button>
+        <Button onClick={() => setCount((count) => count - 1)}>
+          DOWN
+        </Button>
+        <p>
+          {count}
+        </p>
+      </div>
+    </>
+  )
+}
+
+export default App;
+```
+
+
+- カードコンポーネントを導入
+
+```sh
+bunx --bun shadcn-ui@latest add card
+```
+
+```tsx filename="App.tsx"
+import { useState } from 'react'
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
+
+function App() {
+  const [totalSpent, setTotalSpent] = useState(0)
+
+  return (
+    <Card className="w-[350px] m-auto">
+    <CardHeader>
+      <CardTitle>Create project</CardTitle>
+      <CardDescription>Deploy your new project in one-click.</CardDescription>
+    </CardHeader>
+    <CardContent>
+      {totalSpent}
+    </CardContent>
+    </ Card>
+  )
+}
+
+export default App;
+
+```
+
+
+```ts
+  .get("/total-spent", (c) => {
+    const total = fakeExpenses.reduce((acc, expense) => acc + expense.amount, 0);
+    return c.json({ total });
+  })
+
+```
