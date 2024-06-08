@@ -1,0 +1,85 @@
+# React Proxy
+- 開発中は`localhost:3000`のAPIサーバーと`localhost:5173`のvite+React SPAがある
+- 開発中ブラウザは常に`5173`を経由してAPIサーバーにリクエストを送る
+- originは一緒にしてリクエストは`api/`から始まるエンドポイントを指定するようにしたい
+
+```ts
+function App() {
+  const [totalSpent, setTotalSpent] = useState(0)
+
+  useEffect(() => {
+    // fetch('http://localhost:3000/api/expenses/total-spent')
+    fetch('api/expenses/total-spent')
+  }, [])
+
+  ...
+}
+```
+↓proxyを使う
+
+```ts filename="vite.config.ts"
+import path from "path"
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+
+// https://vitejs.dev/config/
+export default defineConfig({
+  plugins: [react()],
+  resolve: {
+    alias: {
+      "@": path.resolve(import.meta.dir, "./src"),
+    },
+  },
+  server: {
+    proxy: {
+      "/api": {
+        target: 'http://localhost:3000',
+        changeOrigin: true
+      }
+    }
+  }
+})
+```
+
+- この設定で`http://localhost:5173/api/expenses`でブラウザからもAPIサーバーを叩ける
+- 開発環境ではProxyを使うが、本番ではSPAはビルドされ静的ファイルとなる
+- 静的ファイルはバックエンドサーバーの`'/'`にルーティングされる（`localhost:3000`バックエンド側に含めるて運用するのが一般）
+
+```tsx filename="App.tsx"
+import { useEffect, useState } from 'react'
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
+
+function App() {
+  const [totalSpent, setTotalSpent] = useState(0);
+
+  useEffect(() => {
+    (async function fetchTotal() {
+      const res = await fetch('/api/expenses/total-spent');
+      const data = await res.json();
+      console.log(data);
+      setTotalSpent(data.total);
+    })();
+  }, [])
+
+  return (
+    <Card className="w-[350px] m-auto">
+    <CardHeader>
+      <CardTitle>Total Spent</CardTitle>
+      <CardDescription>amount of you've spent</CardDescription>
+    </CardHeader>
+    <CardContent>
+      {totalSpent}
+    </CardContent>
+    </Card>
+  )
+}
+
+export default App;
+```
