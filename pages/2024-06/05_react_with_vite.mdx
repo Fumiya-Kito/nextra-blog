@@ -1,0 +1,45 @@
+# Frontend
+
+- dir構成を`server`と`frontend`で分割する
+- 
+```json filename="package.json"
+{
+  "module": "server/index.ts",
+  ...
+  "scripts": {
+    "start": "bun server/index.ts",
+    "dev": "bun --watch server/index.ts"
+  },
+  ...
+}
+```
+
+## frontend プロジェクトを開始
+
+```sh
+bun create vite@latest
+```
+- project name: frontend
+- framework: React
+- variant: typescript
+```sh
+  cd frontend
+  bun install
+```
+
+- bunだけでviteを使うためにpackage.jsonのdev scriptを変更
+- 多分）`tsc`が入っていればそのままで実行可能
+```json filename="frontend/package.json"
+{
+  "scripts": {
+    "dev": "bunx --bun vite",
+    "build": "bunx --bun vite build",
+  },
+}
+```
+
+- 実行
+```sh
+bun dev
+```
+

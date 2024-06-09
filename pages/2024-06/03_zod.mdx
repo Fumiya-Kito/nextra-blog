@@ -1,0 +1,71 @@
+# zod
+- APIの入力検証にzodライブラリを使用する
+- typescript-first schema validation with static type interface
+- なぜvalidationが必要なのか
+- tsは型アノテーションすることで、コンパイル時に型チェックをしてくれるが、APIのbodyはTSが知ることは難しい
+
+```shell
+bun i zod
+```
+- zodは検証用のオブジェクトを作成することで、フォームで送るデータを検証できる
+
+```ts {4-7, 12-14} filename="expenses.ts"
+import { z } from 'zod';
+...
+
+const createPostSchema = z.object({
+  title: z.string().min(3).max(100),
+  amount: z.number().int().positive()
+});
+
+export const expensesRoute = new Hono()
+.get(...)
+.post("/", async (c) => {
+  const data = await c.req.json();
+  const newExpense = createPostSchema.parse(data);
+  ...
+})
+```
+
+### honoにzodミドルウェアを導入する
+```sh
+bun add @hono/zod-validator
+```
+```ts filename="routes/expenses.ts"
+import { zValidator } from '@hono/zod-validator'
+```
+
+- `post()`などの関数の第2引数にvalidatorを導入、フォーマット`json`と`schema`を指定する
+```ts filename="routes/expenses.ts"
+import { Hono } from "hono";
+import { z } from "zod";
+import { zValidator } from "@hono/zod-validator";
+
+type Expense = {
+  id: number;
+  title: string;
+  amount: number;
+};
+
+const fakeExpenses: Expense[] = [
+  { id: 1, title: "Groceries", amount: 50 },
+  { id: 2, title: "Game", amount: 100 },
+  { id: 3, title: "Rent", amount: 500 },
+];
+
+const createPostSchema = z.object({
+  title: z.string().min(3).max(100),
+  amount: z.number().int().positive(),
+});
+
+export const expensesRoute = new Hono()
+  .get("/", async (c) => {
+    return c.json({ expense: fakeExpenses });
+  })
+  .post("/", zValidator("json", createPostSchema), async (c) => {
+    const data = await c.req.valid("json");
+    fakeExpenses.push({ ...data, id: fakeExpenses.length+1 });
+    // const newExpense = createPostSchema.parse(data);
+    return c.json(data);
+  });
+```
