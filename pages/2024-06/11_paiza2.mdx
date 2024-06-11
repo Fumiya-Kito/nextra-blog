@@ -1,0 +1,110 @@
+# Paiza Bランク過去問
+## 3Dプリンター
+
+あなたは念願の3Dプリンタを購入しました。早速、いろいろな立体を出力して楽しみましょう！
+
+3Dプリンタに入力される立体のデータは、大きさ 1×1×1 の立方体（セルという）を一つ以上組み合わせることで得られます。より正確に述べると次のようになります：
+
+三次元空間で図１のような座標系 (x,y,z) を考えます。
+
+立体データは、各座標 (x,y,z) でのセルが立体に含まれるかどうかを指定することで得られます。例えば、図２の立体は 14 個のセル (1,1,1), (1,2,1), (1,3,1), (2,1,1), (2,2,1), (3,1,1), (1,1,2), (1,2,2), (2,1,2), (2,2,2), (1,1,3), (1,2,3), (2,1,3), (2,2,3) を組み合わせることで得られます。
+
+あなたはまず、出力したい立体のデータを作りました。あとは、データを3Dプリンタに入力して印刷するだけです。
+
+しかし、データにミスがあっては大変です。慎重なあなたは、実際に印刷を始める前に、出力される立体を正面（x軸の正の方向）から見たときの図を求めてみることにしました。（図３）
+
+立体のデータが入力された時、この立体を正面から見たときの図を出力するプログラムを書きましょう。
+
+
+入力は以下のフォーマットで与えられます。
+```
+X Y Z
+(1,1,1) (1,2,1) ... (1,Y,1)
+(2,1,1) (2,2,1) ... (2,Y,1)
+...
+(X,1,1) (X,2,1) ... (X,Y,1)
+--
+(1,1,2) (1,2,2) ... (1,Y,2)
+(2,1,2) (2,2,2) ... (2,Y,2)
+...
+(X,1,2) (X,2,2) ... (X,Y,2)
+--
+...
+--
+(1,1,Z) (1,2,Z) ... (1,Y,Z)
+(2,1,Z) (2,2,Z) ... (2,Y,Z)
+...
+(X,1,Z) (X,2,Z) ... (X,Y,Z)
+--
+```
+ここで、X は立体の奥行きを、Y は立体の横幅を、Z は立体の高さを表す整数です。
+入力の 2 行目以降は、ある立体のデータを表しています。
+各 (x,y,z) は '#' または '.' からなる一文字で、この文字が '#' のときはセル (x,y,z) が立体に含まれることを、'.' のときはセル (x,y,z) が立体に含まれないことを意味します。(1 ≦ x ≦ X, 1 ≦ y ≦ Y, 1 ≦ z ≦ Z)
+
+入力には、X 行ごとに区切り記号
+"--"
+が入ることに注意してください。また、二つのセル (x,y,z) と (x,y+1,z) の間には、実際には空白文字は入っていないことに注意してください。(以下の入力例を参照)
+
+
+期待する出力
+入力された立体を正面（x軸の正の方向）から見たときの図を Z 行 Y 列で出力してください。
+
+
+```cpp
+
+#include <iostream>
+#include <vector>
+#include <string>
+
+using namespace std;
+
+int main() {
+    int X, Y, Z;
+    cin >> X >> Y >> Z;
+    
+    // 3D grid to store the structure
+    vector<vector<vector<bool>>> grid(Z, vector<vector<bool>>(X, vector<bool>(Y, false)));
+    
+    // Read the grid data
+    for (int z = 0; z < Z; ++z) {
+        for (int x = 0; x < X; ++x) {
+            string line;
+            cin >> line;
+            for (int y = 0; y < Y; ++y) {
+                grid[z][x][y] = (line[y] == '#');
+            }
+        }
+        string separator;
+        if (z < Z - 1) cin >> separator; // Read the "--" separator
+    }
+    
+    // Prepare the output grid from the front view
+    vector<string> output_grid(Z, string(Y, '.'));
+    
+    // Process each layer from front to back
+    for (int z = 0; z < Z; ++z) {
+        for (int y = 0; y < Y; ++y) {
+            for (int x = 0; x < X; ++x) {
+                if (grid[z][x][y]) {
+                    output_grid[z][y] = '#';
+                    break;
+                }
+            }
+        }
+    }
+    
+    // Print the output grid
+    // for (const auto& line : output_grid) {
+    //     cout << line << endl;
+    // }
+    for (int z = Z-1; z >=0; --z) {
+        for (int y = 0; y < Y; ++y) {
+            cout << output_grid[z][y];
+        }
+        cout << endl;
+    }
+
+    return 0;
+}
+
+k```
