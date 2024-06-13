@@ -1,0 +1,128 @@
+# Bランク問題過去問
+
+あなたは友達たちと N 人でしりとりを行うことにしました。
+1 人目、 2 人目、...、 N 人目、 1 人目、2 人目、... という順序で発言をします。
+
+ここで、それぞれの人は、次に挙げる 4 つのしりとりのルールを守って発言をする必要があります。
+
+1. 発言は、単語リストにある K 個の単語のうちのいずれかの単語でなければならない。
+2. 最初の人以外の発言の頭文字は、直前の人の発言の最後の文字と一緒でなければならない。
+3. 今までに発言された単語を発言してはならない。
+4. z で終わる単語を発言してはならない。
+
+ここで、発言の途中で上のルールを破った場合、ルールを破った人はしりとりから外れます。
+そして、その人を抜いて引き続きしりとりを続けていきます。このとき、後続の人は、ルール 2 を守る必要はありません。
+
+N 人がしりとりを行ったログが M 行分与えられます。
+このとき、M 回の発言が終わった後、しりとりから脱落せずに残っている人のリストを表示するプログラムを書いてください。
+
+
+## 入力される値
+入力は以下のフォーマットで与えられます。
+```
+N K M
+d_1
+d_2
+...
+d_K
+s_1
+s_2
+...
+s_M
+```
+
+・1 行目にしりとりをする人数を表す整数 N、単語リストに乗っている単語の数を表す整数 K、しりとりで行われた発言の数を表す整数 M がこの順にスペース区切りで与えられます。
+・続く K 行のうちの i 行目 (1 ≦ i ≦ K) には、単語リストに乗っている i 番目の単語を表す文字列 d_i が与えられます。
+・続く M 行のうちの j 行目 (1 ≦ j ≦ M) には、しりとりで行われた j 番目の発言を表す文字列 s_j が与えられます。
+・入力は合計で K + M + 1 行となり、入力値最終行の末尾に改行が 1 つ入ります。
+
+
+## 期待する出力
+最終的にしりとりから脱落せずに残っている人の番号を以下の形式で出力してください。
+```
+N'
+a_1
+a_2
+...
+a_N'
+```
+期待する出力は N' + 1 行からなります。
+1 行目には、最終的にしりとりから脱落せずに残っている人の人数を表す整数 N' を出力してください。
+続く N' 行のうち、i 行目 (1 ≦ i ≦ N') には、最終的にしりとりから脱落せずに残っている人の番号のうち、小さい方から i 番目のものを出力してください。
+N' + 1 行目の出力の最後に改行を入れ、余計な文字、空行を含んではいけません。
+
+
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <unordered_set>
+#include <unordered_map>
+
+int main() {
+    int N, K, M;
+    std::cin >> N >> K >> M;
+
+    std::unordered_set<std::string> validWords;
+    std::string word;
+
+    // 単語リストを読み込み
+    for (int i = 0; i < K; ++i) {
+        std::cin >> word;
+        validWords.insert(word);
+    }
+
+    std::vector<bool> active(N, true); // 各プレイヤーの状態
+    std::unordered_set<std::string> usedWords; // 使用済み単語
+    char lastChar = 0; // 直前の単語の最後の文字
+    bool skipNextCheck = false; // 次のプレイヤーがルール2を無視できるかどうか
+
+    // 発言を処理
+    for (int i = 0; i < M; ++i) {
+        std::cin >> word;
+        int player = i % N;
+
+        if (!active[player]) {
+            skipNextCheck = true; // 脱落したプレイヤーがいれば次のプレイヤーはルール2を無視
+            continue;
+        }
+
+        if (validWords.count(word) == 0 || word.back() == 'z' || usedWords.count(word) > 0) {
+            active[player] = false;
+            skipNextCheck = true;
+            continue;
+        }
+
+        if (!skipNextCheck && lastChar != 0 && word[0] != lastChar) {
+            active[player] = false;
+            skipNextCheck = true;
+            continue;
+        }
+
+        // 発言を更新
+        usedWords.insert(word);
+        lastChar = word.back();
+        skipNextCheck = false; // ルール2のチェックをリセット
+    }
+
+    // 残っているプレイヤーの数と番号を出力
+    std::vector<int> remainingPlayers;
+    for (int i = 0; i < N; ++i) {
+        if (active[i]) {
+            remainingPlayers.push_back(i + 1);
+        }
+    }
+
+    if (remainingPlayers.empty()) {
+        std::cout << "0" << std::endl;
+    } else {
+        std::cout << remainingPlayers.size() << std::endl;
+        for (int player : remainingPlayers) {
+            std::cout << player << std::endl;
+        }
+    }
+
+    return 0;
+}
+
+```
