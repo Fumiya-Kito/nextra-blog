@@ -1,0 +1,54 @@
+# deploy hono
+
+```sh
+# in frontend dir
+bun run build
+```
+- `dist`フォルダが作成される
+
+
+### honoで静的ファイルを提供する
+- [Serve static files / Hono](https://hono.dev/getting-started/bun#serve-static-files)
+```ts filename="server/app.ts"
+import { Hono } from 'hono'
+import { serveStatic } from 'hono/bun'
+import { logger } from 'hono/logger';
+import { expensesRoute } from './routes/expenses';
+
+const app = new Hono()
+
+app.use('*', logger());
+
+app.use('*', serveStatic({ root: './frontend/dist' }))
+app.get('*', serveStatic({ path: './frontend/dist/index.html' }))
+
+app.route("/api/expenses", expensesRoute)
+
+export default app
+```
+
+- これで`http://localhost:3000`でstatic files(React SPA)が提供される
+- `/api/...`を叩けば動作するし、無効なURLだと`index.html`が返される
+
+
+```ts filename="server/app.ts"
+import { Hono } from 'hono'
+import { serveStatic } from 'hono/bun'
+import { logger } from 'hono/logger';
+import { expensesRoute } from './routes/expenses';
+
+const app = new Hono()
+
+app.use('*', logger());
+app.route("/api/expenses", expensesRoute)
+
+app.use('*', serveStatic({ root: './frontend/dist' }))
+app.get('*', serveStatic({ path: './frontend/dist/index.html' }))
+
+
+export default app
+```
+
+
+### honoサーバーをデプロイする
+- デプロイする
