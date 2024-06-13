@@ -126,3 +126,71 @@ int main() {
 }
 
 ```
+上は間違いで修正
+- **Non**ActivePlayerは常に排除
+- lastwordをリセットすることでルール2を無視
+```cpp
+#include <iostream>
+#include <vector>
+#include <unordered_set>
+#include <string>
+
+using namespace std;
+
+int main() {
+    int N, K, M;
+    cin >> N >> K >> M;
+
+    unordered_set<string> validWords;
+    string word;
+
+    // 単語リストを読み込み
+    for (int i = 0; i < K; ++i) {
+        cin >> word;
+        validWords.insert(word);
+    }
+
+    vector<bool> active(N, true); // 各プレイヤーの状態
+    unordered_set<string> usedWords; // 使用済み単語
+    string lastWord = ""; // 直前の単語
+    int currentPlayer = 0; // 現在のプレイヤーのインデックス
+
+    // 発言を処理
+    for (int i = 0; i < M; ++i) {
+        while (!active[currentPlayer]) {
+            currentPlayer = (currentPlayer + 1) % N;
+        }
+
+        cin >> word;
+        bool violateRule1 = validWords.find(word) == validWords.end();
+        bool violateRule2 = !lastWord.empty() && lastWord.back() != word.front();
+        bool violateRule3 = usedWords.find(word) != usedWords.end();
+        bool violateRule4 = word.back() == 'z';
+
+        if (violateRule1 || violateRule2 || violateRule3 || violateRule4) {
+            active[currentPlayer] = false;
+            lastWord = ""; // ルール違反があった場合、lastWordをリセット
+        } else {
+            usedWords.insert(word);
+            lastWord = word;
+        }
+
+        currentPlayer = (currentPlayer + 1) % N;
+    }
+
+    // 残っているプレイヤーの数と番号を出力
+    int remainingCount = 0;
+    for (bool status : active) {
+        if (status) remainingCount++;
+    }
+
+    cout << remainingCount << endl;
+    for (int i = 0; i < N; ++i) {
+        if (active[i]) {
+            cout << i + 1 << endl;
+        }
+    }
+
+    return 0;
+}
+```
