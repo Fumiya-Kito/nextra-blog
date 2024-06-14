@@ -1,0 +1,178 @@
+# NodeJSでの標準入出力
+基本的にアルゴリズム系はC++でやっているけど、どの言語で解いているかもPaizaには記録されるためJSでも問題解いていきたい
+(vanilla-jsならフロントエンドのみ、バックエンドはFWしか使ってこなかったツケが出てる)
+
+ちなみに、実行速度は言語ごとに制限が違うためAtCorderと違って同じアルゴリズムで不正解になることはない（はず）
+
+## templateを読み取る
+標準入力（stdin）からデータを読み取り、標準出力（stdout）にデータを出力することが多い
+```js filename="paizaのテンプレート"
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
+
+var lines = [];
+var reader = require('readline').createInterface({
+  input: process.stdin,
+  output: process.stdout
+});
+
+reader.on('line', (line) => {
+  lines.push(line);
+});
+
+reader.on('close', () => {
+  console.log(lines[0]);
+});
+
+```
+
+
+### 1. 標準入力の設定
+```js
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
+```
+- process.stdin.resume() は標準入力ストリームの読み込みを開始します。これを呼び出さないと、Node.jsは標準入力を処理しません。
+- process.stdin.setEncoding('utf8') は標準入力ストリームのエンコーディングを設定します。これにより、受け取るデータが文字列として処理されます。
+
+
+### 2. readline インターフェースの作成
+```js
+var lines = [];
+var reader = require('readline').createInterface({
+  input: process.stdin,
+  output: process.stdout
+});
+```
+
+- require('readline').createInterface は新しい readline インターフェースを作成します。これにより、標準入力からのデータを一行ずつ読み取ることができます。
+- input: process.stdin は標準入力ストリームを指定します。
+- output: process.stdout は標準出力ストリームを指定します。ここでは使用していませんが、プロンプトを表示するために使われます。
+
+### 3. 行の読み取りと保存
+```js
+reader.on('line', (line) => {
+  lines.push(line);
+});
+```
+- reader.on('line', ...) は標準入力から行が読み取られるたびに呼び出されます。読み取られた行（line）は lines 配列に追加されます。
+
+### 4. 入力の終了と処理
+```js
+reader.on('close', () => {
+  console.log(lines[0]);
+});
+```
+- reader.on('close', ...) は標準入力が終了したときに呼び出されます。例えば、ユーザーが Ctrl+D を押したときです。
+- このコールバック内で、lines[0]（最初に読み取った行）を標準出力に表示しています。
+
+# 問題：フィボナッチ数列 
+整数 Q と Q 個の整数 k_1, k_2, ... , k_Q が与えられます。
+
+次のように定められた数列の k_i 項目の値を順に出力してください。
+
+ちなみに、これはフィボナッチ数列と呼ばれる有名な数列です。
+
+```
+・ a_1 = 1 
+・ a_2 = 1 
+・ a_n = a_{n-2} + a_{n-1} (n ≧ 3)
+```
+
+## 入力される値
+```
+Q
+k_1
+k_2
+...
+k_Q
+```
+・ 1行目では、2行目以降で与えられる入力の行数 Q が与えられます。
+・ 続く Q 行のうち i 行目では、k_i が与えられます。
+
+## 期待する出力
+Q 行出力してください。
+
+i 行目には、数列の k_i 項目の値を出力してください。
+
+また、末尾に改行を入れ、余計な文字、空行を含んではいけません。
+
+```
+a_{k_1}
+a_{k_2}
+...
+a_{k_Q}
+```
+
+## 回答
+
+```js
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
+
+const lines = [];
+const reader = require('readline').createInterface({
+  input: process.stdin,
+  output: process.stdout
+});
+reader.on('line', (line) => {
+  lines.push(line);
+});
+
+
+function generateFibonacciSequence(N) {
+  if (N <= 0) return [];
+
+  const fibonacciSequence = [0];
+  if (N === 1) return fibonacciSequence;
+
+  fibonacciSequence.push(1);
+
+  for (let i = 2; i < N; i++) {
+    const nextFib = fibonacciSequence[i - 1] + fibonacciSequence[i - 2];
+    fibonacciSequence.push(nextFib);
+  }
+
+  return fibonacciSequence;
+}
+
+reader.on('close', () => {
+  const fib = generateFibonacciSequence(lines[0]+1);
+  for (var i=1; i < lines.length; i++) {
+      console.log(fib[lines[i]]);
+  }
+});
+```
+
+## 解説 by GPT
+- 回答が汚すぎると、DPで計算量を減らして解いてもらう
+
+```js
+const readline = require('readline');
+
+const rl = readline.createInterface({
+  input: process.stdin,
+  output: process.stdout
+});
+
+const input = [];
+
+rl.on('line', (line) => {
+  input.push(line);
+});
+
+rl.on('close', () => {
+  const Q = parseInt(input[0], 10);
+  const k = input.slice(1).map(Number);
+  const maxK = Math.max(...k);
+
+  const fib = [0, 1, 1]; // Initialize the first three elements (0-indexed for convenience)
+  for (let i = 3; i <= maxK; i++) {
+    fib[i] = fib[i - 1] + fib[i - 2];
+  }
+
+  const results = k.map(index => fib[index]);
+  results.forEach(result => console.log(result));
+});
+
+```
