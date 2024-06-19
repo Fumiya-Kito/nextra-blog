@@ -31,3 +31,36 @@ g[0][0] g[0][1] ...
 ...
 g[N-1][0] g[N-1][1] ...
 ```
+
+## 回答
+```js filename="昇順ソートすることを忘れない"
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
+
+var lines = [];
+var reader = require('readline').createInterface({
+  input: process.stdin,
+  output: process.stdout
+});
+reader.on('line', (line) => {
+  lines.push(line);
+});
+reader.on('close', () => {
+  const N = Number(lines[0]);
+  const G = [...Array(N)].map(() => []);
+  
+  // 頂点情報受け取り
+  for (let i = 1; i < lines.length; i++) {
+    const [a, b] = lines[i].split(' ').map(Number);
+    // 隣接リストに格納
+    G[a-1].push(b);
+    G[b-1].push(a);
+  }
+  
+  // 出力
+  for (let i = 0; i < G.length; i++) {
+  　G[i].sort((x, y) => x - y); // 昇順にソート
+    console.log(G[i].join(' '));
+  }
+});
+```

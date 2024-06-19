@@ -1,0 +1,97 @@
+# 辺の有無の判定 
+木の頂点・辺についての情報が与えられます。
+続いて、K 個の頂点の組が与えられるので、それらをつなぐ辺が存在すれば "YES"、存在しなければ "NO" を出力してください。
+
+
+## 入力される値
+```
+N K
+a_1 b_1
+...
+a_{N-1} b_{N-1}
+qa_1 qb_1
+...
+qa_K qb_K
+```
+
+- 1 行目には、頂点の数 N と有無を判定したい辺の個数 K が与えられます。
+- 続く N-1 行では、木を構成する各辺の両端の頂点 a_i , b_i が与えられます。(1 ≦ i ≦ N-1)
+- 続く K 行では、有無を判定したい辺の頂点の組 qa_i , qb_i が与えられます。(1 ≦ i ≦ K)
+
+## 期待する出力
+・合計で K 行出力してください。
+・i 行目には、与えられた木に qa_i と qb_i を結ぶ辺が存在する場合は "YES" を、存在しない場合は "NO" を出力してください。(1 ≦ i ≦ K)
+
+
+## 回答
+
+```js
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
+
+var lines = [];
+var reader = require('readline').createInterface({
+  input: process.stdin,
+  output: process.stdout
+});
+reader.on('line', (line) => {
+  lines.push(line);
+});
+reader.on('close', () => {
+  const [N, K] = lines[0].split(' ').map(Number);
+  
+  // 木の取得,隣接リストの格納
+  const tree = [...Array(N)].map(() => []);
+  for(i = 1; i < N; i++) {
+    const [a, b] = lines[i].split(' ').map(Number);
+    tree[a-1].push(b);
+    tree[b-1].push(a);
+  }
+  
+  
+  // 出力
+  for(i = N; i < N + K; i++) {
+    const [a, b] = lines[i].split(' ').map(Number);
+
+    const existsEdge = tree[a-1].includes(b) && tree[b-1].includes(a);
+    
+    console.log(existsEdge ? 'YES' : 'NO');
+  }
+});
+```
+
+- 集合を使うと、判定の計算量が`O(1)`になる
+
+```js filename="隣接リスト→集合"
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
+
+var lines = [];
+var reader = require('readline').createInterface({
+  input: process.stdin,
+  output: process.stdout
+});
+
+reader.on('line', (line) => {
+  lines.push(line);
+});
+
+reader.on('close', () => {
+  const [N, K] = lines[0].split(' ').map(Number);
+  
+  // Set を使用して木のエッジを格納
+  const edges = new Set();
+  for (let i = 1; i < N; i++) {
+    const [a, b] = lines[i].split(' ').map(Number);
+    edges.add(`${a}-${b}`);
+    edges.add(`${b}-${a}`);
+  }
+  
+  // 判定するエッジについて結果を出力
+  for (let i = N; i < N + K; i++) {
+    const [qa, qb] = lines[i].split(' ').map(Number);
+    const existsEdge = edges.has(`${qa}-${qb}`);
+    console.log(existsEdge ? 'YES' : 'NO');
+  }
+});
+```
