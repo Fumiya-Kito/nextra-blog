@@ -1,0 +1,140 @@
+# 問題
+木には図にした際に、一番外側となる葉と呼ばれる頂点が必ず存在します。
+葉は言い換えると、接続する辺が 1 本のみであるような頂点と考えることができます。
+
+例として、以下の図において 2, 4, 6, 7 番の頂点は葉になっています。
+
+頂点が 1 つ、または 2 つとなるまで次の操作を繰り返していき、残った頂点を（元の） 木の中心といいます。
+
+葉となっている頂点とそれに接続する辺を木から取り除く。
+
+例として、上のグラフに木の中心を求める操作を行うと、以下の図のようになり、木の中心は 1 番の頂点だと求まります。
+
+## 入力される値
+```
+N
+a_1 b_1
+...
+a_{N-1} b_{N-1}
+```
+
+- 1 行目には、頂点の数 N が与えられます。
+- 続く N-1 行では、各辺の両端の頂点 a_i , b_i が与えられます。(1 ≦ i ≦ N-1)
+
+
+## 期待する出力
+- N 個の頂点のうち、木の中心となっている 1 つまたは 2 つの頂点の番号を昇順に改行区切りで全て出力してください。
+- 出力の末尾に改行を出力してください。
+
+## 回答
+```js
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
+
+var lines = [];
+var reader = require('readline').createInterface({
+  input: process.stdin,
+  output: process.stdout
+});
+reader.on('line', (line) => {
+  lines.push(line);
+});
+reader.on('close', () => {
+  // 入力受け取り
+  const N = Number(lines[0]);
+
+  // 辺受け取り
+  let adjList = [...Array(N)].map(() => []);
+  for (let i = 1; i < N; i++) {
+    const [a, b] = lines[i].split(' ').map(Number);
+    adjList[a - 1].push(b - 1);
+    adjList[b - 1].push(a - 1);
+  }
+
+  // 初期の葉を取得
+  let leaves = [];
+  for (let i = 0; i < N; i++) {
+    if (adjList[i].length === 1) {
+      leaves.push(i);
+    }
+  }
+
+  let remainingNodes = N;
+  while (remainingNodes > 2) {
+    let newLeaves = [];
+    for (let leaf of leaves) {
+      // 葉の隣のノード取得
+      let neighbor = adjList[leaf][0]; // 葉は隣の頂点1つしかもっていないから[0]
+      // adjListを更新
+      adjList[neighbor] = adjList[neighbor].filter(node => node !== leaf);
+      if (adjList[neighbor].length === 1) {
+        newLeaves.push(neighbor);
+      }
+    }
+    remainingNodes -= leaves.length;
+    leaves = newLeaves;
+  }
+
+  // 中心となるノードを出力
+  let result = leaves.map(leaf => leaf + 1).sort((a, b) => a - b);
+  for (let node of result) {
+    console.log(node);
+  }
+});
+```
+
+
+## 解説
+隣接リストを用いて実装しています。
+配列 exist で頂点が木に属するかどうかを管理しています。 頂点番号 i が木に属するとき exist[i-1] が 1 に、属さないとき 0 になるようにしています。
+```cpp
+#include <algorithm>
+#include <iostream>
+#include <vector>
+
+using namespace std;
+
+int main() {
+  int N, num_of_vertex;
+  cin >> N;
+  num_of_vertex = N;
+
+  vector<int> exist(N, 1);
+  vector<vector<int> > g(N);
+
+  for (int i = 0; i < N - 1; i++) {
+    int a, b;
+    cin >> a >> b;
+    a--;
+    b--;
+    g[a].push_back(b);
+    g[b].push_back(a);
+  }
+
+  while (2 < num_of_vertex) {
+    for (int i = 0; i < N; i++) {
+      if (g[i].size() == 1) {
+        num_of_vertex--;
+        exist[i] = 0;
+        g[i].clear();
+      }
+    }
+    
+    for (int i = 0; i < N; i++) {
+      for (int j = 0; j < g[i].size(); j++) {
+        if (exist[g[i][j]] == 0) {
+          g[i].erase(g[i].begin() + j);
+          j--;
+        }
+      }
+    }
+  }
+
+  for (int i = 0; i < N; i++) {
+    if (exist[i] == 1) {
+      cout << i + 1 << endl;
+    }
+  }
+}
+
+```
