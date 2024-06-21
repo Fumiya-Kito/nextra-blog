@@ -1,0 +1,61 @@
+# 問題
+木には葉と呼ばれる特殊な頂点が必ず存在します。
+葉は木を図に起こした時に一番末端に現れる頂点、つまり、接続する辺が 1 本のみであるような頂点のことをいいます。
+
+例として、以下の図で赤くなっている頂点は葉になっています。
+
+頂点に 1 〜 N の番号がついた木の頂点・辺についての情報が与えられるので、葉である全ての頂点の番号を昇順に改行区切りで出力してください。
+
+## 入力される値
+```
+N
+a_1 b_1
+...
+a_{N-1} b_{N-1}
+```
+
+- 1 行目には、頂点の数 N が与えられます。
+- 続く N-1 行では、各辺の両端の頂点 a_i , b_i が与えられます。(1 ≦ i ≦ N-1)
+
+
+## 期待する出力
+```
+V_1
+...
+```
+
+- N 個の頂点のうち、葉となっている頂点の番号を昇順に改行区切りで全て出力してください。
+- 出力の末尾に改行を出力してください。
+
+## 回答
+```js
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
+
+var lines = [];
+var reader = require('readline').createInterface({
+  input: process.stdin,
+  output: process.stdout
+});
+reader.on('line', (line) => {
+  lines.push(line);
+});
+reader.on('close', () => {
+  // 入力受け取り
+  const N = Number(lines[0]);
+
+  // 辺受け取り
+  const verticals = [...Array(N)].map(() => []);
+  for (let i = 1; i < N; i++) {
+    const [a, b] = lines[i].split(' ').map(Number);
+    verticals[a - 1].push(b);
+    verticals[b - 1].push(a);
+  }
+  for (let i = 0; i < N; i++) {
+      if (verticals[i].length !== 1) continue;
+      console.log(i+1);
+  }
+});
+
+
+```
