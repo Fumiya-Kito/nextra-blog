@@ -1,0 +1,165 @@
+## 問題
+特殊な根付き木の 1 つとしてヒープがあります。
+ヒープには次のような特徴があります。
+
+- 親要素の値は子要素よりも常に大きいか等しい(または常に小さいか等しい)
+
+親要素の値が子要素よりも常に大きいか等しいヒープを最大ヒープ、常に小さいか等しいヒープを最小ヒープといいます。
+この問題では最大ヒープを扱います。
+一番上の頂点を根とした場合、上の根付き木は最大ヒープですが、下の根付き木は水色の部分が最大ヒープの条件を満たしていないため、最大ヒープではありません。
+
+## 入力される値
+```
+N R
+a_1 b_1
+...
+a_{N-1} b_{N-1}
+
+
+```
+- 1 行目には、根付き木の頂点の数 N, 根付き木の根の頂点番号 R が与えられます。
+- 続く N-1 行では、根付き木の各辺の両端の頂点の値 a_i , b_i が与えられます。ただし、a_i を値として持つ頂点が b_i を値として持つ頂点の親であることが保証されています。(1 ≦ i ≦ N-1)
+
+## 期待する出力
+- 与えられた根付き木が最大ヒープになっているのであれば "YES" を、そうでなければ "NO" を 1 行で出力してください。
+
+## 条件
+すべてのテストケースにおいて、以下の条件をみたします。
+
+- 1 ≦ N ≦ 100
+- 1 ≦ R ≦ N
+- 1 ≦ a_i , b_i ≦ 100,000 (1 ≦ i ≦ N-1)
+- 与えられる木の中に同じ値が 2 つ以上含まれていないことが保証されている。
+
+## 入力例1
+```
+5 10
+10 11
+10 9
+9 3
+3 2
+```
+
+## 出力例1
+```
+NO
+```
+
+
+## 回答
+```js
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
+
+var lines = [];
+var reader = require('readline').createInterface({
+  input: process.stdin,
+  output: process.stdout
+});
+reader.on('line', (line) => {
+  lines.push(line);
+});
+reader.on('close', () => {
+  const [ N, R ] = lines[0].split(' ').map(Number);
+
+  // 被りがないので、親のみを隣接リストを作成
+  const adjList = [...Array(100001)].map(() => []);
+  for (let i = 1; i < N; i++) { // 0は捨てる
+    const [parent, child] = lines[i].split(' ').map(Number);
+    adjList[parent].push(child);  
+  }
+
+  // 全ての親を走査して子供以上であることをチェック
+  let isMaxHeap = true;
+  for (let i = 1; i < adjList.length; i++) {
+    if (Array.isArray(adjList[i]) && adjList[i].length === 0) continue;
+    isMaxHeap = isMaxHeap && adjList[i].every(v => (v <= i));
+  }
+
+  if (isMaxHeap) {
+    console.log('YES');
+  } else {
+    console.log('NO');
+  }
+});
+
+```
+
+## 解説
+入力は根付き木であることが保証されているので、全ての辺について 「子の値 ≦ 親の値」 が成り立っていることが確認できれば与えられた根付き木はヒープであるということができます。
+```cpp
+#include <iostream>
+
+using namespace std;
+
+int main() {
+  int n, r;
+  cin >> n >> r;
+
+  for (int i = 0; i < n - 1; i++) {
+    int a, b;
+    cin >> a >> b;
+    if (a < b) {
+      cout << "NO" << endl;
+      return 0;
+    }
+  }
+
+  cout << "YES" << endl;
+}
+```
+
+
+## 解説2 by GPT
+```js
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
+
+const readline = require('readline');
+const rl = readline.createInterface({
+  input: process.stdin,
+  output: process.stdout
+});
+
+let inputLines = [];
+
+rl.on('line', (line) => {
+  inputLines.push(line);
+});
+
+rl.on('close', () => {
+  const [N, R] = inputLines[0].split(' ').map(Number);
+
+  const tree = Array.from({ length: 100001 }, () => []);
+  for (let i = 1; i < N; i++) {
+    const [a, b] = inputLines[i].split(' ').map(Number);
+    tree[a].push(b);
+  }
+
+  let isMaxHeap = true;
+
+  function dfs(node) {
+    for (let child of tree[node]) {
+      if (child > node) {
+        isMaxHeap = false;
+        return;
+      }
+      dfs(child);
+    }
+  }
+
+  dfs(R);
+
+  console.log(isMaxHeap ? 'YES' : 'NO');
+});
+
+```
+
+改善点の詳細
+DFSを利用: 深さ優先探索（DFS）を使うことで、木構造を辿りながら最大ヒープの条件を確認します。これはより直感的であり、エレガントな方法です。
+不要なループの削減: 全ての親ノードをループでチェックするのではなく、根から開始して再帰的に確認することで、無駄な計算を省きます。
+実装の説明
+tree は各ノードの子ノードを格納する隣接リストです。
+dfs 関数は、再帰的に各ノードの子ノードを探索し、最大ヒープの条件（親ノードが子ノード以上の値を持つ）を確認します。
+根ノード R からDFSを開始し、どの時点でも条件を満たさない場合は isMaxHeap を false に設定します。
+このようにして、与えられた木が最大ヒープかどうかを効率的に判定できます。
