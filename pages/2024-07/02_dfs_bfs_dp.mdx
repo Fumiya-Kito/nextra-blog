@@ -1,0 +1,167 @@
+# DFS, BFS, DP
+PaizaのAランクはこれらの問題がかなり多いので、整理
+
+
+
+## 幅優先探索（BFS）
+幅優先探索（BFS）は、ツリーやグラフのデータ構造を探索するアルゴリズムです。ルートノード（またはグラフの任意のノード）から始まり、現在の深さの隣接ノードをすべて探索してから、次の深さのノードに移ります。
+
+- `queue`を利用
+- queueがある限りwhileループ
+1. `shift`で手前から出す
+2. そのノードから探索したい隣のノード(あるいは上下左右など)をforループ
+3. 未訪問のときにだけqueueに追加し再実行(whileを抜けなくなる) ※ただし、訪問済みを管理すること
+```js 
+function bfs(graph, startNode) {
+    // BFSのためのキューを作成し、開始ノードをエンキューする
+    let queue = [startNode];
+    // 訪問したノードを追跡するためのセットを作成する
+    let visited = new Set();
+    // 開始ノードを訪問済みにする
+    visited.add(startNode);
+
+    while (queue.length > 0) {
+        // キューからノードをデキューする
+        let currentNode = queue.shift();
+        console.log(currentNode); // 現在のノードを処理する（ここでは出力）
+
+        // 現在のノードのすべての隣接ノード（隣人）を取得する
+        let neighbors = graph[currentNode];
+        for (let neighbor of neighbors) {
+            // 隣接ノードが未訪問であれば、訪問済みにしてエンキューする
+            if (!visited.has(neighbor)) {
+                visited.add(neighbor);
+                queue.push(neighbor);
+            }
+        }
+    }
+}
+
+// グラフの例
+let graph = {
+    'A': ['B', 'C'],
+    'B': ['A', 'D', 'E'],
+    'C': ['A', 'F'],
+    'D': ['B'],
+    'E': ['B', 'F'],
+    'F': ['C', 'E']
+};
+
+// 'A'から始めてBFSを実行
+bfs(graph, 'A');
+```
+
+## 深さ優先探索（DFS）
+深さ優先探索（DFS）は、ツリーやグラフのデータ構造を探索するアルゴリズムです。ルートノード（またはグラフの任意のノード）から始まり、可能な限り各ブランチを探索し、その後バックトラックして次のブランチを探索します。
+
+- `stack`を利用
+- stackに要素がある限りwhileループ
+1. `pop`で最後尾から出す
+2. そのノードから探索したい隣のノード(あるいは上下左右など)をforループ
+3. 未訪問のときにだけ`stack`に追加し再実行(whileを抜けなくなる) ※ただし、訪問済みを管理すること
+```js
+function dfs(graph, startNode) {
+    // DFSのためのスタックを作成し、開始ノードをプッシュする
+    let stack = [startNode];
+    // 訪問したノードを追跡するためのセットを作成する
+    let visited = new Set();
+    // 開始ノードを訪問済みにする
+    visited.add(startNode);
+
+    while (stack.length > 0) {
+        // スタックからノードをポップする
+        let currentNode = stack.pop();
+        console.log(currentNode); // 現在のノードを処理する（ここでは出力）
+
+        // 現在のノードのすべての隣接ノード（隣人）を取得する
+        let neighbors = graph[currentNode];
+        for (let neighbor of neighbors) {
+            // 隣接ノードが未訪問であれば、訪問済みにしてスタックにプッシュする
+            if (!visited.has(neighbor)) {
+                visited.add(neighbor);
+                stack.push(neighbor);
+            }
+        }
+    }
+}
+
+// グラフの例
+let graph = {
+    'A': ['B', 'C'],
+    'B': ['A', 'D', 'E'],
+    'C': ['A', 'F'],
+    'D': ['B'],
+    'E': ['B', 'F'],
+    'F': ['C', 'E']
+};
+
+// 'A'から始めてDFSを実行
+dfs(graph, 'A');
+```
+
+## 動的計画法（DP）
+動的計画法（DP）は、複雑な問題を解決するために再帰的な関係を利用して部分問題を解決し、それらの解を組み合わせて全体の解を得るアルゴリズムです。
+
+
+```js filename="fibonacci数列"
+function fibonacci(n) {
+    // メモ化用の配列を初期化
+    let memo = [0, 1];
+
+    // 再帰的にフィボナッチ数を計算するヘルパー関数
+    function fib(n) {
+        if (memo[n] !== undefined) {
+            return memo[n]; // 既に計算済みの場合はメモから返す
+        }
+        memo[n] = fib(n - 1) + fib(n - 2); // メモに計算結果を保存
+        return memo[n];
+    }
+
+    return fib(n);
+}
+
+console.log(fibonacci(10)); // フィボナッチ数列の10番目の数を出力
+```
+
+- dpテーブルを用意
+- dpテーブルを初期化
+- dpテーブルを走査して更新していく
+- 基本的には`dp[i+1][j] = max(行動A, 行動B, 行動C...)`の形で更新していく ※今回のように後ろ側や未来から逆算することも多い(ex. [i][j]の値を[i+1][j]から取る)
+```js
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
+
+var lines = [];
+var reader = require('readline').createInterface({
+  input: process.stdin,
+  output: process.stdout
+});
+reader.on('line', (line) => {
+  lines.push(line);
+});
+reader.on('close', () => {
+  const [ H, W ] = lines[0].split(' ').map(Number);
+  const scores = lines.slice(1).map(line => line.split(' ').map(Number));
+  
+  // DPで解けるはず
+  const dp = [...Array(H+1)].map(() => Array(W).fill(0));
+  
+  // DP更新
+  for (let row = 1; row <= H; row++) {
+    for (let col = 0; col < W; col++) {
+      let maxScore = dp[row - 1][col]; // 真上からの遷移(無条件OK)
+      if (col > 0) maxScore = Math.max(maxScore, dp[row - 1][col - 1]); // 左上から遷移(colが左端は除外)
+      if (col < W - 1) maxScore = Math.max(maxScore, dp[row - 1][col + 1]); // 左上から遷移(colが右端は除外)
+      
+      dp[row][col] = scores[row - 1][col] + maxScore;
+    }
+  }
+  console.log(Math.max(...dp[H]));
+
+});
+
+
+
+```
+
+
