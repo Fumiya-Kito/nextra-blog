@@ -1,0 +1,346 @@
+## 問題
+山登りに来た paiza 君は、途中仲間と逸れてしまい遭難してしまいました。
+
+paiza 君のバッグには幸いにも山のマップが入っており、山には N 個のチェックポイントとそれらをつなぐ N-1 本の道があり、チェックポイント 1 つ分移動すると、山の中での高さが 1 つ変化することを確認しました。マップの一番上に山の頂点が書かれているので、マップの上側に移動することは山を登ることを、下側に移動することは山を下ることを意味します。
+
+paiza 君はやっとの思いでチェックポイントらしき場所に到着しましたが、肝心のチェックポイント番号が書かれていません。
+自分がスタートした位置と山を登る方面・降りる方面に何本の道を歩いたかを記録していた paiza 君は、これらの情報とマップの情報を合わせることで、自分が今いる可能性のあるチェックポイントがわかることに気がつきました。
+
+山についての情報と paiza 君が記録していた情報についての入力が与えられるので、 paiza 君がいる可能性のあるチェックポイントの場所を求めてください。
+ただし、paiza 君が山から脱出することはないものとします。
+
+例として、入力例 1 を考えると、山には以下の通りチェックポイントがあります。
+スタート地点は チェックポイント 4 で、2 回登り、 1 回降ります。
+
+
+2 回登ったのち 1 回降りた場合は (4, 2, 1, 3) または (4, 2, 1, 2) という順にチェックポイントを通ります。
+同様に 1 回登り、1 回降り、1 回登った場合は (4, 2, 4, 2) または (4, 2, 5, 2)、
+1 回降り 2 回登った場合は、(4, 7, 4, 2) という順になります。
+
+よって、paiza 君がいる可能性のあるチェックポイントは 2, 3 となります。
+
+
+
+## 入力される値
+```
+N T S C D
+a_1 b_1
+...
+a_{N-1} b_{N-1}
+
+```
+- 1 行目には、山のチェックポイントの数 N, 山の頂点に割り当てられたチェックポイントの番号 T, paiza 君が出発したチェックポイントの番号 S, paiza 君が山を登った回数 C, 降りた回数 D が与えられます。
+- 続く N-1 行では、山の N-1 本の道の両端のチェックポイントの番号が与えられます。
+
+
+## 期待する出力
+- paiza 君がいる可能性のあるチェックポイントの番号を昇順で改行区切りで全て出力してください。
+
+## 条件
+すべてのテストケースにおいて、以下の条件をみたします。
+
+- 1 ≦ N ≦ 100
+- 1 ≦ T ≦ N
+- 1 ≦ S ≦ N
+- 0 ≦ C ≦ 5
+- 0 ≦ D ≦ 5
+- 登った回数の合計が C 回、下った回数の合計が D 回である移動方法が必ずあることが保証されている。
+
+
+
+## 入力例1
+```
+8 1 4 2 1
+1 2
+1 3
+2 4
+2 5
+3 6
+4 7
+6 8
+```
+
+## 出力例1
+```
+2
+3
+```
+
+
+## 回答
+```js filename="※間違っている!!"
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
+
+var lines = [];
+var reader = require('readline').createInterface({
+  input: process.stdin,
+  output: process.stdout
+});
+reader.on('line', (line) => {
+  lines.push(line);
+});
+reader.on('close', () => {
+  const [ nodeNum, topNode, startNode, upNum, downNum ] = lines[0].split(' ').map(Number);
+  
+  // グラフ受け取り
+  const adjList = [...Array(nodeNum+1)].map(() => []);
+  for (let i = 1; i < nodeNum; i++) {
+    const [a, b] = lines[i].split(' ').map(Number);
+    adjList[a].push(b);
+    adjList[b].push(a);
+  }
+  
+  // 距離を測る
+  function getDistancesByBfs (graph, startNode) {
+    const distances = Array(nodeNum+1).fill(0);
+    const queue = [ { node: startNode, distance: 0 } ];
+    const visited = new Set([startNode]);
+    
+    while(queue.length > 0) {
+      const { node: curNode, distance } = queue.shift();
+      
+      for (let neibor of graph[curNode]) {
+        if (!visited.has(neibor)) {
+          distances[neibor] = distance + 1;
+          visited.add(neibor);
+          queue.push({ node: neibor, distance: distance + 1 });
+        }
+      }
+    }
+    
+    return distances;
+  }
+  
+  const distances = getDistancesByBfs(adjList, topNode);
+  
+  
+  // 根付き木を完成させる
+  const parents = adjList.map((nbrs, i) => {
+    return nbrs.filter(child => distances[i] > distances[child]); 
+  });
+  const children = adjList.map((nbrs, i) => {
+    return nbrs.filter(child => distances[i] < distances[child]); 
+  });
+  
+//   console.log(parents);
+//   console.log(children);
+  
+  
+  // 山登り開始
+  function mountByBacktrack (n, m, parents, children, startNode) {
+    const checkPoint = new Set();
+    
+    const backtrack = (ups, downs, node) => {
+    //   console.log(ups, downs, node, 'in bt');    
+    
+      if (ups === n && downs === m) {
+        checkPoint.add(node);
+        return;
+      }
+      if (ups < n) {
+        for (let nbr of parents[node]) {
+          backtrack(ups + 1, downs, nbr);
+        } 
+        // backtrack(ups + 1, downs);
+      }
+      if (downs < m) {
+        for (let nbr of children[node]) {
+          backtrack(ups, downs + 1, nbr);
+        }
+      }
+    };
+    
+    backtrack(0, 0, startNode);
+    
+    return checkPoint;
+  }
+  
+  // 出力
+  const checkPointSet = mountByBacktrack(upNum, downNum, parents, children, startNode);
+  const checkPointAns = Array.from(checkPointSet).sort((a, b) => a - b);
+  checkPointSet.forEach(e => console.log(e));
+
+});
+
+```
+
+## 解説1 GPT
+1. 距離計算:getDistancesByBfs関数を修正し、各チェックポイントの距離を正確に計算します。
+2. 木の作成:BFSで求めた距離を元に、parentsとchildrenのリストを正しく作成します。
+3. バックトラックアルゴリズム:mountByBacktrack関数内で、アップダウンの回数を適切に管理し、正しいチェックポイントを特定します。
+```js
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
+
+var lines = [];
+var reader = require('readline').createInterface({
+  input: process.stdin,
+  output: process.stdout
+});
+reader.on('line', (line) => {
+  lines.push(line);
+});
+reader.on('close', () => {
+  const [nodeNum, topNode, startNode, upNum, downNum] = lines[0].split(' ').map(Number);
+  
+  // グラフ受け取り
+  const adjList = [...Array(nodeNum + 1)].map(() => []);
+  for (let i = 1; i < nodeNum; i++) {
+    const [a, b] = lines[i].split(' ').map(Number);
+    adjList[a].push(b);
+    adjList[b].push(a);
+  }
+  
+  // 距離を測る
+  function getDistancesByBfs(graph, startNode) {
+    const distances = Array(nodeNum + 1).fill(Infinity);
+    const queue = [{ node: startNode, distance: 0 }];
+    distances[startNode] = 0;
+
+    while (queue.length > 0) {
+      const { node: curNode, distance } = queue.shift();
+      
+      for (let neighbor of graph[curNode]) {
+        if (distances[neighbor] === Infinity) {
+          distances[neighbor] = distance + 1;
+          queue.push({ node: neighbor, distance: distance + 1 });
+        }
+      }
+    }
+    
+    return distances;
+  }
+  
+  const distances = getDistancesByBfs(adjList, topNode);
+  
+  // 根付き木を完成させる
+  const parents = Array.from({ length: nodeNum + 1 }, () => []);
+  const children = Array.from({ length: nodeNum + 1 }, () => []);
+  
+  for (let i = 1; i <= nodeNum; i++) {
+    for (let neighbor of adjList[i]) {
+      if (distances[i] > distances[neighbor]) {
+        parents[i].push(neighbor);
+      } else if (distances[i] < distances[neighbor]) {
+        children[i].push(neighbor);
+      }
+    }
+  }
+  
+  // 山登り開始
+  function mountByBacktrack(n, m, parents, children, startNode) {
+    const checkPoint = new Set();
+    
+    const backtrack = (ups, downs, node) => {
+      if (ups === n && downs === m) {
+        checkPoint.add(node);
+        return;
+      }
+      if (ups < n) {
+        for (let nbr of parents[node]) {
+          backtrack(ups + 1, downs, nbr);
+        }
+      }
+      if (downs < m) {
+        for (let nbr of children[node]) {
+          backtrack(ups, downs + 1, nbr);
+        }
+      }
+    };
+    
+    backtrack(0, 0, startNode);
+    
+    return checkPoint;
+  }
+  
+  // 出力
+  const checkPointSet = mountByBacktrack(upNum, downNum, parents, children, startNode);
+  const checkPointAns = Array.from(checkPointSet).sort((a, b) => a - b);
+  checkPointAns.forEach(e => console.log(e));
+});
+
+```
+
+## 解説
+### 方針
+問題文が複雑ですが落ち着いて状況を整理しましょう。
+実際に登り・降りのパターンを全探索してシミュレーションした場合膨大な計算量となりタイムオーバーしてしまいます。
+そこで根付き木の次の性質を利用してみましょう。
+根以外の各頂点について、親である頂点はただ１つである。
+このことから、もし paiza 君が n 回降りた後に n 回登った場合、必ず元々いた頂点に戻ってくることが保証されます。
+また、このことから、paiza 君がスタート地点からできるだけ高く登った後に降りた時に到達することができるチェックポイントの集合は、スタート地点から 好きな順番で移動することで到達できる全てのチェックポイントを包含します。
+例として、以下の図の水色の頂点から 「4 回登って 3 回降りる場合」は 「3 回登って頂点まで移動したのち、好きな順番で 1 回登り 3 回降りるような移動」をしたとき、到達できるチェックポイント数が最大になります。「1 回登り 3 回降りる移動」は 「2 回降りる移動」と同じ意味になるので、答えは赤い頂点になります。
+
+つまり、スタート地点から頂点までの距離を len_from_T[s], 登る回数を x, 降りる回数を y とすると答えは次のように決定します。
+x >= len_from_T[s] なら 根から y - (x - len_from_T[s]) 回降りた位置すべてが答えになる x < len_from_T[s] なら s から x 回登った地点(これは一意に決まります)から y 回降りた位置すべてが答えになる
+
+```cpp
+#include <iostream>
+#include <vector>
+
+using namespace std;
+
+vector<vector<int> > g(100);
+vector<int> len_from_T(100, -1);
+int parent[100] = {0};
+
+void calc_length(int now) {
+  for (auto next : g[now]) {
+    if (len_from_T[next] == -1) {
+      len_from_T[next] = len_from_T[now] + 1;
+      parent[next] = now;
+      calc_length(next);
+    }
+  }
+}
+
+int main() {
+  int n, t, s, c, d;
+  cin >> n >> t >> s >> c >> d;
+
+  t--;
+  s--;
+  parent[t] = -1;
+  len_from_T[t] = 0;
+
+  for (int i = 0; i < n - 1; i++) {
+    int a, b;
+    cin >> a >> b;
+    a--;
+    b--;
+    g[a].push_back(b);
+    g[b].push_back(a);
+  }
+
+  calc_length(t);
+
+  if (len_from_T[s] <= c) {
+    for (int i = 0; i < n; i++) {
+      if (len_from_T[i] == len_from_T[s] - c + d) {
+        cout << i + 1 << endl;
+      }
+    }
+
+  } else {
+    int highest = s;
+    for (int i = 0; i < c; i++) {
+      highest = parent[highest];
+    }
+
+    for (int i = 0; i < n; i++) {
+      if (len_from_T[i] == len_from_T[s] - c + d) {
+        int ancestor = i;
+        for (int j = 0; j < d; j++) {
+          ancestor = parent[ancestor];
+        }
+
+        if (ancestor == highest) {
+          cout << i + 1 << endl;
+        }
+      }
+    }
+  }
+}
+
+```
