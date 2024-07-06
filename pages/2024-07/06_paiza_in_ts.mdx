@@ -1,0 +1,53 @@
+# paiza in TypeScript
+
+Web上で実行はできないが、ローカルでトランスパイルしてやっていこうと思う
+
+```ts
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
+
+var lines: string[] = [];
+var reader = require('readline').createInterface({
+  input: process.stdin,
+  output: process.stdout
+});
+reader.on('line', (line: string) => {
+  lines.push(line);
+});
+reader.on('close', () => {
+  const [ N, K ] = lines[0].split(' ').map(Number);
+
+  const nArray = lines.slice(1, N + 2).map(Number);
+  
+  console.log(N, K, nArray);
+  
+  // -------tmp----
+  // const kArray = lines.slice(N + 1, N + K + 1).map(line => parseInt(line));
+  // const maxSize = Math.max(...aList);
+  // const twoDimArray = [...Array(N)].map(() => []);
+  // const idxArray = [...Array(N).keys()];
+  // const boolArray = Array(N).fill(false);
+  // const removeIdxElement = numbers.splice(i, 1);
+  // const sortedNumbers = numbers.sort((a, b) => a - b);
+  // const arrToString = numbers.join(',');
+  // const pushArray = tree[a].push(b);
+  // const existsEdge = tree[a].includes(b);
+  // for (let i = 0; i < N; i++) {
+  //   for (let j = 0; j < K; j++) {
+  //   }
+  // }
+
+});
+
+```
+
+```sh
+npm install --save-dev ts-node
+ts-node 
+```
+
+- paizaに持って行く時は
+
+```sh
+tsc test.ts
+```
