@@ -1,0 +1,130 @@
+## 問題
+このチャプターでは、グラフ理論における二分木よりもさらに分岐の多い木（多分木以上）を扱います。
+
+二分木と同様に、子は「左から i 番目の子」と行った具合に区別することができます。
+
+例として、A は B と C と D の親、 B は A の左から 1 番目の子、 C は A の左からの 2 番目の子、 D は A の左からの 3 番目の子であるような関係を図に起こすと下のようになります。
+
+
+
+このような木の頂点や辺を子の左右の区別がわかる形式で管理するには、普通の木と同様に隣接行列や隣接リストで管理するだけでは足りません。各頂点について構造体を用意したり、頂点自体に左右の特性づけを行うなど、管理方法を工夫する必要があります。
+
+三分木以上の分岐を持つ木の頂点・辺についての情報と K 個の頂点と左から何番目の子を求めたいのかが与えられるので、与えられた各頂点の指定された子の頂点番号を出力してください。
+
+なお、今回の問題では、子の順番は入力された順に左から順序付いているものとします。
+
+
+
+## 入力される値
+```
+N K R
+a_1 b_1
+...
+a_{N-1} b_{N-1}
+v_1 l_1
+...
+v_K l_K
+```
+- 1 行目には、根付き木の頂点の数 N, 与えられる頂点の数 K, 多分木の根の頂点番号 Rが与えられます。
+- 続く N-1 行では、根付き木の各辺の両端の頂点 a_i , b_i が与えられます。ただし、a_i は b_i の親であることが保証されています。(1 ≦ i ≦ N-1)
+- 続く K 行では、子の頂点を求めたい頂点の番号 v_i と調べたい子の左からの順番 l_i が与えられます。(1 ≦ i ≦ K)
+
+## 期待する出力
+- 合計で K 行出力してください。
+- i 行目では、v_i の左から l_i 番目の子の頂点番号を出力してください。(1 ≦ i ≦ K)
+
+## 条件
+すべてのテストケースにおいて、以下の条件をみたします。
+
+- 1 ≦ N ≦ 100
+- 1 ≦ K ≦ 100
+- 1 ≦ R ≦ N
+- 1 ≦ a_i , b_i ≦ N (1 ≦ i ≦ N-1)
+- 1 ≦ v_i ≦ N (1 ≦ i ≦ K)
+- 1 ≦ l_i ≦ 頂点 v_i の子の数(1 ≦ i ≦ K)
+
+
+## 入力例1
+```
+10 3 4
+10 7
+7 2
+2 8
+4 10
+10 1
+4 5
+7 6
+8 3
+4 9
+7 1
+10 2
+7 1
+```
+
+## 出力例1
+```
+2
+1
+2
+```
+
+
+## 回答
+入力された順であれば、そのまま`push`してしまえばいいかな
+```js
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
+
+var lines = [];
+var reader = require('readline').createInterface({
+  input: process.stdin,
+  output: process.stdout
+});
+reader.on('line', (line) => {
+  lines.push(line);
+});
+reader.on('close', () => {
+  const [ N, K, R ] = lines[0].split(' ').map(Number);
+  
+  
+  parentList = [...Array(N+1)].map(() => []);
+  for (let i = 1; i < N; i++) {
+    const [a, b] = lines[i].split(' ');
+    parentList[+a].push(+b);
+  }
+  
+  
+  for (let i = 0; i < K; i++) {
+    const [v, li] = lines[N+i].split(' ').map(Number);
+    
+    console.log(parentList[v][li-1]);
+  }
+});
+
+```
+
+
+```js
+    const [N, K, R] = lines[0].split(' ').map(Number);
+    let tree = {};
+    
+    for (let i = 1; i <= N; i++) {
+        tree[i] = { L: null, R: null };
+    }
+    
+    for (let i = 1; i < N; i++) {
+        const [a, b, lr] = lines[i].split(' ');
+        tree[parseInt(a)][lr] = parseInt(b);
+    }
+    
+    for (let i = 0; i < K; i++) {
+        const [v, lr] = lines[N + i].split(' ');
+        const child = tree[parseInt(v)][lr];
+        if (child !== null) {
+            console.log(child);
+        } else {
+            console.log('');
+        }
+    }
+
+```
