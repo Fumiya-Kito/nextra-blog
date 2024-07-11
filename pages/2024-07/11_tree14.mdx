@@ -1,0 +1,95 @@
+# 完全ニ分木の管理
+
+このチャプターでは、グラフ理論における完全二分木を扱います。
+二分木とは、根付き木の一種で、各頂点が持つ子の数が 2 であるようなもののことです。
+
+子が 2 つであるため、子は「左の子」「右の子」と区別することが多いです。
+
+例として、以下のような頂点 A, B, C があったとき、A は B と C の親、B は A の左の子、C は A の右の子となります。
+
+完全二分木では、要素数は必ず 2^n - 1 (n は非負整数) であり、根から一番下までの間の木全体の形が一意に定まるため、次のような規則にしたがって頂点を管理することで、1 つの配列で完全二分木の情報を管理することができます。
+
+完全二分木の頂点数を 2^n - 1 とする。
+要素数が 2^n - 1 の配列 g を宣言する。
+g[0] に根の頂点を格納し、以後、g[i] の左の子を g[2*i + 1] , 右の子を g[2*i + 2] に格納する。
+
+
+完全二分木の頂点・辺についての情報が根から近い方から順に与えられます。その後 K 個の頂点と左右の組が与えられるので、与えられた各頂点の指定された子の頂点番号を出力してください。
+
+
+## 入力される値
+```
+N K R
+a_1 b_1 LR_1
+...
+a_{N-1} b_{N-1} LR_{N-1}
+v_1 lr_1
+...
+v_K lr_K
+```
+
+・1 行目には、根付き木の頂点の数 N, 与えられる頂点の数 K, 完全二分木の根の頂点の番号 R が与えられます。
+・続く N-1 行のうち、i 行目では、根から近い方の辺から順に、辺がつなぐ 2 頂点の親の番号 a_i と子の番号 b_i と、子が左右どちらの子であるかを表す文字 LR_i が与えられます。(1 ≦ i ≦ N-1)
+・続く K 行では、子の頂点を求めたい頂点の番号 v_i と調べたい子の左右 lr_i が与えられます。(1 ≦ i ≦ K)
+
+## 期待する出力
+・合計で K 行出力してください。
+・i 行目では、lr_i が 'L' のとき v_i の左の子の頂点番号を、'R' のとき v_i の右の子の頂点番号を出力してください。(1 ≦ i ≦ K)
+
+
+## 条件
+すべてのテストケースにおいて、以下の条件をみたします。
+
+・1 ≦ N ≦ 100
+・1 ≦ K ≦ 100
+・1 ≦ R ≦ N
+・1 ≦ a_i , b_i ≦ N (1 ≦ i ≦ N-1)
+・a_i では、既に親が決まっている頂点の番号のみが与えられる。
+・LR_i は 'L' または 'R'(1 ≦ i ≦ N-1)
+・1 ≦ v_i ≦ N (1 ≦ i ≦ K)
+・lr_i は 'L' または 'R'(1 ≦ i ≦ K)
+
+
+## 解答
+
+```js
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
+
+var lines = [];
+var reader = require('readline').createInterface({
+  input: process.stdin,
+  output: process.stdout
+});
+reader.on('line', (line) => {
+  lines.push(line);
+});
+reader.on('close', () => {
+  const [ N, K, R ] = lines[0].split(' ').map(Number);
+  
+  const cmpBiTree = Array(N);
+  cmpBiTree[0] = R; 
+  
+  for (let i = 0; i < N - 1; i++) {
+    const [a, b, lr] = lines[i+1].split(' ');
+    
+    if (!cmpBiTree.includes(a)) cmpBiTree[i] = a;
+    
+    const idx = cmpBiTree.findIndex(nd => nd === a);
+    if (lr === 'L') cmpBiTree[2*idx+1] = b;
+    else cmpBiTree[2*idx+2] = b;
+  }
+  
+  for (i = 0; i < K; i++) {
+    const [ k, lr ] = lines[N+i].split(' ');
+    const parentIdx = cmpBiTree.findIndex(nd => nd === k);
+    if (lr === 'L') console.log(cmpBiTree[2*parentIdx+1]);
+    else console.log(cmpBiTree[2*parentIdx+2]);
+  }
+  
+
+});
+
+
+
+```
