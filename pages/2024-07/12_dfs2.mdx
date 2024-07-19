@@ -1,0 +1,69 @@
+# DFS
+- `#`の集合が何個あるか判定したい
+
+```sh filename="入力例"
+5 5
+##...
+.#...
+#.#..
+###..
+#####
+```
+
+```sh filename="出力例"
+2
+```
+
+```ts
+process.stdin.resume();
+process.stdin.setEncoding('utf8');
+
+var lines = [];
+var reader = require('readline').createInterface({
+  input: process.stdin,
+  output: process.stdout
+});
+reader.on('line', (line) => {
+  lines.push(line);
+});
+reader.on('close', () => {
+  const [ H, W ] = lines[0].split(' ').map(Number);
+  const field = lines.slice(1).map(s => [...s]);
+
+  // 深さ優先探索でvisitedを更新する関数
+  function dfs(x, y, visited) {
+    const stack = [[x, y]];
+    const directions = [[-1, 0], [1, 0], [0, -1], [0, 1]];
+
+    while (stack.length > 0) {
+      const [curX, curY] = stack.pop();
+      for(let [dx, dy] of directions) { // 全方向に探索開始
+        const nextX = curX + dx;
+        const nextY = curY + dy;
+        const isInField = (nextX >= 0 && nextX < H && nextY >= 0 && nextY < W);
+        
+        
+        if (isInField && field[nextX][nextY] === '#' && !visited[nextX][nextY]) {
+          visited[nextX][nextY] = true;
+          stack.push([nextX, nextY]);
+        }
+      }
+    }
+  }
+  
+  const visited = [...Array(H)].map(() => Array(W).fill(false));
+  let sharpSetCount = 0;
+
+
+  for (let x = 0; x < H; x++) {
+    for (let y = 0; y < W; y++) {
+      if (field[x][y] === '#' && !visited[x][y]) {
+        visited[x][y] = true; // スタートcell
+        dfs(x, y, visited);   // #の連結を確認
+        sharpSetCount++;
+      }
+    }
+  }
+  console.log(sharpSetCount);
+});
+```
