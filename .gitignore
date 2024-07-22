@@ -6,3 +6,4 @@ bun.lockb
 .vscode
 
 /pages/*/*.js
+/pages/*/*.ts
