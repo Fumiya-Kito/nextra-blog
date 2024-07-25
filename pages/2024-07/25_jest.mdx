@@ -1,0 +1,97 @@
+# jestをつかったテスト
+
+## jestとは
+1. JS/TSのテストライブラリ
+2. テストランナー → `describe`や`expected`といったグローバル関数の集合
+3. アサーションライブラリ → `toBe`などmatcher関数の集合(チェックポイントで意図した条件が満たされているか確認する)
+
+
+# jestを使う
+- install
+```sh
+npm init -y
+npm i -D typescript jest ts-jest @types/jest ts-node
+```
+
+- 設定ファイル初期化
+```sh
+npx ts-jest config:init
+# これでjest.config.jsが自動作成される
+```
+- 手動で`jest.config.ts`を作成
+
+```ts filename="jest.config.ts"
+import type { Config } from '@jest/types'
+
+const config: Config.InitialOptions = {
+  preset: 'ts-jest', // tsを読むためのプリセット
+  testEnvironment: 'node',
+  verbose: true // 冗長テスト: consoleにより多くの情報を出してくれる
+}
+
+export default config;
+```
+
+- ディレクトリを作る
+```
+/
+├ src
+  ├ app
+    └ Utils.ts
+  └ test
+    └ Utils.test.ts
+```
+
+```ts filename="app/Utils.ts"
+export function toUpperCase(arg: string) {
+  return arg.toUpperCase();
+}
+```
+
+```ts filename="test/Utils.test.ts"
+import { toUpperCase } from "../app/Utils"
+
+// describe関数は異なるテストを組み合わせてtest suiteを作成できる
+describe('Utils test suite', () => {
+
+  test('should return uppercase', () => {
+    const result = toUpperCase('abc');
+    // assersoin
+    expect(result).toBe('ABC');
+  })
+})
+```
+
+- `package.json`のscriptを変更する
+
+```json {3-5}
+{
+  ...
+  "scripts": {
+    "test": "jest"
+  },
+  ...
+}
+
+```
+
+- テストコードを走らせる
+```ts
+$ npm test
+
+> ts-test@1.0.0 test
+> jest
+
+ts-jest[config] (WARN) message TS151001: If you have issues related to imports, you should consider setting `esModuleInterop` to `true` in your TypeScript configuration file (usually `tsconfig.json`). See https://blogs.msdn.microsoft.com/typescript/2018/01/31/announcing-typescript-2-7/#easier-ecmascript-module-interoperability for more information.
+...
+```
+
+- tsがインポートエクスポートのあつかいを理解していないため警告が出た
+- `tsconfig.json`で`"esModuleInterop": true`に指定
+```json filename="tsconfig.json"
+{
+  "compilerOptions": {
+    "esModuleInterop": true
+  }
+}
+```
