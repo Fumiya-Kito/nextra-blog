@@ -1,0 +1,57 @@
+# 単体テストの構成
+- 単体テストをするための適切なディレクトリ構成を考える
+- jestやTypeScriptに限らず、一般的に
+
+### AAAパターン (AAA principles)
+AAA パターンとは、テストコードを Arrange（準備）、Act（実行）、Assert（確認）の3つのフェーズに分けて記述する、テストコードを読みやすくするためのパターンのひとつです
+1. arrange
+2. act
+3. assert
+
+
+-  テストの可読性のために、テスト対象システム（SystemUnderTest）を"sut"と命名すると良い
+- 本当はコメントなしで3段落構成にする
+- テストケースの部分の関数`it`と命名して`it should...`とつながるように書くのが慣用
+```ts
+import { toUpperCase } from "../app/Utils"
+
+describe('Utils test suite', () => {
+  it('should return uppercase of valid string', () => {
+    // arrange
+    const sut = toUpperCase;
+    const expected = 'ABC';
+
+    // act
+    const actual = sut('abc');
+
+    // assert
+    expect(actual).toBe(expected);
+  })
+})
+```
+
+
+# jest assertions and matchers
+- いくつかのmatcherを紹介する
+- このために`string[]`型の変数をテストすることを考える
+- ただし95%最初の`toBe`, `toEqual`を使うことになる
+
+```ts filename="Utils.ts"
+export type stringInfo = {
+  lowerCase: string;
+  upperCase: string;
+  characters: string[];
+  length: number;
+  extraInfo: Object | undefined;
+}
+
+export function getStringInfo(arg: string): stringInfo {
+  return {
+    lowerCase: arg.toLowerCase(),
+    upperCase: arg.toUpperCase(),
+    characters: Array.from(arg),
+    length: arg.length,
+    extraInfo: {},
+  }
+}
+```
