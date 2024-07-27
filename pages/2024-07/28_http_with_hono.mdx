@@ -1,0 +1,131 @@
+# honoでHTTPについて理解する
+- はじめる
+```sh
+bun create hono bun-hono-sessions
+```
+
+- cookieをセットする
+```ts filename="index.ts"
+import { Hono } from 'hono'
+import { setCookie } from 'hono/cookie';
+
+const app = new Hono()
+
+app.get('/', (c) => {
+  return c.text('Hello Hono!')
+})
+  .get('/set-cookie', (c) => {
+    setCookie(
+      c,
+      'cookie name',
+      'cookie value',
+      {httpOnly: true},
+    )
+    return c.text('done');
+  })
+
+export default app
+
+```
+
+## Cookieとsession
+- HTTPはステートレスなプロトコル
+- ログイン状態などは保持できないため、CookieやSessionを使うことで解決する
+
+### Cookie
+- WebサーバーからWebブラウザへHTTPレスポンスのヘッダを利用して小さな情報を送る
+- この情報は「名前=値」の組み合わせで表される
+- Webアプリケーション側では、リクエスト•ヘッダに入っているCookieを調べることで、アクセスしてきた相手がどのような相手なのかを知ることができる
+
+### Session
+- セッションはWebブラウザを閉じるまで保存する
+- リンクなどを張ってページを移動しても内容を保持することができる
+- セッションが不要になった場合は、session_unsetファンクションを使ってセッションの内容を全て削除する。
+
+### 違い
+- Cookieはユーザーのブラウザに保存される一時的な情報
+- セッションはサーバー側で管理される一時的な接続
+- Cookieはブラウザを閉じても有効期限がある場合は削除されませんが、セッションはブラウザを閉じると失われる
+
+
+## hono-sessions
+- `hono-sessions`ライブラリを使用する
+```sh
+bun install hono-sessions
+```
+
+- storeの宣言
+- `sessionMiddleware`を使用する
+- ミドルウェアなのですべてのリクエスト・レスポンスが通過しアクセス可能
+- リクエストのクッキーの値を復号し、ハンドラ内でアクセスできるようにする
+
+### ミドルウェアの設定
+1. `cookieStore`の指定
+2. `encryptionKey` .envファイルに暗号化方法を書いておく
+```env filename=".env.local"
+SESSION_ENCRYPTION_KEY='password_at_least_32_characters_long'
+```
+
+- sessionを使ってクッキーをセットする
+- htmlを返す
+```js filename="index.js"
+import { Hono } from 'hono'
+import { CookieStore, Session, sessionMiddleware } from 'hono-sessions';
+import { setCookie } from 'hono/cookie';
+
+
+const app = new Hono();
+
+const store = new CookieStore();
+
+app.use('*', sessionMiddleware({
+  store,
+  encryptionKey: Bun.env.SESSION_ENCRYPTION_KEY, // Required for CookieStore, recommended for others
+  expireAfterSeconds: 900, // Expire session after 15 minutes of inactivity
+  cookieOptions: {
+    sameSite: 'Lax', // Recommended for basic CSRF protection in modern browsers
+    path: '/', // Required for this library to work properly
+    httpOnly: true, // Recommended to avoid XSS attacks
+  },
+}))
+
+
+app.get('/', (c) => {
+  console.log(Bun.env.SESSION_ENCRYPTION_KEY);
+  console.log('cookie' + JSON.stringify(c.get('session')));
+
+  const session = c.get('session');
+  const userId = session.get('userId');
+
+  return c.html(
+    <html>
+      <body>
+        {userId ? 
+        <>
+          <div>User: {userId}</div>
+          <a href={'/logout'}>Logout</a>
+        </>
+        :
+        <>
+          <div>
+            <a href={'/login'}>Login</a>
+          </div>
+        </>
+        }
+      </body>
+    </html>
+  )
+})
+  .get('/login', (c) => {
+    const session = c.get('session');
+    session.set('userId', 123);
+    return c.redirect('/');
+  })
+  .get('/logout', (c) => {
+    c.get('session').deleteSession();
+    return c.redirect('/');
+  })
+
+export default app
+
+```
