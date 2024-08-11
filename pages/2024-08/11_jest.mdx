@@ -1,0 +1,15 @@
+#  Parametrized tests
+- もう少し柔軟に`actual`と`expected`を作成したい場合、引数を使う
+- it.each([])で複数同時にテストケースを走らせられる
+
+```js
+  describe.only('Uppercase examples', () => {
+    it.each([
+      {input: 'abc', expected: 'ABC'},
+      {input: 'My-String', expected: 'MY-STRING'},
+      {input: 'def', expected: 'DEF'},
+    ])('$input toUppercase shold be $expected', ({input, expected}) => {
+      const actual = toUpperCase(input);
+      expect(actual).toBe(expected);
+    });
+```
