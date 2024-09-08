@@ -1,0 +1,93 @@
+# Jest Hooks
+
+```ts
+export class StringUtils {
+  public toUpperCase (arg: string) {
+    return toUpperCase(arg);
+  }
+}
+
+```
+
+- setupのために`befeoreEach`hookをつかう
+- 後処理のために`afterEach`を使う
+- 今回は1ケースの度に`console.log`をしている
+- hooksはdescribe block内で使うこと
+
+```ts
+describe('Utils test suite', () => {
+  describe.only('StringUtils tests', () => {
+    let sut: StringUtils;
+  
+    beforeEach(() => {
+      sut = new StringUtils();
+      console.log('setup');
+    });
+    afterEach(() => {
+      // clearing mocks
+      console.log('Teardown');
+    });
+
+    it('should return correct Uppercase', () => {
+      const actual = sut.toUpperCase('abc');
+      expect(actual).toBe('ABC');
+      console.log('actual test');
+    });
+
+
+  })
+});
+
+```
+- 他に`beforeAll`, `afterAll`を結合テストなどでつかう
+- 例えば、DBに接続するなど最初の一回しかやらないこと
+
+### Testing for errors
+- argがStringではない場合などの分岐を考える
+
+- utils関数で`throw Error`して, test suitsで`it()`を増やす
+
+```ts
+export class StringUtils {
+  public toUpperCase (arg: string) {
+    if (!arg) {
+      throw new Error('Invalid argument');
+    }
+    return toUpperCase(arg);
+  }
+}
+
+```
+
+```ts
+
+describe('Utils test suite', () => {
+  describe.only('StringUtils tests', () => {
+    let sut: StringUtils;
+  
+    beforeEach(() => {
+      sut = new StringUtils();
+      console.log('setup');
+    });
+    afterEach(() => {
+      // clearing mocks
+      console.log('Teardown');
+    });
+
+    it('should return correct Uppercase', () => {
+      const actual = sut.toUpperCase('abc');
+      expect(actual).toBe('ABC');
+      console.log('actual test');
+    })
+
+    it.only('should throw Error on Invalid arg', () => {
+      // 関数でwrapする
+      function expectError() {
+        const actual = sut.toUpperCase('');
+      }
+      expect(expectError).toThrow();
+      expect(expectError).toThrowError('Invalid argument');
+    });
+  })
+});
+```
