@@ -1,0 +1,352 @@
+# hono チュートリアル
+簡単なブログアプリを作成していく
+
+## 構築
+```sh
+bun create hono@latest
+```
+- `workers`にデプロイする
+- `pages`は静的サイト、`workers`はサーバーレスエッジランタイムでWebアプリケーションをホスティングできる
+
+```sh
+bun i
+bun i -D wrangler
+```
+- `wrangler.toml`がcloud flare CLIを動かすためのツールでworkersにデプロイするのに必要
+
+
+## 作成
+```ts filename="src/index.ts"
+import { Hono } from 'hono'
+
+const app = new Hono()
+
+app.get('/', (c) => {
+  return c.text('Hello Hono!')
+})
+
+export default app
+```
+
+  
+- JSON形式でデータ準備
+- `Hono`インスタンスはtype safeに作られているため、`.`と打った時点で予測してくれる
+- `/posts`Routeに`get`関数でJSONを返してあげる
+
+```ts
+const blogPosts = [
+  {
+    id: "1",
+    title: "Blog1",
+    content: "Blog1 Post",
+  },
+  {
+    id: "2",
+    title: "Blog2",
+    content: "Blog2 Post",
+  },
+  {
+    id: "3",
+    title: "Blog3",
+    content: "Blog3 Post",
+  }
+];
+
+app.get("/posts", (c) => c.json({ posts: blogPosts }));
+
+```
+
+- ミドルウェアを追加する
+- `app.use()`でミドルウェアを追加可能
+- prettyJSON()はブラウザで`URL?pretty`とクエリ追加するとPretty-Printできる
+```ts
+app.use("*", prettyJSON());
+```
+
+- 動的パラメータを取得
+- `"/posts/:id" `として、`c.req.param("id")`で受け取る
+
+```ts
+const app = new Hono()
+
+const blogPosts = [
+  ...
+];
+app.use("*", prettyJSON());
+
+...
+
+app.get("/posts/:id", (c) => {
+  const id = c.req.param("id");
+  const post = blogPosts.find(post => post.id === id);
+  if (!post) {
+    return c.json({ message: "notFound" }, 404); // status code付与できる
+  } 
+  return c.json({ post: post })
+});
+
+export default app
+```
+
+```ts
+// 新規作成
+app.post("/posts", async (c) => {
+  const { title, content } = await c.req.json<{title: string; content: string;}>();
+  const newPost = { id: String(blogPosts.length + 1), title, content };
+  blogPosts = [...blogPosts, newPost];
+  return c.json(newPost, 201);
+})
+```
+
+```ts
+// 更新
+app.put("/posts/:id", async (c) => {
+  const id = c.req.param("id");
+  const index = blogPosts.findIndex(post => post.id === id);
+
+  if (index === -1) return c.json({ message: "not found" }, 404);
+
+  const { title, content } = await c.req.json();
+  blogPosts[index] = { ...blogPosts[index], title, content};
+
+  return c.json(blogPosts[index]);
+})
+```
+
+```ts
+// 削除
+app.delete("/posts/:id", async (c) => {
+  const id = c.req.param("id");
+  const index = blogPosts.findIndex(post => post.id === id);
+
+  if (index === -1) return c.json({ message: "not found" }, 404);
+
+  blogPosts = blogPosts.filter(post => post.id !== id); 
+
+  return c.json({ message: "deleted" }, 200);
+})
+```
+
+### リファクタリングする（ファイル分け）
+- [best Practice](https://hono.dev/docs/guides/best-practices)
+```ts filename="前"
+import { Hono } from 'hono'
+import { prettyJSON } from 'hono/pretty-json';
+
+const app = new Hono()
+
+let blogPosts = [
+  {
+    id: "1",
+    title: "Blog1",
+    content: "Blog1 Post",
+  },
+  {
+    id: "2",
+    title: "Blog2",
+    content: "Blog2 Post",
+  },
+  {
+    id: "3",
+    title: "Blog3",
+    content: "Blog3 Post",
+  }
+];
+app.use("*", prettyJSON());
+
+app.get('/', (c) => {
+  return c.text('Hello Hono!')
+})
+
+// 一覧表示
+app.get("/posts", (c) => c.json({ posts: blogPosts }));
+
+// 詳細表示
+app.get("/posts/:id", (c) => {
+  const id = c.req.param("id");
+  const post = blogPosts.find(post => post.id === id);
+  if (!post) {
+    return c.json({ message: "notFound" }, 404);
+  } 
+  return c.json({ post: post })
+});
+
+// 新規作成
+app.post("/posts", async (c) => {
+  const { title, content } = await c.req.json<{title: string; content: string;}>();
+  const newPost = { id: String(blogPosts.length + 1), title, content };
+  blogPosts = [...blogPosts, newPost];
+  return c.json(newPost, 201);
+})
+
+// 更新
+app.put("/posts/:id", async (c) => {
+  const id = c.req.param("id");
+  const index = blogPosts.findIndex(post => post.id === id);
+
+  if (index === -1) return c.json({ message: "not found" }, 404);
+
+  const { title, content } = await c.req.json();
+  blogPosts[index] = { ...blogPosts[index], title, content};
+
+  return c.json(blogPosts[index]);
+})
+
+// 削除
+app.delete("/posts/:id", async (c) => {
+  const id = c.req.param("id");
+  const index = blogPosts.findIndex(post => post.id === id);
+
+  if (index === -1) return c.json({ message: "not found" }, 404);
+
+  blogPosts = blogPosts.filter(post => post.id !== id); 
+
+  return c.json({ message: "deleted" }, 200);
+})
+
+export default app
+```
+
+- `src/posts`ディレクトリを作成
+```ts filename="src/blogs/blogs.ts"
+import { Hono } from 'hono'
+import { prettyJSON } from 'hono/pretty-json';
+
+const app = new Hono();
+
+let blogPosts = [
+  {
+    id: "1",
+    title: "Blog1",
+    content: "Blog1 Post",
+  },
+  {
+    id: "2",
+    title: "Blog2",
+    content: "Blog2 Post",
+  },
+  {
+    id: "3",
+    title: "Blog3",
+    content: "Blog3 Post",
+  }
+];
+app.use("*", prettyJSON());
+
+
+// 一覧表示
+app.get("/", (c) => c.json({ posts: blogPosts }));
+
+// 詳細表示
+app.get("/:id", (c) => {
+  const id = c.req.param("id");
+  const post = blogPosts.find(post => post.id === id);
+  if (!post) {
+    return c.json({ message: "notFound" }, 404);
+  } 
+  return c.json({ post: post })
+});
+
+// 新規作成
+app.post("/", async (c) => {
+  const { title, content } = await c.req.json<{title: string; content: string;}>();
+  const newPost = { id: String(blogPosts.length + 1), title, content };
+  blogPosts = [...blogPosts, newPost];
+  return c.json(newPost, 201);
+})
+
+// 更新
+app.put("/:id", async (c) => {
+  const id = c.req.param("id");
+  const index = blogPosts.findIndex(post => post.id === id);
+
+  if (index === -1) return c.json({ message: "not found" }, 404);
+
+  const { title, content } = await c.req.json();
+  blogPosts[index] = { ...blogPosts[index], title, content};
+
+  return c.json(blogPosts[index]);
+})
+
+// 削除
+app.delete("/:id", async (c) => {
+  const id = c.req.param("id");
+  const index = blogPosts.findIndex(post => post.id === id);
+
+  if (index === -1) return c.json({ message: "not found" }, 404);
+
+  blogPosts = blogPosts.filter(post => post.id !== id); 
+
+  return c.json({ message: "deleted" }, 200);
+})
+
+
+export default app;
+```
+
+- routingする
+```ts {2, 5} filename="src/index.ts"
+import { Hono } from 'hono'
+import posts from './blogs/blogs';
+
+const app = new Hono();
+app.route("/posts", posts);
+
+app.get('/', (c) => {
+  return c.text('Hello Hono!')
+})
+
+export default app;
+```
+
+### basicAuth
+- ミドルウェアを使って、認証された状態かを事前にチェックする
+- [basic auth middleware](https://hono.dev/docs/middleware/builtin/basic-auth)
+
+```ts
+// 認証用のページ /auth/page
+import { Hono } from "hono"
+
+const app = new Hono()
+
+app.get('/page', (c) => {
+  return c.text('You are authorized')
+})
+
+export default app;
+```
+```ts {8-14, 18} filename="index.ts"
+import { Hono } from 'hono'
+import { basicAuth } from "hono/basic-auth"
+import posts from './blogs/blogs';
+import auth from './auth/auth';
+
+const app = new Hono();
+/* middleware */
+app.use(
+  '/auth/*',
+  basicAuth({
+    username: 'hono',
+    password: 'fumi',
+  })
+)
+
+/* routes */
+app.route("/posts", posts);
+app.route("/auth", auth);
+
+app.get('/', (c) => {
+  return c.text('Hello Hono!')
+})
+
+export default app;
+
+```
+
+## デプロイ
+- cloudflareのアカウント作成→ログイン
+```
+bun run deploy
+```
+- shell URL叩くか
+- workers & pages > 概要 > preview
