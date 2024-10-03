@@ -1,0 +1,120 @@
+# cloud run にnextJS appのコンテナをデプロイしてみる
+
+```sh filenam="nextjsを立ち上げる"
+% npm create next-app
+✔ What is your project named? … next-docerise
+✔ Would you like to use TypeScript? … No / Yes
+✔ Would you like to use ESLint? … No / Yes
+✔ Would you like to use Tailwind CSS? … No / Yes
+✔ Would you like to use `src/` directory? … No / Yes
+✔ Would you like to use App Router? (recommended) … No / Yes
+✔ Would you like to customize the default import alias (@/*)? … No / Yes
+✔ What import alias would you like configured? … @/*
+```
+
+```js filenam="next.config.mjs"
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  output: 'standalone'
+};
+export default nextConfig;
+```
+- `Dockerfile`作成
+```docker filename="Dockerfile"
+FROM node:18-alpine
+WORKDIR /app
+COPY package*.json ./
+RUN npm install
+COPY . .
+EXPOSE 3000
+CMD npm run dev
+```
+
+- imageを作成
+
+```sh
+docker build . -t next-dockerise
+```
+
+```d filename=".dockerignore"
+Dockerfile
+.dockerignore
+node_modules
+npm-debug.log
+README.md
+.next
+.git
+```
+
+
+- gcpのコンソールにアクセス,プロジェクト作成、IDのコピー
+- [CLIのインストール](https://cloud.google.com/sdk/docs/install?hl=ja)
+- Google Cloud にプロジェクトを作成する
+- Google Cloud の Console にアクセス
+- 「プロジェクトの作成」をクリック
+- 任意のプロジェクト名をつける
+- プロジェクト ID をコピーしておく (あとで使う)
+- Google Cloud CLI をインストール
+- [gcloud CLI インストール] のページにアクセス
+- 自分の環境にあったファイルをダウンロード
+- アーカイブされたファイルがダウンロードされるのでそれをホームディレクトリに移動
+- ファイルを開く
+- ./google-cloud-sdk/install.sh を実行してインストール
+- いくつか質問されるので適宜 Yes か No で進めていく
+- インストールが完了したら ./google-cloud-sdk/bin/gcloud init で初期化を開始
+- 設定方法を聞かれるのでとりあえずデフォルトの [1] を選択
+- 利用するアカウントを選択
+- プロジェクトをどれにするか聞かれるのではじめに作成したプロジェクトの ID を入力
+- gcloud CLI　のアップデート
+- gcloud components update でアップデート
+- デフォルトで設定されているプロジェクトを変更するには gcloud config set project PROJECT_ID を実行
+
+# デプロイ by GPT
+```Dockerfile filenam="Dockerfile"
+# ベースイメージを指定
+FROM node:16-alpine
+# 作業ディレクトリを設定
+WORKDIR /app
+# package.jsonとpackage-lock.jsonをコピー
+COPY package*.json ./
+# 依存関係をインストール
+RUN npm install
+# アプリケーションのソースコードをコピー
+COPY . .
+# Next.jsアプリケーションをビルド
+RUN npm run build
+# アプリケーションを起動
+CMD ["npm", "start"]
+```
+
+2. Google Cloud CLIのセットアップ: Google Cloud SDKをインストールし、プロジェクトにログインします。
+```bash
+gcloud auth login
+gcloud config set project YOUR_PROJECT_ID
+```
+3. コンテナイメージのビルドとプッシュ: Google Container Registry (GCR)にコンテナイメージをビルドしてプッシュします。
+```sh
+# イメージをビルド
+gcloud builds submit --tag gcr.io/YOUR_PROJECT_ID/nextjs-app
+
+# イメージをプッシュ
+docker push gcr.io/YOUR_PROJECT_ID/nextjs-app
+```
+4. Cloud Runにデプロイ: Cloud Runにデプロイします。
+```
+gcloud run deploy nextjs-app \
+  --image gcr.io/YOUR_PROJECT_ID/nextjs-app \
+  --platform managed \
+  --region YOUR_REGION \
+  --allow-unauthenticated
+```
+
+↑by GPT
+
+# デプロイ2
+実際はSDKとかダウンロードして以下だけでいけた(請求アカウントだけは紐付けないとダメ) 
+```bash
+gcloud config set project YOUR_PROJECT_ID
+gcloud run deploy    
+```
+https://dockerise-next-53904339602.asia-east1.run.app
