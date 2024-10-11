@@ -1,0 +1,40 @@
+# bun runtimeでhonoをコンテナ化する
+### 参考
+[zen: Docker(App Runner)+Honoなら、BunでもDenoでもNode.jsでも動く](https://zenn.dev/watany/articles/194e31331a25be)
+
+```sh
+# start hono project
+bun create hono@latest
+```
+
+```dockerfile filename="dockerfile"
+# build
+FROM oven/bun:latest AS build
+
+WORKDIR /app
+
+COPY package.json bun.lockb ./
+
+RUN bun install --production
+
+# runtime
+FROM oven/bun:distroless AS runtime
+
+COPY --from=build --chown=nonroot:nonroot /app/node_modules /app/node_modules
+COPY src ./src
+
+USER nonroot
+EXPOSE 3000
+
+CMD ["run", "src/index.ts"]
+```
+
+```sh
+
+# build image 
+docker build -t hono-dockerise .
+# run container
+docker run -p 3000:3000 --rm --name hono-bun hono-dockerise
+# stop container (and remove)
+docker stop hono-bun
+```
