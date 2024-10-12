@@ -1,0 +1,52 @@
+# nextjs + supabase
+
+[参考](https://www.youtube.com/watch?v=S5aNxRk9wy8)
+
+
+### next環境構築
+```sh
+# npx, bunxは直接クラウド上のパッケージを実行
+bunx create-next-app@latest next-supabase-app
+```
+
+### shadcn/ui導入
+- TailwindCSSとRadixUIによって実現されている
+- スターターキットかつフルカスタムできる
+```sh
+$ bunx --bun shadcn@latest init
+✔ Preflight checks.
+✔ Verifying framework. Found Next.js.
+✔ Validating Tailwind CSS.
+✔ Validating import alias.
+✔ Which style would you like to use? › Default
+✔ Which color would you like to use as the base color? › Zinc
+✔ Would you like to use CSS variables for theming? … no / yes
+```
+
+### ローカル確認
+```sh
+bun dev
+```
+
+### supabase環境構築
+```sh
+bunx supabase init
+Generate VS Code settings for Deno? [y/N] n
+Generate IntelliJ Settings for Deno? [y/N] n
+Finished supabase init.
+```
+- `~/supabase`フォルダが作成される
+- `config.toml`の設定でsupabaseの環境をローカルで作成した
+
+- buildする
+- docker desktopを立ち上げておく必要あり
+```sh
+bunx supabase start
+No seed files matched pattern: supabase/seed.sql
+failed to inspect service: Cannot connect to the Docker daemon at unix:///Users/----/.docker/run/docker.sock. Is the docker daemon running?
+Docker Desktop is a prerequisite for local development. Follow the official docs to install: https://docs.docker.com/desktop
+
+# docker立ち上げてもう一回
+$ bunx supabase start
+No seed files matched pattern: supabase/seed.sql
+```
