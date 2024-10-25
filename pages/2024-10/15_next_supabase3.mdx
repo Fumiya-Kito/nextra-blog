@@ -1,5 +1,3 @@
-
-
 ## about ページ
 - routingしたいURL名のフォルダを作成して、`page.tsx`と命名すればFW側でページコンポーネントと認識してくれる
 - `page`がないディレクトリは`_`入れるといい。`app/_fonts`。
@@ -27,7 +25,7 @@ export default function AboutPage() {
 ```sh
 bun add @supabase/supabase-js @supabase/ssr
 ```
-- 環境変数
+- 環境変数: 結局この2つはクライアントに露出するが、ユーザー権限などで不正操作を弾く
 ```.env filename=".env.local"
 NEXT_PUBLIC_SUPABASE_URL=<your_supabase_project_url> ←API URL
 NEXT_PUBLIC_SUPABASE_ANON_KEY=<your_supabase_anon_key>
@@ -175,4 +173,68 @@ export async function updateSession(request: NextRequest) {
 
   return supabaseResponse
 }
+```
+
+### Loginページを作る
+- `supabase`からuser情報を取得する
+- GETは`data`ディレクトリで、WRITEは`actions`ディレクトリで管理する方法
+- もっというと、`data`は画面構築などに自然と必要なデータ、`actions`はユーザーが恣意的に求めてトリガーされるという思想(100%ではない)
+
+```ts filename="app/data/auth.ts"
+// server sideのcreateClient
+import { createClient } from "@/lib/supabase/server"
+import { cache } from "react";
+
+// 各コンポーネント一つ一つがこの関数を実行してしまう
+// ページごとに一回だけ呼び出すために、キャッシュする
+export const currentUser = cache(async () => {
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  return user;
+});
+```
+- `server-only`を使って、クライアントコンポーネントからcurrentUserが呼ばれることを防ぐ（エラーにする）
+```sh
+bun add server-only
+```
+```ts {1} filename="app/data/auth.ts"
+import 'server-only';
+...
+```
+
+- `actions.auth`の追加
+```tsx filename="app/actions/auth.ts"
+
+
+```
+- 認証ログインはデフォルトで使用できないので`config.toml`(supabase設定ファイル)をいじる
+- 更新したらdockerを立ち上げ直さないといけない
+
+```toml filename="config.toml"
+[auth]
+enabled = true
+# The base URL of your website. Used as an allow-list for redirects and for constructing URLs used
+# in emails.
+site_url = "http://127.0.0.1:3000"
+# A list of *exact* URLs that auth providers are permitted to redirect to post authentication.
+additional_redirect_urls = ["https://127.0.0.1:3000"]
+# How long tokens are valid for, in seconds. Defaults to 3600 (1 hour), maximum 604,800 (1 week).
+jwt_expiry = 3600
+# If disabled, the refresh token will never expire.
+enable_refresh_token_rotation = true
+# Allows refresh tokens to be reused after expiry, up to the specified interval in seconds.
+# Requires enable_refresh_token_rotation = true.
+refresh_token_reuse_interval = 10
+# Allow/disallow new user signups to your project.
+enable_signup = true
+# Allow/disallow anonymous sign-ins to your project.
+enable_anonymous_sign_ins = true
+# Allow/disallow testing manual linking of accounts
+enable_manual_linking = false
+```
+
+```
+bunx supabase stop
+bunx supabase start
 ```
