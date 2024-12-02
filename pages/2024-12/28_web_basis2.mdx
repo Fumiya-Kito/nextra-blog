@@ -1,0 +1,59 @@
+# 【Web】知っておきたいWebエンジニアリング各分野の基礎知見80③
+
+## CORSとは何か? CORSを設定しないといけない理由
+- CORS(Cross-Origin Resource Sharing): Webブラウザが異なるオリジン(=プロトコル・ドメイン・ポートが違う)間でリソース共有するための仕組み
+- 前提として、ブラウザはセキュリティの上の観点からスクリプトによって開始されるオリジン間HTTPリクエストを制限している(同一オリジンポリシー)
+  - `JS`が異なるオリジンのリソースにアクセスしようとするとブラウザがブロックする
+  - `Cookie`, `localStrage`などデータストレージには他のオリジンからアクセスできない
+  - DOMへのアクセスも同一オリジンのみに制限される
+- `XMLHttpRequest`や`Fetch API`は同一オリジンのポリシーに従う
+- CORSヘッダーを設定することで、サーバーは特定のオリジンからのリクエストを許可することが可能
+- これにより、開発者が意図していないオリジンからのリクエストによる攻撃（例えば、クロスサイトリクエストフォージェリ（CSRF））を防ぐことができる
+- CORSの設定は、サーバー側でHTTPレスポンスヘッダーにAccess-Control-Allow-Originを含めることで行う
+- (`Access-Control-Allow-Origin: *`にすればすべてのオリジンからリクエストを許可する設定となる)
+
+## セキリティの観点からフォーム実装で気をつけるべきことを述べよ。
+- 入力値のサニタイジング(エスケープ処理)を行う。
+・reCAPTCHAを使い機械的な自動送信を防ぐ。
+・input要素に type="password"を付け入力値を隠す。
+
+
+## セキリティの観点からフォーム実装で気をつけるべきことを述べよ。
+- 入力値のサニタイジング(エスケープ処理)を行う
+  - XSS攻撃を防ぐため、HTMLタグや特殊文字をエスケープする
+  - SQLインジェクションを防ぐため、データベースクエリのパラメータをエスケープする
+  ```js
+  // vanila-JavaScriptでの実装
+  function escapeHTML(str) {
+      return str
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#039;');
+  }
+
+  // 使用例
+  const userInput = '<script>alert("危険!")</script>';
+  const safeOutput = escapeHTML(userInput);
+
+  // → safeOutput = '&lt;script&gt;alert(&#39;危険!&#39;);&lt;/script&gt'
+  ```
+- reCAPTCHAを使い機械的な自動送信を防ぐ
+- CSRFトークンを実装し、クロスサイトリクエストフォージェリを防ぐ
+  - CSRF攻撃は、ユーザーが意図しないリクエストを別のサイトから送信させることで、ユーザーの権限を悪用する攻撃です。
+  - これを防ぐために、CSRFトークンが使用されます。
+  ```html filename="CSRFトークンの埋込み"
+  <form method="POST" action="/submit">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <!-- 他のフォームフィールド -->
+    <button type="submit">送信</button>
+  </form>
+  ```
+  - 「サーバーでトークンを受け取って生成したものと同一か、同一セッションからの送信か」を検証
+- 機密情報を扱う場合：
+  - HTTPSを使用して通信を暗号化する
+  - パスワードはハッシュ化して保存する
+  - input要素にtype="password"を付け入力値を隠す
+- バリデーションは必ずサーバーサイドで実施する
+  - クライアントサイドのバリデーションは利便性のためであり、セキュリティ対策としては不十分
