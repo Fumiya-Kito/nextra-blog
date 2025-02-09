@@ -1,0 +1,15 @@
+# なぜ setTimeout が「API」なのか?
+
+
+- setTimeout は JavaScript の組み込み関数 ですが、実際には ブラウザ（または Node.js）の環境が提供する Web API（または Node.js API） の一部
+- setTimeout 自体は JavaScript のコア機能ではなく、実行環境（ブラウザや Node.js）に依存する
+- 「Javascript」と「ランタイム」をインターフェースするため「API」である
+
+# Promise は非同期 API なのか？
+- `Promise` 自体は 非同期処理を扱うための**仕組み** であり、**APIではない**ですが、非同期処理を管理する仕組み
+
+## Promise の特徴：
+- `Promise` は 非同期処理をラップするオブジェクト であり、単体では API ではない。
+- `fetch` などの 非同期 API（Web API） は `Promise` を返すことが多い。
+- `Promise` は `then` や `catch` で非同期の結果を受け取る 仕組み
+- `Promise` の処理（then 内のコールバック実行）は マイクロタスクキュー に追加される
