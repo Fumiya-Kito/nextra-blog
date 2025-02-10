@@ -1,0 +1,104 @@
+# Python復習
+### ①NoteBookでautoreloadする方法
+```py filename="main.ipynb"
+%reload_ext autoreload
+import ...
+```
+### ②NoteBookモジュールがどこにあっても、ディレクトリを`~/`にする方法
+```py filename="main.ipynb"
+import constants
+# ROOT_DIRの設定
+os.chdir(constants.PROJECT_ROOT)
+```
+- `PROJECT_ROOT`ディレクトリを`cwd`(カレントディレクトリ)としている
+
+```py filename="constants.py"
+from pathlib import Path
+# プロジェクトルートを定義
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+```
+- `__file__`: 現在の Python ファイルのパス
+- `Path(__file__)`: Path オブジェクトに変換
+- `.resolve()`: シンボリックリンクの解決や、絶対パスの取得を行う。
+- `.parent`: 親ディレクトリの取得
+- symlinkはディレクトリの`/usr/local/bin/app -> /project/src/main.py`といったエイリアスのこと
+  - `__file__` は `/usr/local/bin/app` になる可能性があるが、`resolve()` を使えば、本当の場所 `/project/src/main.py` を取得
+```py filename="constants.py"
+# 各ディレクトリ定数をプロジェクトルート基準で定義
+RACE_DETAIL_HTML_DIR = PROJECT_ROOT / "data" / "html" / "race"
+HORSE_DETAIL_HTML_DIR = PROJECT_ROOT / "data" / "html" / "horse"
+RACE_RESULTS_RAWDF_DIR = PROJECT_ROOT / "data" / "rawdf" / "results"
+RACE_DETAIL_ID_DIR = PROJECT_ROOT / "data" / "pkl" / "race_id"
+```
+- `pathlib.Path`は`Path`オブジェクトに対して` / dir名:str`で後ろから新たに`Path`オブジェクトを作成可能
+
+### ③Scraping 開催日の取得
+```py filename="main.ipynb"
+from_, to_ = "2023-01", "2023-12"
+date_list_2023 = scraping.scrape_kaisai_date(from_, to_)
+```
+```py filename="scraping.py"
+def scrape_kaisai_date(from_: str, to_: str) -> list[str]:
+  """
+  netkeibaからレース開催日をfrom-toで取得
+
+  Args:
+    from_ (str): "yyyy-mm"
+    to_ (str): "yyyy-mm"
+  Return:
+    date_list (list[str]): from-toのレース開催日一覧
+  """
+  kaisai_date_list = []
+  for date in tqdm(pd.date_range(from_, to_, freq="MS")):
+      year, month = date.year, date.month
+      url = f"https://race.netkeiba.com/top/calendar.html?pid=race_calendar&year={year}&month={month}"
+      html = url_open_with_headers(url)
+      time.sleep(1)  # 忘れない
+      soup = BeautifulSoup(html, features="lxml")
+      a_tag_list = soup.find("table", class_="Calendar_Table").find_all("a")
+
+      for a_tag in a_tag_list:
+          kaisai_date = re.findall(r"kaisai_date=(\d{8})", a_tag["href"])[0]
+          kaisai_date_list.append(kaisai_date)
+
+  return kaisai_date_list
+```
+- `pd.date_range`: 指定した範囲の日付や時刻のインデックスを生成
+```py
+pd.date_range(start=None, end=None, periods=None, freq='D', tz=None)
+# start	開始日（文字列 or datetime）
+# end	終了日（文字列 or datetime）
+# periods	生成する日付の数（start または end のどちらかと組み合わせて使用）
+# freq	日付の間隔（例：D=日単位、H=時間単位、M=月末単位）
+# tz	タイムゾーン（例：Asia/Tokyo）
+
+pd.date_range(from_="2023-01", to_="2023-12", freq="MS") # = [
+#  '2023-01-01', '2023-02-01', '2023-03-01', '2023-04-01',
+#  '2023-05-01', '2023-06-01', '2023-07-01', '2023-08-01',
+#  '2023-09-01', '2023-10-01', '2023-11-01', '2023-12-01'
+# ]
+```
+- `urlopen`: headersに以下を設定しないとエラーで落ちる
+```py
+def url_open_with_headers(url: str):
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36"
+    }
+    request = Request(url, headers=headers)
+    html = urlopen(request).read()
+    return html
+```
+
+- scraping時には必ず1s間隔をあける
+```py
+time.sleep(1)
+```
+- `BeautifulSoup`でテーブルやaタグを取得する
+```py
+a_tag_list = soup.find("table", class_="Calendar_Table").find_all("a")
+```
+
+- `re`と正規表現でURLから日付を取得
+```py
+kaisai_date = re.findall(r"kaisai_date=(\d{8})", a_tag["href"])[0]
+```
