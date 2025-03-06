@@ -1,0 +1,77 @@
+# CORSポリシーについて
+
+## Error
+- NextJSで開発中にスクレイピングでnetkeiba.comにfetchしたときにエラー発生
+```
+Access to fetch at 'https://race.netkeiba.com/race/shutuba.html?race_id=202506020411' 
+from origin 'http://localhost:3000' has been blocked 
+by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource. 
+If an opaque response serves your needs, set the request's mode to 'no-cors' to fetch the resource with CORS disabled.
+```
+- CORSポリシーによってブロック
+- ブラウザが https://race.netkeiba.com/race/shutuba.html への直接リクエストを許可していないために発生
+
+
+## CORSポリシーについて
+- CORS（Cross-Origin Resource Sharing）は、異なるオリジン（ドメイン、プロトコル、ポートが異なる）間でのリソースのやり取りを制御する仕組み
+- ブラウザは、スクリプトが別のオリジンに `fetch` するときに、サーバーが適切なCORSヘッダーを返すか確認する。
+- サーバー(今回ネット競馬)が許可(Access-Control-Allow-Originを設定)しないと、ブラウザはリクエストをブロックする
+
+
+### CORSポリシーなぜ必要
+- ブラウザの「同一オリジンポリシー」(セキュリティの仕組み)により、異なるオリジンからのリクエストは基本的にブロックされる
+- → APIや外部サーバーと通信する必要がある場合、この制限を適切に緩和するためにCORS が使われる
+
+### そもそも制限である「同一オリジンポリシー」がないと
+- 例) ECサイトにログインしている状態で別の悪意あるサイトを閲覧した場合、ECサイトに登録された個人情報を悪意あるサイトから取得できる
+
+## 今回
+- 結論: `use server`の記述忘れ
+- 作成しているNextJS App のオリジン`http://localhost:3000`から異なるオリジン`https://race.netkeiba.com/race/shutuba.html?race_id=202506020411`へリクエストした際、netkeiba側CORSポリシーに引っかかった
+- クライアントコンポーネントからの`fetch`ならともかく、`Server Actions`は "Next.js のサーバー内部で動く"ため、通常はクライアント側のCORS制限の影響を受けないはず
+- しかし、なぜかCORSに引っかかったしまった
+
+1️. Server Actions はデフォルトで "use server" ではない
+- server actions を使用する場合、`"use server";` を明示的に書かないと クライアント側で実行される可能性がある。
+- クライアント側 (use client 内) で fetch を実行すると、ブラウザが直接 fetch するため、CORS 制限 に引っかかる。
+```
+getRaceTableById を呼び出すコンポーネント (use client 付き) が、ブラウザから直接この関数を実行 しようとすると、
+Next.js は サーバー側で処理するのではなく、クライアントで実行 しようとするその結果、ブラウザの fetch による外部サイト (netkeiba.com) へのリクエストになってしまう
+これにより、CORS 制限が適用される
+```
+→ Server Actionsなら`'use server'`を記述すればNextJSサーバーからfetchするためOK(ブラウザ(のCORSポリシー)は関係ない)
+
+### ちなみにAPI RoutesでもCORSには引っかからない
+- API Routes を経由すると CORS に引っかからない理由
+- API Routes (app/api/race-table/route.ts) を経由すると、リクエストは Next.js サーバー内で完結するため、CORS 制限を受けない。
+
+1. クライアントからのリクエスト
+```js
+fetch('/api/race-table?raceId=12345');
+```
+- オリジンは http://localhost:3000 (開発環境)
+- 宛先も http://localhost:3000/api/race-table (同じオリジン)
+- → CORS 制限なし！ ✅
+
+2. Next.js サーバー内 (api/race-table/route.ts)
+```ts
+export async function GET(req: Request) {
+  const { searchParams } = new URL(req.url);
+  const raceId = searchParams.get('raceId');
+
+  const response = await fetch(`https://race.netkeiba.com/race/shutuba.html?race_id=${raceId}`, {
+    headers: { 'User-Agent': 'Mozilla/5.0' }
+  });
+
+  const data = await response.text(); // or response.json()
+  return new Response(data, { status: 200 });
+}
+```
+- Next.js **サーバー内** で netkeiba.com にリクエスト (ここで CORS は関係なし)
+- データを取得し、API Routes (/api/race-table) 経由でフロントに返す
+
+3. クライアントが Next.js API Routes にアクセス
+```js
+fetch('/api/race-table?raceId=12345');
+```
+- オリジン (localhost:3000) と API (localhost:3000/api/race-table) が同じ → CORS 制限なし！ ✅
