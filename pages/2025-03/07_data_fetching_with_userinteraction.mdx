@@ -1,0 +1,154 @@
+# Next Approuterでのユーザ操作に基づくデータ取得
+- App RouterにおいてデータフェッチはServer Componentsで行うことが基本形
+- クライアントコンポーネントから非推奨だが、ユーザー操作に基づくデータフェッチと再レンダリングには、`Server Actions`と`useActionState()`を利用
+- なぜならユーザー操作に基づくデータフェッチ・再レンダリングを行うのにServer Components(=URLを利用した初期読み込みが基本)は適していため
+- `router.refresh()`などでページ全体を再レンダリングすることはできますが、ユーザー操作に基づいて部分的に再レンダリングしたい場合には不適切です。
+
+### **`useActionState()`**
+- `useActionState()`は関数と初期値を渡すことで、Server Actionsによってのみ更新できるState管理が実現できる
+```ts filename="actions.ts"
+"use server";
+
+export async function searchProducts(
+  _prevState: Product[],
+  formData: FormData,
+) {
+  const query = formData.get("query") as string;
+  const res = await fetch(`https://dummyjson.com/products/search?q=${query}`);
+  const { products } = (await res.json()) as { products: Product[] };
+
+  return products;
+}
+```
+
+```ts filename="form.tsx"
+"use client";
+
+import { useActionState } from "react-dom";
+import { searchProducts } from "./actions";
+
+export default function Form() {
+  const [products, action] = useActionState(searchProducts, []);
+
+  return (
+    <>
+      <form action={action}>
+        <label htmlFor="query">
+          Search Product:&nbsp;
+          <input type="text" id="query" name="query" />
+        </label>
+        <button type="submit">Submit</button>
+      </form>
+      <ul>
+        {products.map((product) => (
+          <li key={product.id}>{product.title}</li>
+        ))}
+      </ul>
+    </>
+  );
+}
+```
+
+
+### トレードオフ: URLシェア・リロード対応
+- form以外ほとんど要素がないような単純なページであれば、公式チュートリアルの実装例のようにrouter.replace()によってURLを更新・ページ全体を再レンダリングするという手段がある
+- この場合Server ActionsとuseActionState()のみでは実現できないリロード復元やURLシェアが実現できる
+- 一方サイドナビゲーションやcmd+kで開く検索モーダルのように、リロード復元やURLシェアをする必要がないケースでは、Server ActionsとuseActionState()の実装が非常に役立つ
+
+### 今回の競馬アプリの実装
+```ts filename="app/components/race-borad.tsx"
+'use client'
+
+import { useActionState } from "react";
+import { getRaceTableById } from "@/app/_actions/get-race-table";
+import { Button } from "@/components/ui/button";
+import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+
+
+export default function RaceBoard() {
+  const [raceTable, action] = useActionState(getRaceTableById, [])
+  const isFetched = raceTable.length > 0;
+  console.log(raceTable)
+
+  return (
+    <>
+      <form action={action} className="flex items-center space-x-3 bg-white shadow-sm rounded-lg p-4 border border-gray-200">
+        <input 
+          type="text" 
+          name="raceId" 
+          placeholder="Enter Race ID" 
+          required 
+          className="flex-1 border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+        <Button type="submit">レース情報取得</Button>
+      </form>
+
+      {isFetched && (
+        <div>
+
+          <Table>
+            <TableHeader>
+              <TableRow>
+                {Object.keys(raceTable[0]).map((colName) => (
+                  <TableHead key={colName}>{colName}</TableHead>
+                ))}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {raceTable.map((row, idx) => (
+                <TableRow key={idx}>
+                  {Object.entries(row).map(([key, value]) => (
+                    <TableHead key={key}>{value}</TableHead>
+                  ))}
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+
+      )}
+    </>
+  );
+}
+```
+
+
+```ts filename="app/_actions/get-race-table.ts"
+'use server'
+
+import { load } from 'cheerio';
+import { decode } from 'iconv-lite'
+// import puppeteer from 'puppeteer'
+
+type raceTable = { [key: string]: string; }
+
+export async function getRaceTableById(_prevState: raceTable[], formData: FormData) {
+  const raceId = formData.get('raceId') as string;
+  const response = await fetch(`https://race.netkeiba.com/race/shutuba.html?race_id=${raceId}`);
+  const buffer = await response.arrayBuffer();
+  const html = decode(Buffer.from(buffer), 'euc-jp')
+  const $ = load(html)
+  const rawTable = $('table').first();
+
+  const excludedKeys = new Set(['お気に入り馬', 'マスターレース別馬メモ切替', 'グループ', '印', '登録', '馬メモ切替', '更新']);
+  // Extract headers
+  const headers: string[] = rawTable.find('th')
+    .map((_, th) => $(th).text().trim())
+    .get();
+
+  // Extract rows
+  const table = rawTable.find('tr').slice(2).toArray().map(tr => {
+    const cells = $(tr).find('td').toArray().map(td => $(td).text().trim());
+    const rowObject: { [key: string]: string } = {};
+    headers.forEach((header, index) => {
+      if (!excludedKeys.has(header)) {
+        rowObject[header] = cells[index] || '';
+      }
+    });
+    return rowObject;
+  });
+  return table;
+}
+```
+
+### 参考
+[zenn: ユーザー操作とデータフェッチ](https://zenn.dev/akfm/books/nextjs-basic-principle/viewer/part_1_interactive_fetch)
