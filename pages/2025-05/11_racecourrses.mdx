@@ -1,0 +1,124 @@
+# コース解説サイト作成
+コースの特徴を毎レースごとに忘れてしまうので、自分でまとめたサイトを作りたい
+
+以下、AIに投げた結果の叩き台
+
+## 要件
+| カテゴリ      | 要件内容                                          |
+| --------- | --------------------------------------------- |
+| サイト目的     | 競馬場のコース解説サイト                                  |
+| フレームワーク   | Next.js（App Router使用）                         |
+| 使用言語      | TypeScript                                    |
+| データ管理     | データベースは使わず、JSON形式で保持                          |
+| データ構成     | コース情報、レース情報、季節・気温による馬場傾向、開催週とコース区分等         |
+| リレーション    | JSON内でコースとレース情報を関連付け                     |
+| 表示形式      | 初期は図表なしのテキスト中心                                |
+| 3D表示      | 将来的にThree.jsでコースを3D表示（初期は未導入）                 |
+| スタイリング    | Tailwind CSS + shadcn/ui を使用                  |
+| 拡張性       | 後から3D表示・CMSなどの導入がしやすい構成                       |
+| 画面構成例     | `/racecourses/[id]`、`/racecourses/[id]/3d` など |
+| データ配置方針   | `/src/data/*.json` に分割配置                      |
+| SSR/SSG戦略 | 基本はSSG（静的生成）を用いて構築                            |
+| 3D描画時の注意  | `Canvas`などは動的import（SSR無効）、ESM構文を使用           |
+| スタイル干渉対策  | TailwindのResetとThree.js描画が干渉しないように注意          |
+
+
+
+## 技術スタック（2025年時点の構成・再整理）
+| 分類        | 採用技術                                             | 用途                |
+| --------- | ------------------------------------------------ | ----------------- |
+| フレームワーク   | Next.js（App Router）                              | Webサイト構築（静的 + 動的） |
+| 言語        | TypeScript                                       | 型安全な実装            |
+| UIフレームワーク | Tailwind CSS + shadcn/ui                 | UI構築、スタイリング       |
+| 3D描画（将来）  | Three.js + @react-three/fiber + drei + leva      | 3Dコース可視化（後から導入）   |
+| データ管理     | JSONファイル                                         | コース・G1情報・傾向などを保持  |
+| 型定義補助     | Zod（任意）                                          | JSON構造の検証・安全な型生成  |
+| コンポーネント構成 | App Router + Client Components                   | ページと描画の分離         |
+
+## 使用モジュール一覧
+| カテゴリ      | パッケージ名                                      | 用途               |
+| --------- | ------------------------------------------- | ---------------- |
+| フレームワーク   | `next`, `react`, `react-dom`                | 基本構成             |
+| 言語補助      | `typescript`, `@types/react`, `@types/node` | 型定義              |
+| スタイリング    | `tailwindcss`, `postcss`, `autoprefixer`    | CSS構成            |
+| UIコンポーネント | `shadcn/ui`（内部で `radix-ui` 使用）              | UIパーツ（ボタン、カード等）  |
+| ユーティリティ   | `clsx`, `tailwind-variants`                 | class結合やスタイル変化管理 |
+| 型バリデーション  | `zod`（任意）                                   | JSON構造の検証        |
+| 3D描画関連    | `three`                                     | 3D描画本体           |
+|           | `@react-three/fiber`                        | React統合版Three.js |
+|           | `@react-three/drei`                         | 便利な3Dコンポーネント群    |
+|           | `leva`（任意）                                  | UIベースのデバッグ・調整パネル |
+
+## 注意点
+#### プロジェクト構成・スタイル周り
+- shadcn/ui は tailwind.config.ts にプリセットを追加する必要あり
+- Tailwindとの連携前提のため、Tailwind初期設定は最初に行っておく
+- shadcnのコンポーネントは@/components/uiに格納される
+- UIとロジックの分離を意識（3Dとは完全分離でOK）
+- tailwind-variantsを使ってshadcnのスタイルを拡張する場合は、命名規則を統一すると保守が楽
+
+#### Three.js導入を見越して
+- Three.jsは ESM前提のライブラリ（import / export 構文のみ対応）
+- 3Dコンポーネントは 動的import + ssr: false にするのがNext.jsでの鉄則
+- Canvasや3D空間表示コンポーネントは use client が必要
+- shadcn/uiとは干渉しないが、`<Canvas>` 周辺ではTailwindのpreflightでのスタイル干渉に注意
+
+#### データ設計・静的生成戦略
+- 競馬場・レース傾向・季節などのデータはJSONで分離し、`/data/*.json`に保存
+- SSG（静的生成）中心に構築
+- JSONの構造定義には zod + TypeScript型を併用すると安全性UP
+
+#### 拡張性の確保
+- `/racecourses/[id]/3d`のように、3D用ルートをあらかじめ用意しておくと後からスムーズ
+- Canvas や 3D表示は他UI（shadcn）とは別で設計し、疎結合にすることが将来的に重要
+
+
+## ディレクトリ構成案(by chatGPT)
+```
+src/
+├── app/
+│   ├── layout.tsx            # ルートレイアウト
+│   ├── page.tsx              # トップページ（例：サイト概要など）
+│   └── racecourses/
+│       ├── page.tsx          # 競馬場一覧ページ
+│       └── [id]/
+│           ├── page.tsx      # 競馬場詳細ページ
+│           └── 3d/
+│               └── page.tsx  # 3Dコース表示ページ（将来導入）
+│
+├── components/
+│   ├── ui/                   # shadcn/uiのコンポーネント（Button, Card など）
+│   ├── common/               # 共通レイアウト（Header, Footer, etc.）
+│   ├── racecourse/           # コースに関するUIコンポーネント群
+│   └── three/                # 3D描画用コンポーネント（Canvasなど）
+│
+├── data/
+│   ├── racecourses.json      # 各競馬場情報
+│   ├── g1.json               # G1レース情報
+│   ├── track_conditions.json # 馬場状態・傾向
+│   └── ...                   # その他データ（必要に応じて）
+│
+├── lib/
+│   ├── data.ts               # JSONを読み込むユーティリティ
+│   └── convertTo3DModel.ts   # JSON → 3Dデータ変換ロジック（将来用）
+│
+├── types/
+│   ├── racecourse.ts         # コース型定義
+│   ├── g1.ts                 # G1レース型定義
+│   └── trackConditions.ts    # 馬場傾向型定義
+│
+└── styles/
+    └── globals.css           # Tailwindベースのスタイル
+```
+
+## ルーティング構成
+```
+/
+├── （トップページ）サイト紹介・最新情報など
+└── /racecourses
+    ├── （競馬場一覧ページ）
+    └── /[id]
+        ├── （競馬場詳細ページ）
+        └── /3d
+            └── （3Dコースビュー ※後から追加）
+```
