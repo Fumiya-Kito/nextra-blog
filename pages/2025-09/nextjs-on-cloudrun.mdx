@@ -1,0 +1,16 @@
+1. nextJSを以下で始める
+```zsh
+bun create next-app --example with-docker nextjs-docker
+```
+```txt filename="--example with-dockerについて"
+Next.js 公式が提供している example プロジェクトのテンプレートを指定している。
+with-docker は Docker 対応済みのサンプル。
+Dockerfile や .dockerignore がすでに用意されている。
+Next.js アプリをコンテナ化してデプロイする前提の構成になっている。
+```
+
+2. GitHubにプッシュ
+3. cloudrunで新規サービスを作成
+
+コンテナのポートだけ`3000`で`Dockerfile`に書いてあるとおりに合わせること
+
