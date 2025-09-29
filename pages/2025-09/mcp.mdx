@@ -1,0 +1,28 @@
+# MCP
+
+# Why
+- 統合問題を解決するために出てきた考え
+- SlackやGmailやDBに干渉するAI Agentを考える
+- AI AgentがAPIを使う時、AIがつかえるようにAPIをカスタムコードでラップする必要がある(それぞれ別個に)
+- さらに、人によって利用するAI Agent自体(CursorやGitHubCopilotなど)が異なると、カスタムコードが別個に必要になる(例えばCursor用にコードを書いたらCursorでしか使えない)
+- 複数のAIアシスタント(将来的に出てくるものを含め)に対応するために毎回、人がコードを書いていたらキリがない
+- この問題を解決するのがMCP(統一されたプロトコルを一つ作ろうという発想)
+- すべてのAIAgentはMCP Serverに対応するだけでよく、すべてのAPIもMCP Serverを使えるようにすればよい
+```
+AI Agent  -API-> Slack
+          -API-> Gmail
+          -API-> DB
+```
+
+```
+AI Agent  -MCPプロトコル->   MCP Server  -API->  Slack
+                                        -API->  Gmail
+                                        -API->  DB
+```
+
+# What
+- Model Context Protocolの例
+- Cloudeで今の天気を聞くと、「リアルタイムのデータは取得できない」と言われる(学習した過去データしか持っていない)
+- ただ天気を取得する関数を作成して、MCPサーバ経由でCloudeに聞けばリアルタイムのデータの取得は可能となる
+- 天気ではなく任意の関数をMCPサーバに実装しておけばCloudeでできないことを拡張できる
+- もちろんCursorなどの(MCPに対応している)別のクライアントからも同様に実行可能
