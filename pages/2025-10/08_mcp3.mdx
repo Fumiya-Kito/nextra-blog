@@ -1,0 +1,17 @@
+# MCP3 
+
+## Cloaude DesktopでMCPサーバーを設定する
+- Cloaude Desktop→Settings→開発者→設定を編集
+- JSONファイルを以下のように編集する
+```json filename="claude_desktop_config.json"
+// bunには対応せず
+{
+  "mcpServers": {
+    "weather": {
+      "command": "node",
+      "args": ["/Users/fumiya/dev/mcp/quickstart-resources/weather-server-typescript/build/index.js"]
+    }
+  }
+}
+```
+
