@@ -1,0 +1,61 @@
+# MCP2: Node.jsでMCPサーバを作成する
+
+#### MCP公式DOCS↓
+
+https://modelcontextprotocol.io/docs/develop/build-server
+
+#### 実行するMCPサーバーサンプル↓
+
+https://github.com/modelcontextprotocol/quickstart-resources/tree/main/weather-server-typescript
+
+#### Cursorの公式Docs↓
+
+https://cursor.com/docs/context/mcp
+
+- まずは、CursorとローカルのMCPサーバーを接続することを考える
+
+### Cursor-MCPサーバ間の接続方式は3種類
+
+|Transport|	Execution environment|	Deployment|	Users|	Input|	Auth |
+|--|--|--|--|--|--|
+|stdio|	Local|	Cursor manages|	Single user|	Shell command|	Manual|
+|SSE(Server-Sent Events)|	Local/Remote|	Deploy as server|	Multiple users|	URL to an SSE endpoint|	OAuth|
+|Streamable HTTP|	Local/Remote|	Deploy as server|	Multiple users|	URL to an HTTP endpoint|	OAuth|
+
+```
+SSEは「サーバーからの一方向ストリーミング」、HTTPは通常「リクエストごとの単発応答」です。
+ここでの違いは通信の性質です。SSEはHTTPの仕組みを使いながら、サーバーからクライアントへイベントを継続的に送り続ける長寿命の接続です。
+クライアントは1回接続すると、サーバー側から更新・進捗・ログなどを逐次プッシュで受け取れます。
+一方、通常のHTTPはリクエスト→レスポンスで完結する短寿命のやり取りが基本で、継続的なプッシュは前提ではありません。
+SSE は「URLに接続してサーバー送信イベントを受け取る」トランスポートで、複数ユーザー共有や OAuth 認証に対応します。
+Streamable HTTP は「HTTPエンドポイントに対する要求と応答」で、ストリーミング対応のHTTPレスポンスも使えますが、
+SSEのような常時接続のサーバー発信チャンネルではなく、リクエスト単位の通信が基本です。
+```
+
+### 設定ファイルの場所
+- プロジェクト単位の設定 → Create .cursor/mcp.json in your project for project-specific tools.
+- グローバルに設定 → Create ~/.cursor/mcp.json in your home directory for tools available everywhere.
+
+### MCPの実行について
+- 基本的にCursorがユーザに使用していいか承認を求める
+- ネット上からダウンロードしたMCPサーバは危険性を含むため自動実行は行わない
+- YOLOモードを使うことで、自動実行して承認メッセージを省くことができる
+
+### Cursor Settings
+- 左上CursorからPreferreces→Cursor Settings → MCP tools→Add Cusntom MCPから`mcp.json`を開く
+- commandは`bun`を使っているので、bun, Nodeなら`node`を使う
+- argsはMCPサーバーのパスを指定する
+- MCPサーバでtsをつかっているのであれば、`bun run build`などでビルドしておきJSファイルを指定すること
+```json filename="~/.cursor/mcp.json"
+{
+  "mcpServers": {
+    "weather": {
+      "command": "bun",
+      "args": ["/Users/fumiya/dev/mcp/quickstart-resources/weather-server-typescript/build/index.js"]
+    }
+  }
+}
+```
+
+
+- 「現在のサンフランシスコの天気は？」という質問に対して、MCPサーバーから天気情報を取得することができる
